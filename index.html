@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Cellar Ledger — Rev 1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#0f0708;--garnet:#5a1620;--gold:#c9a35c;--gold-dim:#8c7038;--parch:#ece3d2;--parch-dim:#a89f8c;--line:rgba(201,163,92,0.22);--glass:rgba(236,227,210,0.04);--green:#6fae6a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;color:var(--parch);background:radial-gradient(ellipse 120% 80% at 50% -10%,#3a1019 0%,transparent 55%),linear-gradient(180deg,#15080a 0%,#0f0708 100%);background-attachment:fixed;min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:clamp(22px,5vw,52px) clamp(16px,4vw,40px) 80px}
+  header{text-align:center;padding-bottom:26px;border-bottom:1px solid var(--line);margin-bottom:28px}
+  .eyebrow{font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:12px}
+  h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:clamp(40px,9vw,72px);line-height:.95;letter-spacing:-.01em}
+  h1 .amp{color:var(--gold);font-style:italic;font-weight:400}
+  .sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(15px,3vw,19px);color:var(--parch-dim);margin-top:8px}
+  .stats{display:flex;justify-content:center;gap:clamp(24px,7vw,60px);margin-top:22px}
+  .stat b{display:block;font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:var(--gold);line-height:1}
+  .stat span{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--parch-dim)}
+  .quick{background:var(--glass);border:1px solid var(--line);border-radius:4px;padding:18px clamp(14px,3vw,22px);margin-bottom:30px}
+  .qhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+  .qhead h3{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600}
+  .qhead em{font-style:normal;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dim)}
+  .qname{font-family:'Inter';font-size:16px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:11px 13px;width:100%;margin-bottom:14px}
+  .qname:focus{outline:none;border-color:var(--gold)}
+  .qlabel{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--parch-dim);font-weight:600;margin-bottom:8px}
+  .scorepad{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;border-radius:3px}
+  .sbtn{flex:1;min-width:30px;font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch-dim);background:rgba(236,227,210,0.04);border:1px solid var(--line);border-radius:3px;padding:8px 0;cursor:pointer;transition:.12s}
+  .sbtn:hover{color:var(--parch);border-color:var(--parch-dim)}
+  .sbtn.on{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+  .halfrow{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .half{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--parch-dim);background:transparent;border:1px solid var(--line);border-radius:20px;padding:5px 13px;cursor:pointer;font-family:'Inter';transition:.15s}
+  .half.on{color:var(--gold);border-color:var(--gold)}
+  .scoreEcho{font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--gold);font-weight:600}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .tag{font-size:11.5px;color:var(--parch-dim);background:rgba(236,227,210,0.04);border:1px solid var(--line);border-radius:20px;padding:6px 13px;cursor:pointer;transition:.14s;font-family:'Inter'}
+  .tag:hover{color:var(--parch)}
+  .qbottom{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .buyflag{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--parch-dim);background:transparent;border:1px solid var(--line);border-radius:3px;padding:10px 15px;cursor:pointer;transition:.15s;font-family:'Inter'}
+  .buyflag.on{color:var(--green);border-color:var(--green)}
+  .buyflag .dot{width:9px;height:9px;border-radius:50%;border:1.5px solid currentColor}
+  .buyflag.on .dot{background:var(--green);border-color:var(--green)}
+  .logbtn{font-family:'Inter';font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--ink);background:var(--gold);border:none;border-radius:3px;padding:12px 26px;cursor:pointer;transition:.2s;margin-left:auto}
+  .logbtn:hover{background:#d8b56c}
+  .moretoggle{font-size:11px;color:var(--gold-dim);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:'Inter';margin-top:12px}
+  .moregrid{display:none;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:14px}
+  .moregrid.show{display:grid}
+  .moregrid input{font-family:'Inter';font-size:13px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:8px 10px}
+  .moregrid input:focus{outline:none;border-color:var(--gold)}
+  .tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .vtab{font-family:'Inter';font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--parch-dim);background:none;border:none;border-bottom:2px solid transparent;padding:10px 4px;margin-bottom:-1px;cursor:pointer;transition:.15s}
+  .vtab.on{color:var(--gold);border-bottom-color:var(--gold)}
+  .vtab:hover{color:var(--parch)}
+  .shead{margin:0 0 8px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .shead p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch-dim)}
+  .addcellar{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--gold);background:transparent;border:1px solid var(--line);border-radius:3px;padding:8px 14px;cursor:pointer;font-family:'Inter';transition:.15s;white-space:nowrap}
+  .addcellar:hover{border-color:var(--gold)}
+  .lb-row{display:grid;grid-template-columns:34px 50px 1fr auto;gap:clamp(10px,2.5vw,18px);align-items:center;padding:15px 0;border-bottom:1px solid var(--line)}
+  .rank{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold-dim);text-align:center}
+  .lb-row.top .rank{color:var(--gold)}
+  .lscore{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;color:var(--gold);text-align:center;line-height:.9}
+  .lname{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch);line-height:1.12}
+  .lmeta{font-size:11px;color:var(--parch-dim);margin-top:2px}
+  .ltag{display:inline-block;font-size:10px;letter-spacing:.04em;padding:2px 8px;border-radius:20px;margin-top:5px;font-weight:600}
+  .wine{display:grid;grid-template-columns:54px 1fr auto;gap:clamp(10px,3vw,20px);align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+  .score b{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:600;line-height:.9;display:block;text-align:center}
+  .score s{text-decoration:none;font-size:9px;letter-spacing:.1em;color:var(--parch-dim);text-transform:uppercase;display:block;text-align:center}
+  .s-hi b{color:var(--gold)}.s-mid b{color:#c98a52}.s-lo b{color:#9a5a55}
+  .s-pred b{color:var(--parch-dim);font-size:22px}
+  .meta .name{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:var(--parch);line-height:1.1}
+  .meta .producer{font-size:12.5px;color:var(--gold-dim);font-weight:500}
+  .meta .row2{font-size:11px;color:var(--parch-dim);margin-top:5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .meta .notes{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--parch-dim);margin-top:6px}
+  .buy-yes{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--green)}
+  .qtybadge{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--gold);border:1px solid var(--line);border-radius:20px;padding:2px 8px}
+  .openbtn{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--parch);background:transparent;border:1px solid var(--line);border-radius:3px;padding:7px 12px;cursor:pointer;font-family:'Inter';transition:.15s;white-space:nowrap}
+  .openbtn:hover{border-color:var(--gold);color:var(--gold)}
+  .del{background:none;border:none;color:var(--parch-dim);opacity:.35;cursor:pointer;font-size:15px;padding:4px;transition:.15s}
+  .del:hover{opacity:1;color:#c0635c}
+  .empty{text-align:center;padding:46px 20px;color:var(--parch-dim)}
+  .empty p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px}
+  .axis{margin-bottom:13px}
+  .axis-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+  .axis-name{font-size:13px;font-weight:500}
+  .axis-tag{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dim);font-weight:600}
+  .axis-tag.core{color:var(--gold)}
+  .bar{height:5px;background:rgba(236,227,210,0.07);border-radius:3px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--garnet),var(--gold));border-radius:3px}
+  .palate-sum{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch-dim);margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+  footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);text-align:center;font-size:11px;letter-spacing:.1em;color:var(--parch-dim);opacity:.7;display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap}
+  footer button{background:none;border:none;color:var(--parch-dim);font-size:11px;letter-spacing:.1em;cursor:pointer;font-family:'Inter';text-decoration:underline;opacity:.9}
+  footer button:hover{color:var(--gold)}
+  .rev{color:var(--gold-dim)}
+  /* ── Auth gate ── */
+  #auth-gate{display:none;position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse 120% 80% at 50% -10%,#3a1019 0%,transparent 55%),linear-gradient(180deg,#15080a 0%,#0f0708 100%);align-items:center;justify-content:center;padding:24px}
+  .auth-card{max-width:400px;width:100%;text-align:center}
+  .auth-card .eyebrow{margin-bottom:14px}
+  .auth-card h1{font-size:clamp(38px,11vw,60px);margin-bottom:6px}
+  .auth-card .sub{margin-bottom:28px}
+  .gbtn{display:inline-flex;align-items:center;justify-content:center;gap:11px;width:100%;font-family:'Inter';font-size:13px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--ink);background:var(--gold);border:none;border-radius:3px;padding:15px;cursor:pointer;transition:.2s}
+  .gbtn:hover{background:#d8b56c}
+  .gbtn svg{width:18px;height:18px}
+  .auth-error{margin-top:16px;font-size:13px;color:#c0635c;line-height:1.5}
+  .auth-rev{margin-top:26px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--parch-dim);opacity:.6}
+  /* ── Modals ── */
+  .modal{display:none;position:fixed;inset:0;z-index:90;background:rgba(15,7,8,0.82);align-items:center;justify-content:center;padding:20px}
+  .modal.open{display:flex}
+  .modal-card{background:linear-gradient(180deg,#1c0d10,#140809);border:1px solid var(--line);border-radius:6px;max-width:460px;width:100%;padding:24px clamp(16px,4vw,26px);max-height:90vh;overflow-y:auto}
+  .modal-card h3{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;margin-bottom:4px}
+  .modal-card .msub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--parch-dim);margin-bottom:18px}
+  .modal-card input,.modal-card select{font-family:'Inter';font-size:14px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:10px 12px;width:100%;margin-bottom:12px}
+  .modal-card input:focus,.modal-card select:focus{outline:none;border-color:var(--gold)}
+  .modal-card select option{background:#1c0d10}
+  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .mrow{display:flex;gap:8px;align-items:center;margin-top:10px}
+  .mbtn{font-family:'Inter';font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--ink);background:var(--gold);border:none;border-radius:3px;padding:12px 22px;cursor:pointer;transition:.2s}
+  .mbtn:hover{background:#d8b56c}
+  .mbtn.ghost{color:var(--parch-dim);background:transparent;border:1px solid var(--line)}
+  .mbtn.ghost:hover{color:var(--parch);background:transparent}
+  .mstatus{font-size:12px;color:var(--gold);margin-top:12px;min-height:16px}
+  .roster-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .roster-row .re{font-size:13px;color:var(--parch)}
+  .roster-row .rr{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-dim);font-weight:600}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c0d10;border:1px solid var(--line);color:var(--parch);font-size:13px;padding:11px 18px;border-radius:4px;z-index:120;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+  @media(max-width:520px){.lb-row{grid-template-columns:28px 44px 1fr auto}.logbtn{width:100%;margin-left:0;margin-top:4px}.mgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ── AUTH GATE ── -->
+<div id="auth-gate">
+  <div class="auth-card">
+    <div class="eyebrow">Sigler Cellar &middot; Becker Ridge</div>
+    <h1>The Cellar <span class="amp">&</span> Ledger</h1>
+    <div class="sub">Snap it, score it, know what to reorder</div>
+    <button class="gbtn" onclick="signInWithGoogle()">
+      <svg viewBox="0 0 24 24"><path fill="#0f0708" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#0f0708" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#0f0708" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/><path fill="#0f0708" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-rev">Rev 1.0</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Sigler Cellar &middot; Becker Ridge</div>
+    <h1>The Cellar <span class="amp">&</span> Ledger</h1>
+    <div class="sub">Snap it, score it, know what to reorder</div>
+    <div class="stats">
+      <div class="stat"><b id="st-count">0</b><span>Logged</span></div>
+      <div class="stat"><b id="st-buy">0</b><span>Buy Again</span></div>
+      <div class="stat"><b id="st-avg">—</b><span>Avg Score</span></div>
+    </div>
+  </header>
+
+  <div class="quick">
+    <div class="qhead"><h3>Log a pour</h3><em>score &rarr; log</em></div>
+    <input class="qname" id="q-name" placeholder="Wine name">
+    <div class="qlabel">Score</div>
+    <div class="scorepad" id="scorepad"></div>
+    <div class="halfrow"><button class="half" id="halfbtn" onclick="toggleHalf()">+ ½ point</button><span class="scoreEcho" id="scoreEcho"></span></div>
+    <div class="qlabel">Tag — one dominant impression</div>
+    <div class="tags" id="tags"></div>
+    <div class="qbottom">
+      <button class="buyflag" id="buyflag" onclick="toggleBuy()"><span class="dot"></span> Buy again</button>
+      <button class="logbtn" onclick="logPour()">Log it</button>
+    </div>
+    <button class="moretoggle" onclick="toggleMore()">+ view / edit detail (producer, region, vintage, note)</button>
+    <div class="moregrid" id="moregrid">
+      <input id="q-prod" placeholder="Producer">
+      <input id="q-region" placeholder="Region">
+      <input id="q-grape" placeholder="Grape">
+      <input id="q-vintage" placeholder="Vintage">
+      <input id="q-abv" placeholder="ABV %">
+      <input id="q-notes" placeholder="Quick note">
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="vtab on" data-view="buy" onclick="setView('buy')">Buy-Again Leaderboard</button>
+    <button class="vtab" data-view="cellar" onclick="setView('cellar')">Cellar</button>
+    <button class="vtab" data-view="all" onclick="setView('all')">All Bottles</button>
+    <button class="vtab" data-view="palate" onclick="setView('palate')">The Palate</button>
+  </div>
+  <div id="content"></div>
+
+  <footer>
+    <span id="whoami"></span>
+    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
+    <button onclick="signOutUser()">Sign out</button>
+    <span class="rev">The Cellar Ledger &middot; Rev 1.0</span>
+  </footer>
+</div>
+
+<!-- ── PEOPLE MODAL ── -->
+<div class="modal" id="accessModal">
+  <div class="modal-card">
+    <h3>People</h3>
+    <div class="msub">Who can open the cellar. Admins manage the roster; members log &amp; score.</div>
+    <div id="accessList"></div>
+    <div style="margin-top:18px">
+      <input id="accessEmail" placeholder="name@email.com" autocomplete="off">
+      <select id="accessRole"><option value="member">Member</option><option value="admin">Admin</option></select>
+      <div class="mrow">
+        <button class="mbtn" onclick="addAccessEntry()">Add person</button>
+        <button class="mbtn ghost" onclick="closeAccessModal()">Close</button>
+      </div>
+    </div>
+    <div class="mstatus" id="accessStatus"></div>
+  </div>
+</div>
+
+<!-- ── MARK OPENED MODAL ── -->
+<div class="modal" id="openModal">
+  <div class="modal-card">
+    <h3>Mark opened</h3>
+    <div class="msub" id="openWineName">—</div>
+    <div class="qlabel">Score</div>
+    <div class="scorepad" id="openScorepad"></div>
+    <div class="halfrow"><button class="half" id="openHalfbtn" onclick="toggleOpenHalf()">+ ½ point</button><span class="scoreEcho" id="openScoreEcho"></span></div>
+    <div class="qlabel">Tag — one dominant impression</div>
+    <div class="tags" id="openTags"></div>
+    <div class="mrow" style="margin-top:14px">
+      <button class="buyflag" id="openBuyflag" onclick="toggleOpenBuy()"><span class="dot"></span> Buy again</button>
+    </div>
+    <div class="mrow" style="margin-top:16px">
+      <button class="mbtn" onclick="confirmOpen()">Save &amp; open</button>
+      <button class="mbtn ghost" onclick="closeOpenModal()">Cancel</button>
+    </div>
+    <div class="mstatus" id="openStatus"></div>
+  </div>
+</div>
+
+<!-- ── ADD TO CELLAR MODAL ── -->
+<div class="modal" id="cellarAddModal">
+  <div class="modal-card">
+    <h3>Add to cellar</h3>
+    <div class="msub">An unopened bottle you're holding. Score it later when you open it.</div>
+    <input id="ca-name" placeholder="Wine name">
+    <div class="mgrid">
+      <input id="ca-prod" placeholder="Producer">
+      <input id="ca-region" placeholder="Region">
+      <input id="ca-grape" placeholder="Grape">
+      <input id="ca-vintage" placeholder="Vintage">
+      <input id="ca-abv" placeholder="ABV %">
+      <input id="ca-qty" placeholder="Qty" type="number" min="1" value="1">
+      <input id="ca-predlow" placeholder="Predicted low" type="number" step="0.5">
+      <input id="ca-predhigh" placeholder="Predicted high" type="number" step="0.5">
+    </div>
+    <div class="mrow" style="margin-top:8px">
+      <button class="mbtn" onclick="addCellarBottle()">Add bottle</button>
+      <button class="mbtn ghost" onclick="closeCellarAddModal()">Cancel</button>
+    </div>
+    <div class="mstatus" id="cellarAddStatus"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getDatabase, ref, get, set, update, remove, push, onValue } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+
+// ── Firebase (shared philinity-893d2 project — same as Eats) ──
+const firebaseConfig = {
+  apiKey: "AIzaSyCrW9Lrf7fWVqRxKqsnuPK0tL6UYbd_qds",
+  authDomain: "philinity-893d2.firebaseapp.com",
+  databaseURL: "https://philinity-893d2-default-rtdb.firebaseio.com",
+  projectId: "philinity-893d2",
+  storageBucket: "philinity-893d2.firebasestorage.app",
+  messagingSenderId: "443020781676",
+  appId: "1:443020781676:web:614ec91c9ba33076eb9049"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// ── ACCESS MODEL (role + roster) ──────────────────────────
+// Lockout-proof root admins (always 'admin', regardless of roster).
+const ROOT_ADMIN_UIDS = ['CuJigrzCbRfFFsM7uqe0mix46xH3', 'g4stabGPKiWAE23NTw6oUsqawWf1'];
+const PEOPLE_PATH = 'cellar/people';
+const VALID_ROLES = ['admin', 'member'];
+let currentRole = null;
+
+// Email → roster key. Dots → underscores. Chained split/join keeps every dot
+// replaced (RTDB rules .replace is first-occurrence-only; we sanitize fully here).
+function emailToKey(email){ return (email||'').trim().toLowerCase().split('.').join('_'); }
+
+async function resolveRole(user){
+  if(!user) return null;
+  if(ROOT_ADMIN_UIDS.includes(user.uid)) return 'admin';
+  if(!user.email) return null;
+  try{
+    const snap = await get(ref(db, PEOPLE_PATH + '/' + emailToKey(user.email)));
+    const rec = snap.val();
+    const role = rec && rec.role;
+    return VALID_ROLES.includes(role) ? role : null;
+  }catch(e){ console.warn('[Cellar] role resolution failed:', e); return null; }
+}
+const isAdmin = () => currentRole === 'admin';
+
+// ── DB HELPERS ──
+const dbGet = (p) => get(ref(db, p));
+const dbSet = (p, v) => set(ref(db, p), v);
+const dbUpdate = (p, v) => update(ref(db, p), v);
+const dbRemove = (p) => remove(ref(db, p));
+
+// ── STATE ──
+let bottles = {};   // id -> bottle
+let buylist = {};   // id -> item
+let view = 'buy';
+let subscribed = false;
+let draft = { score:null, half:false, tag:null, buy:false };
+let openDraft = { id:null, score:null, half:false, tag:null, buy:false };
+
+const TAGS=[
+  {k:'earthy',t:'Earthy / Savory',c:'#c9a35c'},
+  {k:'smoke',t:'Smoke / Leather',c:'#b5793f'},
+  {k:'big',t:'Big / Structured',c:'#a8556a'},
+  {k:'aged',t:'Aged / Tertiary',c:'#9c7b46'},
+  {k:'fruity',t:'Fruity / Modern',c:'#8a5a8f'},
+  {k:'light',t:'Light / Tart',c:'#6f8a9c'},
+  {k:'funky',t:'Funky / Natural',c:'#7a9a6a'},
+  {k:'off',t:'Off / SO₂',c:'#9a5a55'}
+];
+const tagInfo = k => TAGS.find(t=>t.k===k) || {t:k,c:'#a89f8c'};
+
+// ── SEED (imported once, if /cellar/bottles is empty) ──
+const SEED_RATED=[
+  {name:"Nòtu e l'albera",producer:'Fabio Gea',region:'Langhe Rosso, Neive',grape:'Nebbiolo + Barbera',vintage:'2019',abv:'13.5',score:5.5,tag:'light',buyAgain:false,notes:'Too light and tart — wanted more body, smoke, leather.'},
+  {name:'Brunello di Montalcino',producer:'La Gerla',region:'Montalcino, Tuscany',grape:'Sangiovese',vintage:'2021',abv:'14.0',score:7,tag:'earthy',buyAgain:true,notes:'Earthy, savory, structured — landed well with no smoke/meat. Young; a bottle with age would likely score higher.'},
+  {name:'Beatus (Châteauneuf-du-Pape)',producer:'Ch. de la Font du Loup',region:'CdP, France',grape:'Grenache blend',vintage:'2021',abv:'14.9',score:8.5,tag:'earthy',buyAgain:true,notes:''},
+  {name:'Ruvei (Barolo)',producer:'Marchesi di Barolo',region:'Piedmont',grape:'Nebbiolo',vintage:'NV',abv:'13.5',score:5,tag:'light',buyAgain:false,notes:'Nebbiolo underperformed again.'}
+];
+const SEED_CELLARED=[
+  {name:'Campo dei Gigli Amarone',producer:"Tenuta Sant'Antonio",region:'Valpolicella, Veneto',grape:'Corvina blend',vintage:'2018',qty:1,predLow:8,predHigh:9},
+  {name:'Famiglia Castagnedi Amarone',producer:"Tenuta Sant'Antonio",region:'Valpolicella, Veneto',grape:'Corvina blend',vintage:'2019',qty:1,predLow:7.5,predHigh:8.5},
+  {name:'Amarone della Valpolicella',producer:"Ca' Storica",region:'Valpolicella, Verona',grape:'Corvina blend',vintage:'2021',qty:3,predLow:7.5,predHigh:8.5},
+  {name:'Culmen Reserva',producer:'Bodegas LAN',region:'Rioja',grape:'Tempranillo + Graciano',vintage:'2017',qty:1,predLow:7.5,predHigh:8.5},
+  {name:'Rioja Crianza',producer:'Milhojas',region:'Rioja',grape:'Tempranillo',vintage:'2021',qty:1,predLow:6,predHigh:6.5},
+  {name:'La Poulosa',producer:'Raúl Pérez',region:'Bierzo',grape:'Mencía',vintage:'2021',qty:1,predLow:7,predHigh:8},
+  {name:'La Santa de Úrsula',producer:'Envínate',region:'Tenerife (Vinos Atlánticos)',grape:'Listán Negro',vintage:'2021',qty:1,predLow:6,predHigh:7},
+  {name:'Graciano',producer:'Castillo de Feliciana',region:'Columbia Valley, WA',grape:'Graciano',vintage:'2017',qty:1,predLow:6.5,predHigh:7.5},
+  {name:'Châteauneuf-du-Pape Réserve',producer:'Prestige des Princes',region:'CdP, France',grape:'Grenache blend',vintage:'NV',qty:1,predLow:7.5,predHigh:8.5},
+  {name:'Saint-Estèphe (Grand Vin)',producer:'Château Picard',region:'Saint-Estèphe, Bordeaux',grape:'Cab/Merlot',vintage:'NV',qty:1,predLow:7,predHigh:8},
+  {name:'Cadillac Côtes de Bordeaux',producer:'Château de Lyde',region:'Cadillac, Bordeaux',grape:'Merlot-led',vintage:'2022',qty:1,predLow:7,predHigh:7.5}
+];
+const SEED_BUYLIST=[
+  {name:'Domaine du Pégaü "Cuvée Réservée"',region:'Châteauneuf-du-Pape',note:''},
+  {name:'Vieux Télégraphe "La Crau"',region:'Châteauneuf-du-Pape',note:''},
+  {name:'Bertani Amarone',region:'Valpolicella',note:''},
+  {name:'Vincent Paris "La Geynale" Cornas',region:'Cornas',note:'or Clape Cornas'},
+  {name:'Il Poggione Brunello',region:'Montalcino',note:''},
+  {name:'López de Heredia "Viña Tondonia" Gran Reserva',region:'Rioja',note:''},
+  {name:'Nemea Agiorgitiko',region:'Nemea, Greece',note:'Gaia Estate / Skouras — blind-test proven'}
+];
+
+async function seedIfEmpty(){
+  try{
+    const snap = await dbGet('cellar/bottles');
+    if(snap.exists()) return;
+    const now = Date.now();
+    const uid = (auth.currentUser && auth.currentUser.uid) || 'seed';
+    const updates = {};
+    let i = 0;
+    SEED_RATED.forEach(w=>{
+      const id = 'seed_r' + (i++);
+      updates['cellar/bottles/' + id] = {
+        name:w.name, producer:w.producer, region:w.region, grape:w.grape, vintage:w.vintage,
+        abv:w.abv, status:'opened', qty:0, predLow:null, predHigh:null, score:w.score,
+        tag:w.tag, buyAgain:w.buyAgain, notes:w.notes||'', photoPath:null,
+        addedBy:uid, addedAt:now + (i), openedAt:now + (i)
+      };
+    });
+    i = 0;
+    SEED_CELLARED.forEach(w=>{
+      const id = 'seed_c' + (i++);
+      updates['cellar/bottles/' + id] = {
+        name:w.name, producer:w.producer, region:w.region, grape:w.grape, vintage:w.vintage,
+        abv:'', status:'cellared', qty:w.qty, predLow:w.predLow, predHigh:w.predHigh, score:null,
+        tag:null, buyAgain:false, notes:'', photoPath:null,
+        addedBy:uid, addedAt:now + (i), openedAt:null
+      };
+    });
+    i = 0;
+    SEED_BUYLIST.forEach(w=>{
+      const id = 'seed_b' + (i++);
+      updates['cellar/buylist/' + id] = {
+        name:w.name, region:w.region, note:w.note||'', addedBy:uid, addedAt:now + (i)
+      };
+    });
+    await dbUpdate('/', updates);
+    console.log('[Cellar] Seed data imported.');
+  }catch(e){ console.warn('[Cellar] seed failed:', e); }
+}
+
+// ── LIVE SUBSCRIPTIONS ──
+function subscribe(){
+  if(subscribed) return;
+  subscribed = true;
+  onValue(ref(db, 'cellar/bottles'), snap => { bottles = snap.val() || {}; render(); });
+  onValue(ref(db, 'cellar/buylist'), snap => { buylist = snap.val() || {}; render(); });
+}
+
+// ── BUILD SCORE PADS + TAGS ──
+function buildScorepad(el, onPick){
+  el.innerHTML = '';
+  for(let i=1;i<=10;i++){
+    const b=document.createElement('button');
+    b.className='sbtn'; b.textContent=i; b.dataset.v=i;
+    b.onclick=()=>onPick(i,el);
+    el.appendChild(b);
+  }
+}
+function buildTags(el, onPick){
+  el.innerHTML = '';
+  TAGS.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='tag'; b.textContent=t.t; b.style.borderColor=t.c+'55'; b.dataset.k=t.k;
+    b.onclick=()=>onPick(t.k,b,t.c,el);
+    el.appendChild(b);
+  });
+}
+function paintScore(el, v){ el.querySelectorAll('.sbtn').forEach(b=>b.classList.toggle('on', +b.dataset.v===v)); }
+function paintTag(el, k, btn, c){
+  const was = btn && btn.dataset.k === k && btn.classList.contains('_on');
+  el.querySelectorAll('.tag').forEach(b=>{ b.style.background=''; b.style.color=''; b.style.borderColor=tagInfo(b.dataset.k).c+'55'; b.classList.remove('_on'); });
+  if(k && btn){ btn.style.background=c; btn.style.color='#0f0708'; btn.style.borderColor=c; btn.classList.add('_on'); }
+}
+
+// Quick-log pad
+buildScorepad(document.getElementById('scorepad'), (v)=>{ draft.score=v; paintScore(document.getElementById('scorepad'), v); echo('scoreEcho', draft); });
+buildTags(document.getElementById('tags'), (k,btn,c)=>{ const was=draft.tag===k; draft.tag=was?null:k; paintTag(document.getElementById('tags'), was?null:k, btn, c); });
+// Mark-opened pad
+buildScorepad(document.getElementById('openScorepad'), (v)=>{ openDraft.score=v; paintScore(document.getElementById('openScorepad'), v); echo('openScoreEcho', openDraft); });
+buildTags(document.getElementById('openTags'), (k,btn,c)=>{ const was=openDraft.tag===k; openDraft.tag=was?null:k; paintTag(document.getElementById('openTags'), was?null:k, btn, c); });
+
+function echo(id, d){ const e=document.getElementById(id); if(d.score==null){ e.textContent=''; return; } e.textContent=(d.score+(d.half?0.5:0)).toFixed(1); }
+
+window.toggleHalf = ()=>{ draft.half=!draft.half; document.getElementById('halfbtn').classList.toggle('on',draft.half); echo('scoreEcho',draft); };
+window.toggleOpenHalf = ()=>{ openDraft.half=!openDraft.half; document.getElementById('openHalfbtn').classList.toggle('on',openDraft.half); echo('openScoreEcho',openDraft); };
+window.toggleBuy = ()=>{ draft.buy=!draft.buy; document.getElementById('buyflag').classList.toggle('on',draft.buy); };
+window.toggleOpenBuy = ()=>{ openDraft.buy=!openDraft.buy; document.getElementById('openBuyflag').classList.toggle('on',openDraft.buy); };
+window.toggleMore = ()=>{ document.getElementById('moregrid').classList.toggle('show'); };
+
+// ── LOG A POUR (opened + scored) ──
+window.logPour = async function(){
+  const name = document.getElementById('q-name').value.trim();
+  if(!name){ document.getElementById('q-name').focus(); return; }
+  if(draft.score==null){ const p=document.getElementById('scorepad'); p.style.outline='1px solid #9a5a55'; setTimeout(()=>p.style.outline='',900); return; }
+  const now = Date.now();
+  const uid = (auth.currentUser && auth.currentUser.uid) || '';
+  try{
+    const r = push(ref(db, 'cellar/bottles'));
+    await set(r, {
+      name,
+      producer:document.getElementById('q-prod').value.trim(),
+      region:document.getElementById('q-region').value.trim(),
+      grape:document.getElementById('q-grape').value.trim(),
+      vintage:document.getElementById('q-vintage').value.trim(),
+      abv:document.getElementById('q-abv').value.replace('%','').trim(),
+      status:'opened', qty:0, predLow:null, predHigh:null,
+      score:draft.score+(draft.half?0.5:0), tag:draft.tag, buyAgain:draft.buy,
+      notes:document.getElementById('q-notes').value.trim(), photoPath:null,
+      addedBy:uid, addedAt:now, openedAt:now
+    });
+    resetQuickLog();
+    showToast('Logged — ' + name);
+    if(view==='palate') setView('all');
+  }catch(e){ showToast('Save failed: ' + (e.message||e)); }
+};
+function resetQuickLog(){
+  ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-notes'].forEach(id=>document.getElementById(id).value='');
+  draft={score:null,half:false,tag:null,buy:false};
+  paintScore(document.getElementById('scorepad'), -1);
+  paintTag(document.getElementById('tags'), null, null, null);
+  document.getElementById('halfbtn').classList.remove('on');
+  document.getElementById('buyflag').classList.remove('on');
+  document.getElementById('scoreEcho').textContent='';
+  document.getElementById('moregrid').classList.remove('show');
+}
+
+// ── DELETE ──
+window.del = async function(id){
+  if(!confirm('Remove this bottle?')) return;
+  try{ await dbRemove('cellar/bottles/' + id); }catch(e){ showToast('Delete failed'); }
+};
+
+// ── TOGGLE BUY-AGAIN INLINE ──
+window.toggleBuyList = async function(id){
+  const w = bottles[id]; if(!w) return;
+  try{ await dbUpdate('cellar/bottles/' + id, { buyAgain: !w.buyAgain }); }catch(e){ showToast('Update failed'); }
+};
+
+// ── MARK OPENED FLOW ──
+window.openMarkOpened = function(id){
+  const w = bottles[id]; if(!w) return;
+  openDraft = { id, score:null, half:false, tag:null, buy:false };
+  document.getElementById('openWineName').textContent = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ');
+  paintScore(document.getElementById('openScorepad'), -1);
+  paintTag(document.getElementById('openTags'), null, null, null);
+  document.getElementById('openHalfbtn').classList.remove('on');
+  document.getElementById('openBuyflag').classList.remove('on');
+  document.getElementById('openScoreEcho').textContent='';
+  document.getElementById('openStatus').textContent='';
+  document.getElementById('openModal').classList.add('open');
+};
+window.closeOpenModal = ()=>document.getElementById('openModal').classList.remove('open');
+window.confirmOpen = async function(){
+  const w = bottles[openDraft.id]; if(!w){ closeOpenModal(); return; }
+  if(openDraft.score==null){ document.getElementById('openStatus').textContent='⚠ Tap a score first.'; return; }
+  const now = Date.now();
+  const uid = (auth.currentUser && auth.currentUser.uid) || '';
+  const finalScore = openDraft.score + (openDraft.half?0.5:0);
+  const qty = Number(w.qty) || 1;
+  try{
+    if(qty > 1){
+      // Leave qty-1 cellared; create a new opened+scored record.
+      await dbUpdate('cellar/bottles/' + openDraft.id, { qty: qty - 1 });
+      const r = push(ref(db, 'cellar/bottles'));
+      await set(r, {
+        name:w.name, producer:w.producer||'', region:w.region||'', grape:w.grape||'', vintage:w.vintage||'',
+        abv:w.abv||'', status:'opened', qty:0, predLow:null, predHigh:null,
+        score:finalScore, tag:openDraft.tag, buyAgain:openDraft.buy, notes:w.notes||'', photoPath:w.photoPath||null,
+        addedBy:uid, addedAt:now, openedAt:now
+      });
+    }else{
+      await dbUpdate('cellar/bottles/' + openDraft.id, {
+        status:'opened', qty:0, score:finalScore, tag:openDraft.tag, buyAgain:openDraft.buy, openedAt:now
+      });
+    }
+    closeOpenModal();
+    showToast('Opened — ' + w.name);
+  }catch(e){ document.getElementById('openStatus').textContent='❌ ' + (e.message||e); }
+};
+
+// ── ADD TO CELLAR ──
+window.openCellarAdd = ()=>{
+  ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ca-qty').value = '1';
+  document.getElementById('cellarAddStatus').textContent='';
+  document.getElementById('cellarAddModal').classList.add('open');
+};
+window.closeCellarAddModal = ()=>document.getElementById('cellarAddModal').classList.remove('open');
+window.addCellarBottle = async function(){
+  const name = document.getElementById('ca-name').value.trim();
+  if(!name){ document.getElementById('cellarAddStatus').textContent='⚠ Wine name is required.'; return; }
+  const pl = document.getElementById('ca-predlow').value.trim();
+  const ph = document.getElementById('ca-predhigh').value.trim();
+  const now = Date.now();
+  const uid = (auth.currentUser && auth.currentUser.uid) || '';
+  try{
+    const r = push(ref(db, 'cellar/bottles'));
+    await set(r, {
+      name,
+      producer:document.getElementById('ca-prod').value.trim(),
+      region:document.getElementById('ca-region').value.trim(),
+      grape:document.getElementById('ca-grape').value.trim(),
+      vintage:document.getElementById('ca-vintage').value.trim(),
+      abv:document.getElementById('ca-abv').value.replace('%','').trim(),
+      status:'cellared', qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1),
+      predLow: pl===''?null:Number(pl), predHigh: ph===''?null:Number(ph),
+      score:null, tag:null, buyAgain:false, notes:'', photoPath:null,
+      addedBy:uid, addedAt:now, openedAt:null
+    });
+    closeCellarAddModal();
+    showToast('Added to cellar — ' + name);
+    setView('cellar');
+  }catch(e){ document.getElementById('cellarAddStatus').textContent='❌ ' + (e.message||e); }
+};
+
+// ── VIEWS + RENDER ──
+window.setView = function(v){ view=v; document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); render(); };
+function scoreClass(r){ return r>=7?'s-hi':r>=5?'s-mid':'s-lo'; }
+function fmt(n){ return Number(n).toFixed(1).replace(/\.0$/,''); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function asArr(map){ return Object.keys(map||{}).map(id=>Object.assign({id}, map[id])); }
+
+function render(){
+  const all = asArr(bottles);
+  const opened = all.filter(w=>w.status==='opened');
+  const cellared = all.filter(w=>w.status==='cellared');
+  document.getElementById('st-count').textContent = opened.length;
+  document.getElementById('st-buy').textContent = opened.filter(w=>w.buyAgain).length;
+  document.getElementById('st-avg').textContent = opened.length ? (opened.reduce((s,w)=>s+Number(w.score||0),0)/opened.length).toFixed(1) : '—';
+
+  const c = document.getElementById('content');
+  if(view==='palate'){ c.innerHTML = palateHTML(); return; }
+
+  if(view==='buy'){
+    const list = opened.filter(w=>w.buyAgain).sort((a,b)=>b.score-a.score);
+    let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers, ranked by score.</p></div>';
+    if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No buy-again bottles yet. Flag the keepers as you log them.</p></div>'; return; }
+    c.innerHTML = html + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`; }).join('');
+    return;
+  }
+
+  if(view==='cellar'){
+    const list = cellared.slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+    let html = '<div class="shead"><p>Unopened bottles on the rack — predicted band &amp; count.</p><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>';
+    if(!list.length){ c.innerHTML = html + '<div class="empty"><p>The rack is empty. Add a bottle you\'re holding.</p></div>'; return; }
+    c.innerHTML = html + list.map(w=>{
+      const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : (w.predLow!=null?fmt(w.predLow)+'+':'—');
+      const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
+      const qty = Number(w.qty)||1;
+      return `<div class="wine"><div class="score s-pred"><b>${esc(band)}</b><s>pred</s></div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
+    }).join('');
+    return;
+  }
+
+  // all
+  const list = all.slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  let html = '<div class="shead"><p>Everything — opened &amp; cellared, newest first.</p></div>';
+  if(!list.length){ c.innerHTML = html + '<div class="empty"><p>Nothing logged yet. Score a pour above.</p></div>'; return; }
+  c.innerHTML = html + list.map(w=>{
+    const ti=tagInfo(w.tag);
+    if(w.status==='cellared'){
+      const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
+      const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
+      const qty = Number(w.qty)||1;
+      return `<div class="wine"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
+    }
+    const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
+    return `<div class="wine"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
+  }).join('');
+}
+
+function palateHTML(){
+  return `<div class="shead"><p>What the ratings keep confirming. This sharpens with every pour you log.</p></div>
+  <div class="axis"><div class="axis-top"><span class="axis-name">Earthy / Savory / Dried-fruit</span><span class="axis-tag core">Core driver</span></div><div class="bar"><i style="width:95%"></i></div></div>
+  <div class="axis"><div class="axis-top"><span class="axis-name">Body / Weight / Concentration</span><span class="axis-tag core">Matters</span></div><div class="bar"><i style="width:88%"></i></div></div>
+  <div class="axis"><div class="axis-top"><span class="axis-name">Structure — tannin &amp; acid grip</span><span class="axis-tag core">Likes it</span></div><div class="bar"><i style="width:82%"></i></div></div>
+  <div class="axis"><div class="axis-top"><span class="axis-name">Bottle age / Tertiary complexity</span><span class="axis-tag">Favors aged</span></div><div class="bar"><i style="width:78%"></i></div></div>
+  <div class="axis"><div class="axis-top"><span class="axis-name">Smoke / Leather / Meat</span><span class="axis-tag">Bonus — 7→9</span></div><div class="bar"><i style="width:70%"></i></div></div>
+  <div class="axis"><div class="axis-top"><span class="axis-name">Excess SO₂ · light/tart/funky natural</span><span class="axis-tag" style="color:#9a5a55">Turn-off</span></div><div class="bar"><i style="width:14%;background:linear-gradient(90deg,#3a1418,#9a5a55)"></i></div></div>
+  <div class="palate-sum">Earthy, savory, structured European reds with real weight — bottle age welcome, smoke and leather a bonus. Light/tart/funky and SO₂-sharp lose. Nebbiolo has underperformed (two lowest scores).</div>`;
+}
+
+// ── PEOPLE MODAL ──
+window.openAccessModal = async function(){
+  if(!isAdmin()){ showToast('Admins only'); return; }
+  document.getElementById('accessStatus').textContent='';
+  document.getElementById('accessModal').classList.add('open');
+  await renderAccessList();
+};
+window.closeAccessModal = ()=>document.getElementById('accessModal').classList.remove('open');
+async function renderAccessList(){
+  const wrap = document.getElementById('accessList');
+  wrap.innerHTML = '<div style="color:var(--parch-dim);font-size:13px">Loading…</div>';
+  try{
+    const snap = await dbGet(PEOPLE_PATH);
+    const people = snap.val() || {};
+    const keys = Object.keys(people);
+    if(!keys.length){ wrap.innerHTML='<div style="color:var(--parch-dim);font-size:13px;font-style:italic;font-family:Cormorant Garamond,serif">No one added yet.</div>'; return; }
+    wrap.innerHTML = keys.map(k=>{
+      const p = people[k];
+      return `<div class="roster-row"><div><div class="re">${esc(p.email||k)}</div><div class="rr">${esc(p.role||'member')}</div></div><button class="del" onclick="removeAccessEntry('${k}','${esc(p.email||k)}')">✕</button></div>`;
+    }).join('');
+  }catch(e){ wrap.innerHTML='<div style="color:#c0635c;font-size:13px">'+esc(e.message||e)+'</div>'; }
+}
+window.addAccessEntry = async function(){
+  if(!isAdmin()){ showToast('Admins only'); return; }
+  const status = document.getElementById('accessStatus');
+  const email = (document.getElementById('accessEmail').value||'').trim().toLowerCase();
+  const role = document.getElementById('accessRole').value;
+  if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ status.textContent='⚠ Enter a valid email.'; return; }
+  if(!VALID_ROLES.includes(role)){ status.textContent='⚠ Pick a valid role.'; return; }
+  status.textContent='⏳ Saving…';
+  try{
+    await dbSet(PEOPLE_PATH + '/' + emailToKey(email), {
+      email, role, addedAt:Date.now(), addedBy:(auth.currentUser && auth.currentUser.uid) || 'root'
+    });
+    status.textContent='✅ ' + email + ' added as ' + role + '.';
+    document.getElementById('accessEmail').value='';
+    renderAccessList();
+  }catch(e){ status.textContent='❌ ' + (e.message||e); }
+};
+window.removeAccessEntry = async function(key, label){
+  if(!isAdmin()){ showToast('Admins only'); return; }
+  if(!confirm('Remove access for ' + label + '?')) return;
+  const status = document.getElementById('accessStatus');
+  status.textContent='⏳ Removing…';
+  try{ await dbRemove(PEOPLE_PATH + '/' + key); status.textContent='✅ Removed ' + label + '.'; renderAccessList(); }
+  catch(e){ status.textContent='❌ ' + (e.message||e); }
+};
+
+// ── TOAST ──
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+// ── AUTH ──
+window.signInWithGoogle = function(){
+  document.getElementById('authError').textContent='';
+  signInWithPopup(auth, provider).catch(e=>{
+    console.error('Google sign-in error:', e);
+    document.getElementById('authError').textContent = (e && e.message) || 'Sign-in failed. Please try again.';
+  });
+};
+window.signOutUser = async function(){ try{ await signOut(auth); }catch(e){ console.warn(e); } };
+
+let initialized = false;
+onAuthStateChanged(auth, async (user)=>{
+  if(!user){
+    document.getElementById('auth-gate').style.display='flex';
+    initialized = false;
+    return;
+  }
+  currentRole = await resolveRole(user);
+  if(!currentRole){
+    const shown = user.email ? ' (' + user.email + ')' : '';
+    document.getElementById('authError').innerHTML = '⚠️ This account' + esc(shown) + ' is not authorized for the Cellar.<br><br>Ask an admin to add you, then sign in again.';
+    document.getElementById('auth-gate').style.display='flex';
+    initialized = false;
+    signOut(auth).catch(e=>console.warn('Forced sign-out failed:', e));
+    return;
+  }
+  try{ await user.getIdToken(true); }
+  catch(e){ document.getElementById('authError').textContent='Auth token refresh failed. Please sign in again.'; document.getElementById('auth-gate').style.display='flex'; return; }
+
+  document.getElementById('auth-gate').style.display='none';
+  document.getElementById('authError').textContent='';
+  document.getElementById('whoami').textContent = user.email || '';
+  document.getElementById('footerPeople').style.display = isAdmin() ? '' : 'none';
+
+  if(!initialized){
+    initialized = true;
+    await seedIfEmpty();
+    subscribe();
+    setView('buy');
+  }
+});
+
+// Show auth gate on load
+document.getElementById('auth-gate').style.display='flex';
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "_comment": "ADDITIVE block for the SHARED philinity-893d2 rules file. Merge the 'cellar' key alongside the existing app blocks (Eats, etc.) — do NOT publish this file on its own, and never drop/overwrite/wildcard another app's block. Rev 1.0 = option 1 (household-private, auth != null) per handoff spec section 5a. Verify Eats' block is intact after publishing.",
+  "rules": {
+    "cellar": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "people": {
+        ".write": "auth != null && (auth.uid === 'CuJigrzCbRfFFsM7uqe0mix46xH3' || auth.uid === 'g4stabGPKiWAE23NTw6oUsqawWf1' || root.child('cellar/people/' + auth.token.email.replace('.','_')).child('role').val() === 'admin')"
+      }
+    }
+  }
+}
