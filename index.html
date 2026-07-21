@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 1.0</title>
+<title>The Cellar Ledger — Rev 1.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -26,6 +26,18 @@
   .qhead em{font-style:normal;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dim)}
   .qname{font-family:'Inter';font-size:16px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:11px 13px;width:100%;margin-bottom:14px}
   .qname:focus{outline:none;border-color:var(--gold)}
+  .snap{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;font-family:'Inter';font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--gold);background:transparent;border:1px solid var(--line);border-radius:3px;padding:12px;cursor:pointer;transition:.2s;margin-bottom:12px}
+  .snap:hover{border-color:var(--gold)}
+  .snap svg{width:17px;height:17px}
+  .snap.busy{opacity:.6;pointer-events:none}
+  .photoprev{display:none;align-items:center;gap:10px;margin-bottom:14px}
+  .photoprev.show{display:flex}
+  .photoprev img{width:52px;height:52px;object-fit:cover;border-radius:4px;border:1px solid var(--line)}
+  .photoprev button{background:none;border:none;color:var(--parch-dim);font-size:11px;cursor:pointer;text-decoration:underline;font-family:'Inter'}
+  .photoprev button:hover{color:#c0635c}
+  .thumb{width:46px;height:46px;object-fit:cover;border-radius:4px;border:1px solid var(--line);cursor:pointer;float:right;margin:0 0 6px 12px}
+  #imgModal{padding:0;background:rgba(15,7,8,0.94);cursor:zoom-out}
+  #imgModal img{max-width:94vw;max-height:92vh;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
   .qlabel{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--parch-dim);font-weight:600;margin-bottom:8px}
   .scorepad{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;border-radius:3px}
   .sbtn{flex:1;min-width:30px;font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch-dim);background:rgba(236,227,210,0.04);border:1px solid var(--line);border-radius:3px;padding:8px 0;cursor:pointer;transition:.12s}
@@ -142,7 +154,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 1.0</div>
+    <div class="auth-rev">Rev 1.1</div>
   </div>
 </div>
 
@@ -161,6 +173,12 @@
   <div class="quick">
     <div class="qhead"><h3>Log a pour</h3><em>score &rarr; log</em></div>
     <input class="qname" id="q-name" placeholder="Wine name">
+    <button class="snap" id="q-snap" onclick="document.getElementById('q-photo').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Snap the label
+    </button>
+    <input type="file" id="q-photo" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this,'q')">
+    <div class="photoprev" id="q-photoprev"><img id="q-photoimg" alt="label"><button onclick="clearPhoto('q')">Remove photo</button></div>
     <div class="qlabel">Score</div>
     <div class="scorepad" id="scorepad"></div>
     <div class="halfrow"><button class="half" id="halfbtn" onclick="toggleHalf()">+ ½ point</button><span class="scoreEcho" id="scoreEcho"></span></div>
@@ -193,7 +211,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 1.0</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 1.1</span>
   </footer>
 </div>
 
@@ -252,6 +270,12 @@
       <input id="ca-predlow" placeholder="Predicted low" type="number" step="0.5">
       <input id="ca-predhigh" placeholder="Predicted high" type="number" step="0.5">
     </div>
+    <button class="snap" id="ca-snap" style="margin-top:12px" onclick="document.getElementById('ca-photo').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Add a label photo
+    </button>
+    <input type="file" id="ca-photo" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this,'ca')">
+    <div class="photoprev" id="ca-photoprev"><img id="ca-photoimg" alt="label"><button onclick="clearPhoto('ca')">Remove photo</button></div>
     <div class="mrow" style="margin-top:8px">
       <button class="mbtn" onclick="addCellarBottle()">Add bottle</button>
       <button class="mbtn ghost" onclick="closeCellarAddModal()">Cancel</button>
@@ -260,11 +284,15 @@
   </div>
 </div>
 
+<!-- ── IMAGE LIGHTBOX ── -->
+<div class="modal" id="imgModal" onclick="closeImg()"><img id="imgFull" alt="label"></div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getDatabase, ref, get, set, update, remove, push, onValue } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+import { getStorage, ref as storageRef, uploadString, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 
 // ── Firebase (shared philinity-893d2 project — same as Eats) ──
@@ -279,6 +307,7 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const storage = getStorage(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
@@ -317,8 +346,9 @@ let bottles = {};   // id -> bottle
 let buylist = {};   // id -> item
 let view = 'buy';
 let subscribed = false;
-let draft = { score:null, half:false, tag:null, buy:false };
+let draft = { score:null, half:false, tag:null, buy:false, photo:null };
 let openDraft = { id:null, score:null, half:false, tag:null, buy:false };
+let caPhoto = null;   // add-to-cellar pending photo (compressed data URL)
 
 const TAGS=[
   {k:'earthy',t:'Earthy / Savory',c:'#c9a35c'},
@@ -444,6 +474,54 @@ buildTags(document.getElementById('openTags'), (k,btn,c)=>{ const was=openDraft.
 
 function echo(id, d){ const e=document.getElementById(id); if(d.score==null){ e.textContent=''; return; } e.textContent=(d.score+(d.half?0.5:0)).toFixed(1); }
 
+// ── PHOTO: compress client-side, hold as data URL until the bottle is written ──
+function compressImage(file, maxEdge=1600, quality=0.8){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+      if(w>=h && w>maxEdge){ h=Math.round(h*maxEdge/w); w=maxEdge; }
+      else if(h>w && h>maxEdge){ w=Math.round(w*maxEdge/h); h=maxEdge; }
+      const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      try{ resolve(canvas.toDataURL('image/jpeg',quality)); }catch(e){ reject(e); }
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+    img.src=url;
+  });
+}
+window.handlePhoto = async function(input, which){
+  const file=input.files && input.files[0];
+  input.value='';
+  if(!file) return;
+  const snap=document.getElementById(which+'-snap');
+  if(snap) snap.classList.add('busy');
+  try{
+    const dataUrl=await compressImage(file);
+    if(which==='q') draft.photo=dataUrl; else caPhoto=dataUrl;
+    document.getElementById(which+'-photoimg').src=dataUrl;
+    document.getElementById(which+'-photoprev').classList.add('show');
+  }catch(e){ showToast('Could not read that photo — try again.'); }
+  finally{ if(snap) snap.classList.remove('busy'); }
+};
+window.clearPhoto = function(which){
+  if(which==='q') draft.photo=null; else caPhoto=null;
+  document.getElementById(which+'-photoprev').classList.remove('show');
+  document.getElementById(which+'-photoimg').removeAttribute('src');
+};
+// Upload compressed label to Storage under the bottle id; return {path,url}.
+async function uploadLabel(bottleId, dataUrl){
+  const path='cellar/bottles/'+bottleId+'/label_'+Date.now()+'.jpg';
+  const sref=storageRef(storage, path);
+  await uploadString(sref, dataUrl, 'data_url');
+  const url=await getDownloadURL(sref);
+  return { path, url };
+}
+window.viewImage = function(url){ document.getElementById('imgFull').src=url; document.getElementById('imgModal').classList.add('open'); };
+window.closeImg = function(){ document.getElementById('imgModal').classList.remove('open'); };
+
 window.toggleHalf = ()=>{ draft.half=!draft.half; document.getElementById('halfbtn').classList.toggle('on',draft.half); echo('scoreEcho',draft); };
 window.toggleOpenHalf = ()=>{ openDraft.half=!openDraft.half; document.getElementById('openHalfbtn').classList.toggle('on',openDraft.half); echo('openScoreEcho',openDraft); };
 window.toggleBuy = ()=>{ draft.buy=!draft.buy; document.getElementById('buyflag').classList.toggle('on',draft.buy); };
@@ -459,6 +537,11 @@ window.logPour = async function(){
   const uid = (auth.currentUser && auth.currentUser.uid) || '';
   try{
     const r = push(ref(db, 'cellar/bottles'));
+    let photoPath=null, photoUrl=null;
+    if(draft.photo){
+      try{ const up=await uploadLabel(r.key, draft.photo); photoPath=up.path; photoUrl=up.url; }
+      catch(e){ showToast('Photo upload failed — logged without it'); }
+    }
     await set(r, {
       name,
       producer:document.getElementById('q-prod').value.trim(),
@@ -468,7 +551,7 @@ window.logPour = async function(){
       abv:document.getElementById('q-abv').value.replace('%','').trim(),
       status:'opened', qty:0, predLow:null, predHigh:null,
       score:draft.score+(draft.half?0.5:0), tag:draft.tag, buyAgain:draft.buy,
-      notes:document.getElementById('q-notes').value.trim(), photoPath:null,
+      notes:document.getElementById('q-notes').value.trim(), photoPath, photoUrl,
       addedBy:uid, addedAt:now, openedAt:now
     });
     resetQuickLog();
@@ -478,7 +561,8 @@ window.logPour = async function(){
 };
 function resetQuickLog(){
   ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-notes'].forEach(id=>document.getElementById(id).value='');
-  draft={score:null,half:false,tag:null,buy:false};
+  clearPhoto('q');
+  draft={score:null,half:false,tag:null,buy:false,photo:null};
   paintScore(document.getElementById('scorepad'), -1);
   paintTag(document.getElementById('tags'), null, null, null);
   document.getElementById('halfbtn').classList.remove('on');
@@ -490,7 +574,11 @@ function resetQuickLog(){
 // ── DELETE ──
 window.del = async function(id){
   if(!confirm('Remove this bottle?')) return;
-  try{ await dbRemove('cellar/bottles/' + id); }catch(e){ showToast('Delete failed'); }
+  const photoPath = bottles[id] && bottles[id].photoPath;
+  try{
+    await dbRemove('cellar/bottles/' + id);
+    if(photoPath){ deleteObject(storageRef(storage, photoPath)).catch(()=>{}); }
+  }catch(e){ showToast('Delete failed'); }
 };
 
 // ── TOGGLE BUY-AGAIN INLINE ──
@@ -528,7 +616,7 @@ window.confirmOpen = async function(){
       await set(r, {
         name:w.name, producer:w.producer||'', region:w.region||'', grape:w.grape||'', vintage:w.vintage||'',
         abv:w.abv||'', status:'opened', qty:0, predLow:null, predHigh:null,
-        score:finalScore, tag:openDraft.tag, buyAgain:openDraft.buy, notes:w.notes||'', photoPath:w.photoPath||null,
+        score:finalScore, tag:openDraft.tag, buyAgain:openDraft.buy, notes:w.notes||'', photoPath:w.photoPath||null, photoUrl:w.photoUrl||null,
         addedBy:uid, addedAt:now, openedAt:now
       });
     }else{
@@ -545,6 +633,7 @@ window.confirmOpen = async function(){
 window.openCellarAdd = ()=>{
   ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ca-qty').value = '1';
+  clearPhoto('ca');
   document.getElementById('cellarAddStatus').textContent='';
   document.getElementById('cellarAddModal').classList.add('open');
 };
@@ -558,6 +647,11 @@ window.addCellarBottle = async function(){
   const uid = (auth.currentUser && auth.currentUser.uid) || '';
   try{
     const r = push(ref(db, 'cellar/bottles'));
+    let photoPath=null, photoUrl=null;
+    if(caPhoto){
+      try{ const up=await uploadLabel(r.key, caPhoto); photoPath=up.path; photoUrl=up.url; }
+      catch(e){ showToast('Photo upload failed — added without it'); }
+    }
     await set(r, {
       name,
       producer:document.getElementById('ca-prod').value.trim(),
@@ -567,7 +661,7 @@ window.addCellarBottle = async function(){
       abv:document.getElementById('ca-abv').value.replace('%','').trim(),
       status:'cellared', qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1),
       predLow: pl===''?null:Number(pl), predHigh: ph===''?null:Number(ph),
-      score:null, tag:null, buyAgain:false, notes:'', photoPath:null,
+      score:null, tag:null, buyAgain:false, notes:'', photoPath, photoUrl,
       addedBy:uid, addedAt:now, openedAt:null
     });
     closeCellarAddModal();
@@ -581,6 +675,7 @@ window.setView = function(v){ view=v; document.querySelectorAll('.vtab').forEach
 function scoreClass(r){ return r>=7?'s-hi':r>=5?'s-mid':'s-lo'; }
 function fmt(n){ return Number(n).toFixed(1).replace(/\.0$/,''); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function thumbHTML(w){ return w.photoUrl ? `<img class="thumb" src="${esc(w.photoUrl)}" alt="label" onclick="viewImage('${esc(w.photoUrl)}')">` : ''; }
 function asArr(map){ return Object.keys(map||{}).map(id=>Object.assign({id}, map[id])); }
 
 function render(){
@@ -610,7 +705,7 @@ function render(){
       const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : (w.predLow!=null?fmt(w.predLow)+'+':'—');
       const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
       const qty = Number(w.qty)||1;
-      return `<div class="wine"><div class="score s-pred"><b>${esc(band)}</b><s>pred</s></div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
+      return `<div class="wine"><div class="score s-pred"><b>${esc(band)}</b><s>pred</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
     }).join('');
     return;
   }
@@ -625,10 +720,10 @@ function render(){
       const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
       const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
       const qty = Number(w.qty)||1;
-      return `<div class="wine"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
+      return `<div class="wine"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
     }
     const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
-    return `<div class="wine"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
+    return `<div class="wine"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
   }).join('');
 }
 
