@@ -1,0 +1,29 @@
+// ADDITIVE Firebase STORAGE rule for the shared philinity-893d2 bucket.
+// Storage rules are SEPARATE from the Realtime Database rules — they live in
+// Firebase console → Storage → Rules (not the Database → Rules tab).
+//
+// Add this match block INSIDE your existing `match /b/{bucket}/o { ... }`,
+// alongside whatever blocks are already there (e.g. Eats). Do NOT replace the
+// file or remove another app's match block.
+//
+// Rev 1.1: any authenticated user may read/write cellar label photos. This
+// matches the spec (§5b) and the household-private posture; can be tightened to
+// the /cellar roster later alongside the RTDB hardening.
+
+match /cellar/bottles/{bottleId}/{file} {
+  allow read, write: if request.auth != null;
+}
+
+// ---------------------------------------------------------------------------
+// Full-file shape, for reference — merge the cellar block into YOUR existing file:
+//
+// rules_version = '2';
+// service firebase.storage {
+//   match /b/{bucket}/o {
+//     // ... existing app blocks (eats, etc.) stay exactly as they are ...
+//
+//     match /cellar/bottles/{bottleId}/{file} {
+//       allow read, write: if request.auth != null;
+//     }
+//   }
+// }

@@ -1,11 +1,21 @@
 {
-  "_comment": "ADDITIVE block for the SHARED philinity-893d2 rules file. Merge the 'cellar' key alongside the existing app blocks (Eats, etc.) — do NOT publish this file on its own, and never drop/overwrite/wildcard another app's block. Rev 1.0 = option 1 (household-private, auth != null) per handoff spec section 5a. Verify Eats' block is intact after publishing.",
-  "rules": {
-    "cellar": {
-      ".read": "auth != null",
-      ".write": "auth != null",
-      "people": {
-        ".write": "auth != null && (auth.uid === 'CuJigrzCbRfFFsM7uqe0mix46xH3' || auth.uid === 'g4stabGPKiWAE23NTw6oUsqawWf1' || root.child('cellar/people/' + auth.token.email.replace('.','_')).child('role').val() === 'admin')"
+  "_comment": "ADDITIVE block for the SHARED philinity-893d2 default-RTDB rules. Add the 'cellar' key alongside the existing app blocks (autoflag, eats, taskboard, veritas, orbit, ...) inside the top-level 'rules' object. Do NOT publish this on its own and never drop/overwrite another app's block. Structure mirrors the veritas/orbit blocks: role-gated (NOT the spec's looser auth!=null), root read/write admin-only, data children grant member access, people stays admin-only with a self-read. Roles: admin | member. Root admin UIDs are lockout-proof. Verify Eats' block is intact after publishing.",
+  "cellar": {
+    ".read": "auth != null && (auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' || auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1' || (auth.token.email != null && root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'admin'))",
+    ".write": "auth != null && (auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' || auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1' || (auth.token.email != null && root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'admin'))",
+    "bottles": {
+      ".read": "auth != null && (auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' || auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1' || (auth.token.email != null && (root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'admin' || root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'member')))",
+      ".write": "auth != null && (auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' || auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1' || (auth.token.email != null && (root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'admin' || root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'member')))"
+    },
+    "buylist": {
+      ".read": "auth != null && (auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' || auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1' || (auth.token.email != null && (root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'admin' || root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'member')))",
+      ".write": "auth != null && (auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' || auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1' || (auth.token.email != null && (root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'admin' || root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'member')))"
+    },
+    "people": {
+      ".read": "auth != null && (auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' || auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1' || (auth.token.email != null && root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'admin'))",
+      ".write": "auth != null && (auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' || auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1' || (auth.token.email != null && root.child('cellar/people').child(auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')).child('role').val() == 'admin'))",
+      "$personKey": {
+        ".read": "auth != null && auth.token.email != null && $personKey == auth.token.email.toLowerCase().replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_').replace('.','_')"
       }
     }
   }
