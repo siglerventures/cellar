@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 1.9</title>
+<title>The Cellar Ledger — Rev 1.10</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,6 +14,9 @@
   .wrap{max-width:880px;margin:0 auto;padding:clamp(22px,5vw,52px) clamp(16px,4vw,40px) 80px}
   header{text-align:center;padding-bottom:26px;border-bottom:1px solid var(--line);margin-bottom:28px}
   .eyebrow{font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:12px}
+  .brand{display:inline-flex;align-items:center;gap:7px;font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold);text-decoration:none;cursor:pointer;transition:.15s;margin-bottom:20px}
+  .brand:hover{color:#d8b56c}
+  .brand .brand-emoji{font-size:19px}
   h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:clamp(40px,9vw,72px);line-height:.95;letter-spacing:-.01em}
   h1 .amp{color:var(--gold);font-style:italic;font-weight:400}
   .sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(15px,3vw,19px);color:var(--parch-dim);margin-top:8px}
@@ -290,7 +293,7 @@
 <!-- ── AUTH GATE ── -->
 <div id="auth-gate">
   <div class="auth-card">
-    <div class="eyebrow">Sigler Cellar &middot; Becker Ridge</div>
+    <div class="eyebrow">Philinity Wines 🍷</div>
     <h1>The Cellar <span class="amp">&</span> Ledger</h1>
     <div class="sub">Snap it, score it, know what to reorder</div>
     <button class="gbtn" onclick="signInWithGoogle()">
@@ -298,13 +301,13 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 1.9</div>
+    <div class="auth-rev">Rev 1.10</div>
   </div>
 </div>
 
 <div class="wrap">
+  <a class="brand" href="#" onclick="goHome();return false;" title="Philinity Wines — home">Philinity Wines <span class="brand-emoji">🍷</span></a>
   <header>
-    <div class="eyebrow">Sigler Cellar &middot; Becker Ridge</div>
     <h1>The Cellar <span class="amp">&</span> Ledger</h1>
     <div class="sub">Snap it, score it, know what to reorder</div>
     <div class="stats">
@@ -397,7 +400,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 1.9</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 1.10</span>
   </footer>
 </div>
 
@@ -1211,6 +1214,13 @@ window.addCellarBottle = async function(){
 };
 
 // ── VIEWS + RENDER ──
+// Brand click → back to the home view (All Bottles): close any modal/panel, top of page.
+window.goHome = function(){
+  document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open'));
+  const qp=document.getElementById('quickPanel'); if(qp) qp.classList.remove('show');
+  setView('all');
+  window.scrollTo({ top:0, behavior:'smooth' });
+};
 window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; render(); };
 window.onSearch = function(v){ search=(v||'').trim().toLowerCase(); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
 window.clearSearch = function(){ search=''; document.getElementById('searchbar').value=''; document.getElementById('searchclear').style.display='none'; render(); };
