@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 1.1</title>
+<title>The Cellar Ledger — Rev 1.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -38,6 +38,37 @@
   .thumb{width:46px;height:46px;object-fit:cover;border-radius:4px;border:1px solid var(--line);cursor:pointer;float:right;margin:0 0 6px 12px}
   #imgModal{padding:0;background:rgba(15,7,8,0.94);cursor:zoom-out}
   #imgModal img{max-width:94vw;max-height:92vh;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+  .scanstatus{font-size:12.5px;color:var(--gold);font-style:italic;font-family:'Cormorant Garamond',serif;font-size:15px;margin-bottom:10px;min-height:0;display:none}
+  .scanstatus.show{display:block}
+  .scanstatus.err{color:#c0635c}
+  .scout{display:none;border:1px solid var(--line);border-radius:4px;padding:13px 15px;margin-bottom:16px;background:rgba(201,163,92,0.06)}
+  .scout.show{display:block}
+  .scout-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .scout-fit{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;padding:4px 11px;border-radius:20px}
+  .fit-love{background:var(--gold);color:var(--ink)}
+  .fit-like{background:rgba(111,174,106,0.22);color:var(--green)}
+  .fit-maybe{background:rgba(201,138,82,0.2);color:#c98a52}
+  .fit-pass{background:rgba(154,90,85,0.22);color:#c0635c}
+  .scout-band{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold)}
+  .scout-verdict{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:var(--parch);line-height:1.35;margin-bottom:11px}
+  .scout-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .scout-btn{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--gold);background:transparent;border:1px solid var(--line);border-radius:3px;padding:8px 13px;cursor:pointer;font-family:'Inter';transition:.15s}
+  .scout-btn:hover{border-color:var(--gold)}
+  .scout-btn.ghost{color:var(--parch-dim)}
+  .searchrow{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:3px;padding:9px 12px;margin-bottom:18px;background:rgba(236,227,210,0.04)}
+  .searchrow svg{width:15px;height:15px;color:var(--parch-dim);flex-shrink:0}
+  .searchrow input{flex:1;background:none;border:none;color:var(--parch);font-family:'Inter';font-size:14px;outline:none}
+  .searchrow input::placeholder{color:var(--parch-dim)}
+  .searchrow button{background:none;border:none;color:var(--parch-dim);cursor:pointer;font-size:14px}
+  .wl-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .wl-name{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch);line-height:1.15}
+  .wl-meta{font-size:11px;color:var(--parch-dim);margin-top:3px}
+  .wl-note{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--parch-dim);margin-top:4px}
+  .wl-add{display:grid;grid-template-columns:2fr 1fr auto;gap:9px;margin-bottom:18px}
+  .wl-add input{font-family:'Inter';font-size:13px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:9px 11px}
+  .wl-add input:focus{outline:none;border-color:var(--gold)}
+  .wl-add button{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--ink);background:var(--gold);border:none;border-radius:3px;padding:0 16px;cursor:pointer;font-family:'Inter'}
+  @media(max-width:520px){.wl-add{grid-template-columns:1fr}}
   .qlabel{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--parch-dim);font-weight:600;margin-bottom:8px}
   .scorepad{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;border-radius:3px}
   .sbtn{flex:1;min-width:30px;font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch-dim);background:rgba(236,227,210,0.04);border:1px solid var(--line);border-radius:3px;padding:8px 0;cursor:pointer;transition:.12s}
@@ -154,7 +185,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 1.1</div>
+    <div class="auth-rev">Rev 1.2</div>
   </div>
 </div>
 
@@ -179,6 +210,16 @@
     </button>
     <input type="file" id="q-photo" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this,'q')">
     <div class="photoprev" id="q-photoprev"><img id="q-photoimg" alt="label"><button onclick="clearPhoto('q')">Remove photo</button></div>
+    <div class="scanstatus" id="q-scanstatus"></div>
+    <div class="scout" id="scoutPanel">
+      <div class="scout-head"><span class="scout-fit" id="scout-fit">—</span><span class="scout-band" id="scout-band"></span></div>
+      <div class="scout-verdict" id="scout-verdict"></div>
+      <div class="scout-actions">
+        <button class="scout-btn" onclick="scoutToCellar()">＋ Cellar</button>
+        <button class="scout-btn" onclick="scoutToBuylist()">＋ Buy list</button>
+        <button class="scout-btn ghost" onclick="dismissScout()">Dismiss</button>
+      </div>
+    </div>
     <div class="qlabel">Score</div>
     <div class="scorepad" id="scorepad"></div>
     <div class="halfrow"><button class="half" id="halfbtn" onclick="toggleHalf()">+ ½ point</button><span class="scoreEcho" id="scoreEcho"></span></div>
@@ -203,7 +244,13 @@
     <button class="vtab on" data-view="buy" onclick="setView('buy')">Buy-Again Leaderboard</button>
     <button class="vtab" data-view="cellar" onclick="setView('cellar')">Cellar</button>
     <button class="vtab" data-view="all" onclick="setView('all')">All Bottles</button>
+    <button class="vtab" data-view="wishlist" onclick="setView('wishlist')">Wishlist</button>
     <button class="vtab" data-view="palate" onclick="setView('palate')">The Palate</button>
+  </div>
+  <div class="searchrow" id="searchrow">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="searchbar" placeholder="Search name, producer, region, grape…" oninput="onSearch(this.value)">
+    <button id="searchclear" onclick="clearSearch()" style="display:none">✕</button>
   </div>
   <div id="content"></div>
 
@@ -211,7 +258,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 1.1</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 1.2</span>
   </footer>
 </div>
 
@@ -293,6 +340,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getDatabase, ref, get, set, update, remove, push, onValue } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 import { getStorage, ref as storageRef, uploadString, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
+import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 
 // ── Firebase (shared philinity-893d2 project — same as Eats) ──
@@ -308,6 +356,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const storage = getStorage(app);
+const functions = getFunctions(app);   // us-central1 (default) — matches the deployed scanLabel
+const scanLabelFn = httpsCallable(functions, 'scanLabel');
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
@@ -349,6 +399,8 @@ let subscribed = false;
 let draft = { score:null, half:false, tag:null, buy:false, photo:null };
 let openDraft = { id:null, score:null, half:false, tag:null, buy:false };
 let caPhoto = null;   // add-to-cellar pending photo (compressed data URL)
+let search = '';      // current search filter
+let lastScout = null; // last scanned wine details (for scout quick-actions)
 
 const TAGS=[
   {k:'earthy',t:'Earthy / Savory',c:'#c9a35c'},
@@ -498,18 +550,92 @@ window.handlePhoto = async function(input, which){
   if(!file) return;
   const snap=document.getElementById(which+'-snap');
   if(snap) snap.classList.add('busy');
+  let dataUrl;
   try{
-    const dataUrl=await compressImage(file);
+    dataUrl=await compressImage(file);
     if(which==='q') draft.photo=dataUrl; else caPhoto=dataUrl;
     document.getElementById(which+'-photoimg').src=dataUrl;
     document.getElementById(which+'-photoprev').classList.add('show');
-  }catch(e){ showToast('Could not read that photo — try again.'); }
-  finally{ if(snap) snap.classList.remove('busy'); }
+  }catch(e){ showToast('Could not read that photo — try again.'); if(snap) snap.classList.remove('busy'); return; }
+  await scanAndFill(dataUrl, which);
+  if(snap) snap.classList.remove('busy');
+};
+
+// ── LABEL SCAN via the scanLabel Cloud Function ──
+function setScanStatus(which, msg, kind){
+  const el=document.getElementById(which+'-scanstatus');
+  if(!el) return;
+  if(!msg){ el.className='scanstatus'; el.textContent=''; return; }
+  el.className='scanstatus show'+(kind==='err'?' err':'');
+  el.textContent=msg;
+}
+async function scanAndFill(dataUrl, which){
+  setScanStatus(which, 'Reading the label…', '');
+  try{
+    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:'image/jpeg' });
+    const r = res && res.data;
+    if(!r || !r.ok){ setScanStatus(which, (r && r.error) || 'Couldn’t read that one — type it in.', 'err'); return; }
+    fillScanFields(which, r.data);
+    setScanStatus(which, 'Filled from the label — check the details.', '');
+    if(which==='q') showScout(r.data);
+  }catch(e){
+    console.warn('[Cellar] scan failed:', e);
+    setScanStatus(which, 'Scan isn’t available yet — type the details in and score it.', 'err');
+  }
+}
+function fillScanFields(which, d){
+  const p = which==='q' ? 'q-' : 'ca-';
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el && v) el.value=v; };
+  if(which==='q'){
+    document.getElementById('q-name').value = d.name || d.producer || '';
+    set('q-prod', d.producer); set('q-region', d.region); set('q-grape', d.grape);
+    set('q-vintage', d.vintage); set('q-abv', d.abv);
+    document.getElementById('moregrid').classList.add('show');
+  }else{
+    document.getElementById('ca-name').value = d.name || d.producer || '';
+    set('ca-prod', d.producer); set('ca-region', d.region); set('ca-grape', d.grape);
+    set('ca-vintage', d.vintage); set('ca-abv', d.abv);
+    if(d.predLow!=null) document.getElementById('ca-predlow').value = d.predLow;
+    if(d.predHigh!=null) document.getElementById('ca-predhigh').value = d.predHigh;
+  }
+}
+const FIT_LABEL = { love:'Buy it', like:'Worth a look', maybe:'Toss-up', pass:'Skip it' };
+function showScout(d){
+  lastScout = d;
+  const panel=document.getElementById('scoutPanel');
+  const fit=document.getElementById('scout-fit');
+  fit.className='scout-fit fit-'+(d.fit||'maybe');
+  fit.textContent = FIT_LABEL[d.fit] || 'Toss-up';
+  const band = (d.predLow!=null && d.predHigh!=null) ? 'Predicted '+fmt(d.predLow)+'–'+fmt(d.predHigh) : '';
+  document.getElementById('scout-band').textContent = band;
+  document.getElementById('scout-verdict').textContent = d.verdict || '';
+  panel.classList.add('show');
+}
+window.dismissScout = ()=>{ lastScout=null; document.getElementById('scoutPanel').classList.remove('show'); };
+window.scoutToCellar = ()=>{
+  const d = lastScout; if(!d){ return; }
+  openCellarAdd();
+  const set=(id,v)=>{ const el=document.getElementById(id); if(v!=null && v!=='') el.value=v; };
+  set('ca-name', d.name || d.producer); set('ca-prod', d.producer); set('ca-region', d.region);
+  set('ca-grape', d.grape); set('ca-vintage', d.vintage); set('ca-abv', d.abv);
+  set('ca-predlow', d.predLow); set('ca-predhigh', d.predHigh);
+  if(draft.photo){ caPhoto=draft.photo; document.getElementById('ca-photoimg').src=draft.photo; document.getElementById('ca-photoprev').classList.add('show'); }
+};
+window.scoutToBuylist = async function(){
+  const d = lastScout; if(!d) return;
+  const name = d.name || d.producer; if(!name){ showToast('No name to add'); return; }
+  try{
+    const r = push(ref(db, 'cellar/buylist'));
+    await set(r, { name, region:d.region||'', note:d.verdict||'', addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now() });
+    showToast('Added to wishlist — ' + name);
+    dismissScout();
+  }catch(e){ showToast('Could not add to wishlist'); }
 };
 window.clearPhoto = function(which){
   if(which==='q') draft.photo=null; else caPhoto=null;
   document.getElementById(which+'-photoprev').classList.remove('show');
   document.getElementById(which+'-photoimg').removeAttribute('src');
+  setScanStatus(which, '', '');
 };
 // Upload compressed label to Storage under the bottle id; return {path,url}.
 async function uploadLabel(bottleId, dataUrl){
@@ -562,6 +688,7 @@ window.logPour = async function(){
 function resetQuickLog(){
   ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-notes'].forEach(id=>document.getElementById(id).value='');
   clearPhoto('q');
+  dismissScout();
   draft={score:null,half:false,tag:null,buy:false,photo:null};
   paintScore(document.getElementById('scorepad'), -1);
   paintTag(document.getElementById('tags'), null, null, null);
@@ -671,7 +798,10 @@ window.addCellarBottle = async function(){
 };
 
 // ── VIEWS + RENDER ──
-window.setView = function(v){ view=v; document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); render(); };
+window.setView = function(v){ view=v; document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); document.getElementById('searchrow').style.display = v==='palate' ? 'none' : ''; render(); };
+window.onSearch = function(v){ search=(v||'').trim().toLowerCase(); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
+window.clearSearch = function(){ search=''; document.getElementById('searchbar').value=''; document.getElementById('searchclear').style.display='none'; render(); };
+function matchSearch(w){ if(!search) return true; return [w.name,w.producer,w.region,w.grape,w.vintage].filter(Boolean).join(' ').toLowerCase().includes(search); }
 function scoreClass(r){ return r>=7?'s-hi':r>=5?'s-mid':'s-lo'; }
 function fmt(n){ return Number(n).toFixed(1).replace(/\.0$/,''); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -689,8 +819,10 @@ function render(){
   const c = document.getElementById('content');
   if(view==='palate'){ c.innerHTML = palateHTML(); return; }
 
+  if(view==='wishlist'){ c.innerHTML = wishlistHTML(); return; }
+
   if(view==='buy'){
-    const list = opened.filter(w=>w.buyAgain).sort((a,b)=>b.score-a.score);
+    const list = opened.filter(w=>w.buyAgain).filter(matchSearch).sort((a,b)=>b.score-a.score);
     let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers, ranked by score.</p></div>';
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No buy-again bottles yet. Flag the keepers as you log them.</p></div>'; return; }
     c.innerHTML = html + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`; }).join('');
@@ -698,7 +830,7 @@ function render(){
   }
 
   if(view==='cellar'){
-    const list = cellared.slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+    const list = cellared.filter(matchSearch).slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
     let html = '<div class="shead"><p>Unopened bottles on the rack — predicted band &amp; count.</p><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>';
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>The rack is empty. Add a bottle you\'re holding.</p></div>'; return; }
     c.innerHTML = html + list.map(w=>{
@@ -711,7 +843,7 @@ function render(){
   }
 
   // all
-  const list = all.slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  const list = all.filter(matchSearch).slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
   let html = '<div class="shead"><p>Everything — opened &amp; cellared, newest first.</p></div>';
   if(!list.length){ c.innerHTML = html + '<div class="empty"><p>Nothing logged yet. Score a pour above.</p></div>'; return; }
   c.innerHTML = html + list.map(w=>{
@@ -737,6 +869,29 @@ function palateHTML(){
   <div class="axis"><div class="axis-top"><span class="axis-name">Excess SO₂ · light/tart/funky natural</span><span class="axis-tag" style="color:#9a5a55">Turn-off</span></div><div class="bar"><i style="width:14%;background:linear-gradient(90deg,#3a1418,#9a5a55)"></i></div></div>
   <div class="palate-sum">Earthy, savory, structured European reds with real weight — bottle age welcome, smoke and leather a bonus. Light/tart/funky and SO₂-sharp lose. Nebbiolo has underperformed (two lowest scores).</div>`;
 }
+
+// ── WISHLIST (buy list) ──
+function wishlistHTML(){
+  const list = asArr(buylist).filter(w=>{ if(!search) return true; return [w.name,w.region,w.note].filter(Boolean).join(' ').toLowerCase().includes(search); }).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  let html = '<div class="shead"><p>Want-to-try list — scout a bottle in the store, or add one by hand.</p></div>';
+  html += `<div class="wl-add"><input id="wl-name" placeholder="Wine name"><input id="wl-region" placeholder="Region (optional)"><button onclick="addBuylistItem()">Add</button></div>`;
+  if(!list.length){ return html + '<div class="empty"><p>Nothing on the wishlist yet.</p></div>'; }
+  return html + list.map(w=>`<div class="wl-row"><div><div class="wl-name">${esc(w.name)}</div>${w.region?`<div class="wl-meta">${esc(w.region)}</div>`:''}${w.note?`<div class="wl-note">${esc(w.note)}</div>`:''}</div><button class="del" title="Remove" onclick="removeBuylistItem('${w.id}')">✕</button></div>`).join('');
+}
+window.addBuylistItem = async function(){
+  const name=(document.getElementById('wl-name').value||'').trim();
+  if(!name){ document.getElementById('wl-name').focus(); return; }
+  const region=(document.getElementById('wl-region').value||'').trim();
+  try{
+    const r = push(ref(db, 'cellar/buylist'));
+    await set(r, { name, region, note:'', addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now() });
+    showToast('Added — ' + name);
+  }catch(e){ showToast('Could not add'); }
+};
+window.removeBuylistItem = async function(id){
+  if(!confirm('Remove from wishlist?')) return;
+  try{ await dbRemove('cellar/buylist/' + id); }catch(e){ showToast('Remove failed'); }
+};
 
 // ── PEOPLE MODAL ──
 window.openAccessModal = async function(){
