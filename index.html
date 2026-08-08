@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 1.6</title>
+<title>The Cellar Ledger — Rev 1.7</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -98,10 +98,14 @@
   .rack-grid.z1{--cw:30px;--rh:24px;--ch:24px}
   .rack-grid.z2{--cw:46px;--rh:26px;--ch:40px}
   .rack-grid.z3{--cw:74px;--rh:30px;--ch:62px}
-  .rack-colhead{font-size:8px;line-height:1.05;text-align:center;color:var(--gold-dim);font-weight:600;padding:2px 1px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;align-self:end;min-height:30px}
+  .rack-colhead{text-align:center;padding:2px 1px;align-self:end;min-height:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;overflow:hidden}
+  .rack-colhead .ch-num{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--gold);line-height:1}
+  .rack-colhead .ch-cat{font-size:7.5px;line-height:1.02;color:var(--gold-dim);font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .rack-grid.z1 .ch-cat{display:none}
   .rack-colhead.editable{cursor:pointer}
-  .rack-colhead.editable:hover{color:var(--gold)}
-  .rack-rowhead{font-size:9px;color:var(--parch-dim);display:flex;align-items:center;justify-content:center;position:sticky;left:0;background:#160a0c;z-index:2}
+  .rack-colhead.editable:hover .ch-num,.rack-colhead.editable:hover .ch-cat{color:var(--gold)}
+  .rack-corner{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--parch-dim);opacity:.5;padding-bottom:3px}
+  .rack-rowhead{font-family:'Cormorant Garamond',serif;font-size:12px;font-weight:600;color:var(--gold-dim);display:flex;align-items:center;justify-content:center;position:sticky;left:0;background:#160a0c;z-index:2}
   .rack-slot{height:var(--ch);border:1px solid var(--line);border-radius:2px;background:rgba(236,227,210,0.03);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;transition:.1s;padding:1px;text-align:center}
   .rack-slot:hover{border-color:var(--gold-dim)}
   .rack-slot.filled{background:linear-gradient(180deg,var(--garnet),#360f16);border-color:var(--gold-dim)}
@@ -255,7 +259,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 1.6</div>
+    <div class="auth-rev">Rev 1.7</div>
   </div>
 </div>
 
@@ -328,7 +332,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 1.6</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 1.7</span>
   </footer>
 </div>
 
@@ -486,17 +490,38 @@ let caSuggest = null; // {col,row,label} scan-to-place suggestion for Add-to-Cel
 
 // ── RACK MAP (physical cellar grid: 20 columns × 29 rows) ──
 const RACK_COLS = 20, RACK_ROWS = 29;
-// Column defaults — seed labels + the type→column matcher for scan-to-place.
-// Labels are DATA (stored per cell in cellar/rack_layout/cells); these are only
-// the initial seed and a fallback. A column can vary down its rows (edit in-app).
-// Only the columns Phil has confirmed are seeded; 4–11 stay blank ("Col N")
-// until he labels them in-app (or sends the layout so I can seed them).
-const DEFAULT_COL_LABELS = {
-  1:'Whiskey → Vodka', 2:'Mixers ↔ Brut', 3:'Riesling',
-  12:'Amarone / Valpolicella', 13:'CdP / S. Rhône', 14:'Brunello / Sangiovese',
-  15:'Rioja / Tempranillo', 16:'Red Blends', 17:'Red Blends', 18:'Red Blends',
-  19:'Red Blends', 20:'Red Blends'
+// Phil's rack layout. Labels are DATA (stored per cell in cellar/rack_layout/cells);
+// this is the seed + fallback + the type→column matcher source. A column whose
+// category shifts down the rows is an ARRAY of segments; those rows are split
+// EVENLY across the segments as a starting point — the exact transition rows are
+// editable in-app (tap Edit labels → a slot). Single-string columns are uniform.
+const COL_CATEGORIES = {
+  1:['Whiskey → Vodkas'],
+  2:['Mixers ↔ Brut'],
+  3:['Riesling (dry → sweet)'],
+  4:['Sauv Blanc','Chardonnay','Pinot Gris'],
+  5:['White Blends','Rosé','Moscato','White Zin'],
+  6:['Pinot Noir','Medium Reds','Cabernet'],
+  7:['Premium Cabernet Sauvignon'],
+  8:['Cabernet Sauvignon','Malbec'],
+  9:['GSM','Syrah'],
+  10:['Syrah','Petite Sirah'],
+  11:['Merlot','Bordeaux'],
+  12:['Amarone / Valpolicella'],
+  13:['Châteauneuf-du-Pape / S. Rhône'],
+  14:['Brunello / Sangiovese'],
+  15:['Rioja / Tempranillo'],
+  16:['Red Blends'], 17:['Red Blends'], 18:['Red Blends'], 19:['Red Blends'], 20:['Red Blends']
 };
+// Per-cell seed label: for a multi-segment column, split the 29 rows evenly.
+function seededCellLabel(col,row){
+  const segs = COL_CATEGORIES[col]; if(!segs || !segs.length) return null;
+  if(segs.length===1) return segs[0];
+  const idx = Math.min(segs.length-1, Math.floor((row-1) * segs.length / RACK_ROWS));
+  return segs[idx];
+}
+// Column-level fallback (used when live cells can't be read, e.g. a non-admin member).
+const DEFAULT_COL_LABELS = Object.fromEntries(Object.keys(COL_CATEGORIES).map(c=>[c, COL_CATEGORIES[c].join(' → ')]));
 // Varietal / region → canonical keywords, matched against a column's label tokens.
 const VARIETAL_SYNONYMS = [
   {re:/riesling|gew[uü]rz|kabinett|spatlese|sp[aä]tlese/, keys:['riesling']},
@@ -601,24 +626,28 @@ async function seedIfEmpty(){
   }catch(e){ console.warn('[Cellar] seed failed:', e); }
 }
 
-// Seed per-cell labels once (admin only — writes are role-gated). Stored at
-// cellar/rack_layout/cells/{col}_{row}.label so a column can vary down its rows.
-// Cols 4–11 are left blank for Phil to define; migrates a Rev 1.4 cols-only doc.
+// Fill any UNLABELLED rack cell from the seed (admin only — writes are role-gated).
+// Stored at cellar/rack_layout/cells/{col}_{row}.label so a column can vary down
+// its rows. Only writes empty cells, so it fills cols 4–11 and any gaps WITHOUT
+// clobbering labels Phil has already edited. Idempotent once every cell is set.
 async function ensureRackLayout(){
   try{
     if(!isAdmin()) return;
     const snap = await dbGet('cellar/rack_layout');
     const cur = snap.val() || {};
-    if(cur.cells) return;
-    const cells = {};
+    const existing = cur.cells || {};
+    const updates = {};
     for(let c=1;c<=RACK_COLS;c++){
-      const label = DEFAULT_COL_LABELS[c];
-      if(!label) continue;
-      for(let r=1;r<=RACK_ROWS;r++) cells[c+'_'+r] = { label };
+      for(let r=1;r<=RACK_ROWS;r++){
+        const key = c+'_'+r;
+        const has = existing[key] && existing[key].label;
+        if(!has){ const label = seededCellLabel(c,r); if(label) updates['cellar/rack_layout/cells/'+key] = { label }; }
+      }
     }
-    await dbUpdate('cellar/rack_layout', { cells, colCount: RACK_COLS, rowCount: RACK_ROWS });
-    console.log('[Cellar] Rack layout cells seeded.');
-  }catch(e){ console.warn('[Cellar] rack layout seed failed:', e); }
+    if(cur.colCount == null) updates['cellar/rack_layout/colCount'] = RACK_COLS;
+    if(cur.rowCount == null) updates['cellar/rack_layout/rowCount'] = RACK_ROWS;
+    if(Object.keys(updates).length){ await dbUpdate('/', updates); console.log('[Cellar] Rack labels filled:', Object.keys(updates).length); }
+  }catch(e){ console.warn('[Cellar] rack layout fill failed:', e); }
 }
 
 // ── LIVE SUBSCRIPTIONS ──
@@ -1031,19 +1060,21 @@ function render(){
 }
 
 // ── RACK MAP: labels, matching, placement ──
-function colLetter(col){ return String.fromCharCode(64 + col); }        // 1→A … 20→T
-function slotCode(col,row){ return colLetter(col) + '-' + row; }
+// Coordinate: column number + row number, e.g. C5·R7 (columns are addressed 1–20)
+function slotCode(col,row){ return 'C' + col + '·R' + row; }
 function cellLabel(col,row){
   const cs = rackLayout && rackLayout.cells;
   const v = cs && cs[col+'_'+row];
-  return (v && v.label) || DEFAULT_COL_LABELS[col] || ('Col ' + col);
+  return (v && v.label) || seededCellLabel(col,row) || DEFAULT_COL_LABELS[col] || ('Col ' + col);
 }
-function colLabels(col){                                                 // distinct labels down a column
-  const set = new Set(); const cs = (rackLayout && rackLayout.cells) || {};
-  for(let r=1;r<=RACK_ROWS;r++){ const v = cs[col+'_'+r]; if(v && v.label) set.add(v.label); }
-  if(!set.size && DEFAULT_COL_LABELS[col]) set.add(DEFAULT_COL_LABELS[col]);
-  return [...set];
+function colLabels(col){                                                 // distinct labels down a column, in row order
+  const seen = new Set(); const out = []; const cs = (rackLayout && rackLayout.cells) || {};
+  for(let r=1;r<=RACK_ROWS;r++){ const v = cs[col+'_'+r]; const l = v && v.label; if(l && !seen.has(l)){ seen.add(l); out.push(l); } }
+  if(!out.length){ (COL_CATEGORIES[col] || (DEFAULT_COL_LABELS[col]?[DEFAULT_COL_LABELS[col]]:[])).forEach(l=>{ if(!seen.has(l)){ seen.add(l); out.push(l); } }); }
+  return out;
 }
+// Header label = the whole column's range (reflects live edits), e.g. "Sauv Blanc → Chardonnay → Pinot Gris"
+function colHeaderLabel(col){ const ls = colLabels(col); return ls.length ? ls.join(' → ') : ('Col ' + col); }
 function repLabel(col){ return cellLabel(col, 1); }
 function placedAt(col,row){ return asArr(bottles).find(w=>w.status==='cellared' && Number(w.rackCol)===col && Number(w.rackRow)===row) || null; }
 function firstOpenRow(col){ for(let r=1;r<=RACK_ROWS;r++){ if(!placedAt(col,r)) return r; } return null; }
@@ -1115,7 +1146,7 @@ function rackHTML(){
   const admin = isAdmin();
 
   // Toolbar — zoom · column jump · edit labels
-  const jumpOpts = Array.from({length:RACK_COLS},(_,i)=>{ const c=i+1; return `<option value="${c}">${colLetter(c)} · ${esc(repLabel(c))}</option>`; }).join('');
+  const jumpOpts = Array.from({length:RACK_COLS},(_,i)=>{ const c=i+1; return `<option value="${c}">Col ${c} · ${esc(colHeaderLabel(c))}</option>`; }).join('');
   const tools = `<div class="rack-tools">
     <div class="rt-group"><span class="rt-lbl">Zoom</span><button class="rt-btn ${rackZoom===1?'on':''}" onclick="rackZoomSet(1)">S</button><button class="rt-btn ${rackZoom===2?'on':''}" onclick="rackZoomSet(2)">M</button><button class="rt-btn ${rackZoom===3?'on':''}" onclick="rackZoomSet(3)">L</button></div>
     <div class="rt-group"><span class="rt-lbl">Jump</span><select class="rt-jump" onchange="rackJump(this.value)"><option value="">Column…</option>${jumpOpts}</select></div>
@@ -1147,11 +1178,12 @@ function rackHTML(){
     tray += '<div class="rack-tray-empty">Every bottle is on the rack.</div>';
   }
 
-  // Grid: header row (corner + 20 col labels), then 29 rows of (row# + 20 slots)
-  let grid = `<div class="rack-grid z${rackZoom}"><div></div>`;
+  // Grid: header row (corner + 20 numbered col headers), then 29 rows of (row# + 20 slots).
+  // Column header shows the NUMBER (1–20) as the primary id, category beneath.
+  let grid = `<div class="rack-grid z${rackZoom}"><div class="rack-corner" title="column → / row ↓">#</div>`;
   for(let c=1;c<=RACK_COLS;c++){
-    const label = repLabel(c);
-    grid += `<div class="rack-colhead${admin?' editable':''}" title="${esc(label)} (col ${c})"${admin?` onclick="rackEditColLabel(${c})"`:''}>${esc(label)}</div>`;
+    const label = colHeaderLabel(c);
+    grid += `<div class="rack-colhead${admin?' editable':''}" title="Column ${c} — ${esc(label)}"${admin?` onclick="rackEditColLabel(${c})"`:''}><span class="ch-num">${c}</span><span class="ch-cat">${esc(label)}</span></div>`;
   }
   for(let r=1;r<=RACK_ROWS;r++){
     grid += `<div class="rack-rowhead">${r}</div>`;
@@ -1204,12 +1236,12 @@ window.rackJump = function(v){ if(!v) return; const el=document.querySelector('.
 window.rackToggleEdit = function(){ if(!isAdmin()){ showToast('Admins only'); return; } rackEdit = !rackEdit; placing=null; inspect=null; render(); };
 window.rackEditColLabel = async function(col){
   if(!isAdmin()) return;
-  const cur = repLabel(col); const seed = cur===('Col '+col) ? '' : cur;
-  const val = prompt('Label for ALL of column ' + col + ' (' + colLetter(col) + '):', seed);
+  const cur = colHeaderLabel(col); const seed = cur===('Col '+col) ? '' : cur;
+  const val = prompt('Label for ALL of column ' + col + ':', seed);
   if(val===null) return;
   const v = val.trim(); const updates = {};
   for(let r=1;r<=RACK_ROWS;r++) updates['cellar/rack_layout/cells/'+col+'_'+r] = v ? { label:v } : null;
-  try{ await dbUpdate('/', updates); showToast('Column ' + colLetter(col) + ' labelled'); }
+  try{ await dbUpdate('/', updates); showToast('Column ' + col + ' labelled'); }
   catch(e){ showToast('Could not save label'); }
 };
 window.rackEditCell = async function(col, row){
