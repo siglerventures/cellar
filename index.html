@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 1.7</title>
+<title>The Cellar Ledger — Rev 1.8</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -93,19 +93,23 @@
   .rt-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--parch-dim);font-weight:600}
   .rt-jump{font-family:'Inter';font-size:12px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:6px 8px}
   .rt-jump option{background:#1c0d10}
-  .rack-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:4px;padding:10px;background:rgba(15,7,8,0.4);max-height:72vh;position:relative}
-  .rack-grid{display:grid;grid-template-columns:var(--rh) repeat(20,var(--cw));gap:3px;width:max-content}
-  .rack-grid.z1{--cw:30px;--rh:24px;--ch:24px}
-  .rack-grid.z2{--cw:46px;--rh:26px;--ch:40px}
-  .rack-grid.z3{--cw:74px;--rh:30px;--ch:62px}
-  .rack-colhead{text-align:center;padding:2px 1px;align-self:end;min-height:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;overflow:hidden}
+  /* Cellar/rack view breaks out of the app's centered column to full viewport width. */
+  .rack-view{padding:0 clamp(10px,2vw,24px)}
+  .rack-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:4px;padding:10px;background:rgba(15,7,8,0.4);max-height:78vh;position:relative}
+  /* width:100% + minmax(min,1fr): on desktop all 20 columns fill the width (no scroll);
+     when too narrow to hold 20 at their min, the grid overflows and .rack-wrap scrolls. */
+  .rack-grid{display:grid;grid-template-columns:var(--rh) repeat(20,minmax(var(--cw),1fr));gap:3px;width:100%}
+  .rack-grid.z1{--cw:26px;--rh:26px;--ch:24px}
+  .rack-grid.z2{--cw:40px;--rh:28px;--ch:40px}
+  .rack-grid.z3{--cw:64px;--rh:30px;--ch:62px}
+  .rack-colhead{text-align:center;padding:2px 1px;min-height:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;overflow:hidden;position:sticky;top:0;background:#160a0c;z-index:2}
   .rack-colhead .ch-num{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--gold);line-height:1}
   .rack-colhead .ch-cat{font-size:7.5px;line-height:1.02;color:var(--gold-dim);font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .rack-grid.z1 .ch-cat{display:none}
   .rack-colhead.editable{cursor:pointer}
   .rack-colhead.editable:hover .ch-num,.rack-colhead.editable:hover .ch-cat{color:var(--gold)}
-  .rack-corner{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--parch-dim);opacity:.5;padding-bottom:3px}
-  .rack-rowhead{font-family:'Cormorant Garamond',serif;font-size:12px;font-weight:600;color:var(--gold-dim);display:flex;align-items:center;justify-content:center;position:sticky;left:0;background:#160a0c;z-index:2}
+  .rack-corner{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--parch-dim);opacity:.5;padding-bottom:3px;position:sticky;top:0;left:0;background:#160a0c;z-index:4}
+  .rack-rowhead{font-family:'Cormorant Garamond',serif;font-size:12px;font-weight:600;color:var(--gold-dim);display:flex;align-items:center;justify-content:center;position:sticky;left:0;background:#160a0c;z-index:3}
   .rack-slot{height:var(--ch);border:1px solid var(--line);border-radius:2px;background:rgba(236,227,210,0.03);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;transition:.1s;padding:1px;text-align:center}
   .rack-slot:hover{border-color:var(--gold-dim)}
   .rack-slot.filled{background:linear-gradient(180deg,var(--garnet),#360f16);border-color:var(--gold-dim)}
@@ -118,9 +122,9 @@
   @keyframes slotflash{0%,100%{box-shadow:0 0 0 0 rgba(201,163,92,0)}50%{box-shadow:0 0 0 3px rgba(201,163,92,0.85);outline:2px solid var(--gold)}}
   .slot-v{font-size:8.5px;color:var(--gold);font-weight:600;pointer-events:none}
   .slot-name{font-size:8px;line-height:1.02;color:var(--parch);pointer-events:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
-  .slot-lbl{font-size:7.5px;line-height:1;color:var(--parch-dim);opacity:.5;pointer-events:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .slot-thumb{width:100%;max-width:34px;height:auto;max-height:32px;object-fit:cover;border-radius:2px;pointer-events:none;margin-bottom:1px}
-  .rack-grid.z1 .slot-name,.rack-grid.z1 .slot-lbl,.rack-grid.z1 .slot-thumb{display:none}
+  .slot-coord{font-size:7.5px;line-height:1;color:var(--parch-dim);opacity:.35;pointer-events:none;font-weight:600}
+  .slot-thumb{width:100%;max-width:44px;height:auto;max-height:44px;object-fit:cover;border-radius:2px;pointer-events:none;margin-bottom:1px}
+  .rack-grid.z1 .slot-name,.rack-grid.z1 .slot-coord,.rack-grid.z1 .slot-thumb{display:none}
   .rack-grid.z2 .slot-thumb{display:none}
   .ca-suggest{display:none;border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin:4px 0 12px;background:rgba(201,163,92,0.07)}
   .ca-suggest.show{display:block}
@@ -259,7 +263,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 1.7</div>
+    <div class="auth-rev">Rev 1.8</div>
   </div>
 </div>
 
@@ -332,7 +336,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 1.7</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 1.8</span>
   </footer>
 </div>
 
@@ -1060,8 +1064,8 @@ function render(){
 }
 
 // ── RACK MAP: labels, matching, placement ──
-// Coordinate: column number + row number, e.g. C5·R7 (columns are addressed 1–20)
-function slotCode(col,row){ return 'C' + col + '·R' + row; }
+// Coordinate: column-row, e.g. 12-7 (column 1–20, row 1–29)
+function slotCode(col,row){ return col + '-' + row; }
 function cellLabel(col,row){
   const cs = rackLayout && rackLayout.cells;
   const v = cs && cs[col+'_'+row];
@@ -1191,24 +1195,43 @@ function rackHTML(){
       const w = placed[c+'_'+r];
       const flash = flashSlot===(c+'_'+r) ? ' flash' : '';
       if(w){
+        // Filled slot shows the BOTTLE (photo thumb → fallback short name + vintage). Never the category.
+        const vv = w.vintage ? ` ’${esc(String(w.vintage).replace(/[^0-9]/g,'').slice(-2))}` : '';
+        const short = esc(w.name || w.producer || '');
         const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ') + ' · ' + slotCode(c,r);
         const thumb = w.photoUrl ? `<img class="slot-thumb" src="${esc(w.photoUrl)}" alt="">` : '';
-        grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}${flash}" data-cell="${c}_${r}" draggable="${rackEdit?'false':'true'}" ondragstart="rackDragStart(event,'${w.id}')" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(title)}" onclick="rackTapSlot(${c},${r})">${thumb}<span class="slot-name">${esc(w.name)}</span></div>`;
+        grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}${flash}" data-cell="${c}_${r}" draggable="${rackEdit?'false':'true'}" ondragstart="rackDragStart(event,'${w.id}')" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(title)}" onclick="rackTapSlot(${c},${r})">${thumb}<span class="slot-name">${short}${vv}</span></div>`;
       }else{
-        const lbl = cellLabel(c,r);
-        grid += `<div class="rack-slot${placing?' target':''}${flash}" data-cell="${c}_${r}" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(lbl)} · ${slotCode(c,r)}" onclick="rackTapSlot(${c},${r})"><span class="slot-lbl">${esc(lbl)}</span></div>`;
+        // Empty slot: faint outline + its coordinate only (category lives solely in the header).
+        grid += `<div class="rack-slot${placing?' target':''}${flash}" data-cell="${c}_${r}" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="Slot ${slotCode(c,r)} — ${esc(cellLabel(c,r))}" onclick="rackTapSlot(${c},${r})"><span class="slot-coord">${slotCode(c,r)}</span></div>`;
       }
     }
   }
   grid += '</div>';
 
+  // After this HTML is in the DOM: break the rack view out to full viewport width, and flash.
+  bindRackResize();
+  setTimeout(()=>{ const rv=document.getElementById('rackView'); if(rv) applyRackFullBleed(rv); }, 0);
   if(flashSlot){
     const key = flashSlot;
-    setTimeout(()=>{ const el=document.querySelector('.rack-wrap [data-cell="'+key+'"]'); if(el){ const wrap=el.closest('.rack-wrap'); wrap.scrollLeft=Math.max(0, el.offsetLeft - wrap.clientWidth/2); wrap.scrollTop=Math.max(0, el.offsetTop - wrap.clientHeight/2); } }, 40);
+    setTimeout(()=>{ const el=document.querySelector('.rack-wrap [data-cell="'+key+'"]'); if(el){ const wrap=el.closest('.rack-wrap'); wrap.scrollLeft=Math.max(0, el.offsetLeft - wrap.clientWidth/2); wrap.scrollTop=Math.max(0, el.offsetTop - wrap.clientHeight/2); } }, 60);
     setTimeout(()=>{ if(flashSlot===key){ flashSlot=null; } }, 4300);
   }
 
-  return `<div class="shead"><p>Your physical rack — 20 columns × 29 rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</p></div>${tools}${bar}${tray}<div class="rack-wrap">${grid}</div>`;
+  return `<div class="rack-view" id="rackView"><div class="shead"><p>Your physical rack — 20 columns × 29 rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</p></div>${tools}${bar}${tray}<div class="rack-wrap">${grid}</div></div>`;
+}
+// Full-bleed: pull the rack view out of the app's centered column to span the viewport
+// exactly (documentElement.clientWidth excludes the scrollbar, so no page h-scroll).
+function applyRackFullBleed(el){
+  el.style.width = ''; el.style.marginLeft = '';
+  const left = el.getBoundingClientRect().left;
+  el.style.width = document.documentElement.clientWidth + 'px';
+  el.style.marginLeft = (-left) + 'px';
+}
+let rackResizeBound = false;
+function bindRackResize(){
+  if(rackResizeBound) return; rackResizeBound = true;
+  window.addEventListener('resize', ()=>{ if(view==='cellar'){ const rv=document.getElementById('rackView'); if(rv) applyRackFullBleed(rv); } });
 }
 // Interaction — tap
 window.rackTapBottle = function(id){ placing = (placing===id ? null : id); inspect = null; render(); };
