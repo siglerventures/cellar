@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 1.3</title>
+<title>The Cellar Ledger — Rev 1.4</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -69,6 +69,34 @@
   .wl-add input:focus{outline:none;border-color:var(--gold)}
   .wl-add button{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--ink);background:var(--gold);border:none;border-radius:3px;padding:0 16px;cursor:pointer;font-family:'Inter'}
   @media(max-width:520px){.wl-add{grid-template-columns:1fr}}
+  /* ── RACK MAP ── */
+  .rack-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--line);border-radius:4px;padding:10px 13px;margin-bottom:12px;background:rgba(201,163,92,0.06)}
+  .rack-bar.rb-hint{background:rgba(236,227,210,0.03)}
+  .rb-msg{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch)}
+  .rb-msg b{font-style:normal;font-weight:600;color:var(--gold)}
+  .rb-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .rack-tray-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--parch-dim);font-weight:600}
+  .rack-tray{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+  .tray-chip{font-family:'Inter';font-size:12px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:20px;padding:7px 13px;cursor:pointer;transition:.14s}
+  .tray-chip:hover{border-color:var(--gold-dim)}
+  .tray-chip.on{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+  .tray-chip em{font-style:normal;opacity:.6}
+  .tray-chip.on em{opacity:.85}
+  .rack-tray-empty{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch-dim);margin-bottom:16px}
+  .rack-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:4px;padding:10px;background:rgba(15,7,8,0.4)}
+  .rack-grid{display:grid;grid-template-columns:26px repeat(20,minmax(30px,1fr));gap:3px;min-width:720px}
+  .rack-colhead{font-size:8px;line-height:1.05;text-align:center;color:var(--gold-dim);font-weight:600;padding:2px 1px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;align-self:end;min-height:30px}
+  .rack-colhead.editable{cursor:pointer}
+  .rack-colhead.editable:hover{color:var(--gold)}
+  .rack-rowhead{font-size:9px;color:var(--parch-dim);display:flex;align-items:center;justify-content:center}
+  .rack-slot{height:24px;border:1px solid var(--line);border-radius:2px;background:rgba(236,227,210,0.03);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.1s}
+  .rack-slot:hover{border-color:var(--gold-dim)}
+  .rack-slot.filled{background:linear-gradient(180deg,var(--garnet),#360f16);border-color:var(--gold-dim)}
+  .rack-slot.filled:hover{border-color:var(--gold)}
+  .rack-slot.filled.sel{outline:2px solid var(--gold);outline-offset:1px}
+  .rack-slot.target{border-color:var(--gold-dim);border-style:dashed}
+  .rack-slot.target:hover{background:rgba(201,163,92,0.14)}
+  .slot-v{font-size:8.5px;color:var(--gold);font-weight:600;pointer-events:none}
   .qlabel{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--parch-dim);font-weight:600;margin-bottom:8px}
   .scorepad{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;border-radius:3px}
   .sbtn{flex:1;min-width:30px;font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch-dim);background:rgba(236,227,210,0.04);border:1px solid var(--line);border-radius:3px;padding:8px 0;cursor:pointer;transition:.12s}
@@ -185,7 +213,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 1.3</div>
+    <div class="auth-rev">Rev 1.4</div>
   </div>
 </div>
 
@@ -258,7 +286,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 1.3</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 1.4</span>
   </footer>
 </div>
 
@@ -401,6 +429,18 @@ let openDraft = { id:null, score:null, half:false, tag:null, buy:false };
 let caPhoto = null;   // add-to-cellar pending photo (compressed data URL)
 let search = '';      // current search filter
 let lastScout = null; // last scanned wine details (for scout quick-actions)
+let rackLayout = {};  // cellar/rack_layout — editable column labels
+let placing = null;   // bottle id currently being placed / moved on the rack
+let inspect = null;   // placed bottle id currently inspected
+
+// ── RACK MAP (physical cellar grid: 20 columns × 29 rows) ──
+const RACK_COLS = 20, RACK_ROWS = 29;
+const DEFAULT_COL_LABELS = {
+  1:'Whiskey → Vodka', 2:'Mixers ↔ Brut', 3:'Riesling',
+  12:'Amarone / Valpolicella', 13:'CdP / S. Rhône', 14:'Brunello / Sangiovese',
+  15:'Rioja / Tempranillo', 16:'Red Blends', 17:'Red Blends', 18:'Red Blends',
+  19:'Red Blends', 20:'Red Blends'
+};
 
 const TAGS=[
   {k:'earthy',t:'Earthy / Savory',c:'#c9a35c'},
@@ -483,12 +523,24 @@ async function seedIfEmpty(){
   }catch(e){ console.warn('[Cellar] seed failed:', e); }
 }
 
+// Seed the rack column labels once (admin only — writes are role-gated).
+async function ensureRackLayout(){
+  try{
+    if(!isAdmin()) return;
+    const snap = await dbGet('cellar/rack_layout');
+    if(snap.exists()) return;
+    await dbSet('cellar/rack_layout', { cols: DEFAULT_COL_LABELS, colCount: RACK_COLS, rowCount: RACK_ROWS });
+    console.log('[Cellar] Rack layout seeded.');
+  }catch(e){ console.warn('[Cellar] rack layout seed failed:', e); }
+}
+
 // ── LIVE SUBSCRIPTIONS ──
 function subscribe(){
   if(subscribed) return;
   subscribed = true;
   onValue(ref(db, 'cellar/bottles'), snap => { bottles = snap.val() || {}; render(); });
   onValue(ref(db, 'cellar/buylist'), snap => { buylist = snap.val() || {}; render(); });
+  onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
 }
 
 // ── BUILD SCORE PADS + TAGS ──
@@ -798,7 +850,7 @@ window.addCellarBottle = async function(){
 };
 
 // ── VIEWS + RENDER ──
-window.setView = function(v){ view=v; document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); document.getElementById('searchrow').style.display = v==='palate' ? 'none' : ''; render(); };
+window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); document.getElementById('searchrow').style.display = (v==='palate'||v==='cellar') ? 'none' : ''; render(); };
 window.onSearch = function(v){ search=(v||'').trim().toLowerCase(); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
 window.clearSearch = function(){ search=''; document.getElementById('searchbar').value=''; document.getElementById('searchclear').style.display='none'; render(); };
 function matchSearch(w){ if(!search) return true; return [w.name,w.producer,w.region,w.grape,w.vintage].filter(Boolean).join(' ').toLowerCase().includes(search); }
@@ -829,18 +881,7 @@ function render(){
     return;
   }
 
-  if(view==='cellar'){
-    const list = cellared.filter(matchSearch).slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-    let html = '<div class="shead"><p>Unopened bottles on the rack — predicted band &amp; count.</p><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>';
-    if(!list.length){ c.innerHTML = html + '<div class="empty"><p>The rack is empty. Add a bottle you\'re holding.</p></div>'; return; }
-    c.innerHTML = html + list.map(w=>{
-      const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : (w.predLow!=null?fmt(w.predLow)+'+':'—');
-      const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
-      const qty = Number(w.qty)||1;
-      return `<div class="wine"><div class="score s-pred"><b>${esc(band)}</b><s>pred</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
-    }).join('');
-    return;
-  }
+  if(view==='cellar'){ c.innerHTML = rackHTML(); return; }
 
   // all
   const list = all.filter(matchSearch).slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
@@ -858,6 +899,93 @@ function render(){
     return `<div class="wine"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
   }).join('');
 }
+
+// ── RACK MAP RENDER ──
+function rackHTML(){
+  const cellared = asArr(bottles).filter(w=>w.status==='cellared');
+  const placed = {}, unplaced = [];
+  cellared.forEach(w=>{
+    const col = Number(w.rackCol), row = Number(w.rackRow);
+    if(col>=1 && col<=RACK_COLS && row>=1 && row<=RACK_ROWS) placed[col+'-'+row] = w;
+    else unplaced.push(w);
+  });
+  unplaced.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  const cols = (rackLayout && rackLayout.cols) || {};
+  const admin = isAdmin();
+
+  // Action / status bar
+  let bar;
+  if(placing && bottles[placing]){
+    bar = `<div class="rack-bar"><span class="rb-msg">Placing <b>${esc(bottles[placing].name)}</b> — tap an empty slot.</span><span class="rb-actions"><button class="scout-btn ghost" onclick="rackCancel()">Cancel</button></span></div>`;
+  }else if(inspect && bottles[inspect]){
+    const w = bottles[inspect];
+    const loc = (w.rackCol && w.rackRow) ? `Col ${w.rackCol} · Row ${w.rackRow}` : 'unplaced';
+    bar = `<div class="rack-bar"><span class="rb-msg"><b>${esc(w.name)}</b> — ${loc}</span><span class="rb-actions"><button class="scout-btn" onclick="rackMove('${inspect}')">Move</button><button class="scout-btn" onclick="rackUnplace('${inspect}')">Unplace</button><button class="scout-btn" onclick="rackMarkOpened('${inspect}')">Mark opened</button><button class="scout-btn ghost" onclick="rackCancel()">Close</button></span></div>`;
+  }else{
+    bar = `<div class="rack-bar rb-hint"><span class="rb-msg">Tap a bottle below, then tap a slot to place it. Tap a filled slot to move or open it.</span></div>`;
+  }
+
+  // Tray of unplaced bottles
+  let tray = `<div class="rack-tray-head"><span>Unplaced — ${unplaced.length}</span><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>`;
+  if(unplaced.length){
+    tray += '<div class="rack-tray">' + unplaced.map(w=>{
+      const vin = w.vintage ? ` <em>’${esc(String(w.vintage).slice(-2))}</em>` : '';
+      return `<button class="tray-chip ${placing===w.id?'on':''}" onclick="rackTapBottle('${w.id}')">${esc(w.name)}${vin}</button>`;
+    }).join('') + '</div>';
+  }else{
+    tray += '<div class="rack-tray-empty">Every bottle is on the rack.</div>';
+  }
+
+  // Grid: header row (corner + 20 col labels), then 29 rows of (row# + 20 slots)
+  let grid = '<div class="rack-grid"><div></div>';
+  for(let c=1;c<=RACK_COLS;c++){
+    const label = cols[c] || ('Col ' + c);
+    grid += `<div class="rack-colhead${admin?' editable':''}" title="${esc(label)}"${admin?` onclick="rackEditCol(${c})"`:''}>${esc(label)}</div>`;
+  }
+  for(let r=1;r<=RACK_ROWS;r++){
+    grid += `<div class="rack-rowhead">${r}</div>`;
+    for(let c=1;c<=RACK_COLS;c++){
+      const w = placed[c+'-'+r];
+      if(w){
+        const vin = w.vintage ? String(w.vintage).replace(/[^0-9]/g,'').slice(-2) : '';
+        const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ');
+        grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}" title="${esc(title)}" onclick="rackTapSlot(${c},${r})"><span class="slot-v">${esc(vin||'●')}</span></div>`;
+      }else{
+        grid += `<div class="rack-slot${placing?' target':''}" onclick="rackTapSlot(${c},${r})"></div>`;
+      }
+    }
+  }
+  grid += '</div>';
+
+  return `<div class="shead"><p>Your physical rack — 20 columns × 29 rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</p></div>${bar}${tray}<div class="rack-wrap">${grid}</div>`;
+}
+window.rackTapBottle = function(id){ placing = (placing===id ? null : id); inspect = null; render(); };
+window.rackTapSlot = async function(col, row){
+  const occupant = asArr(bottles).find(w=>w.status==='cellared' && Number(w.rackCol)===col && Number(w.rackRow)===row);
+  if(placing){
+    if(occupant && occupant.id!==placing){ showToast('That slot is taken.'); return; }
+    const id = placing; placing = null;
+    try{ await dbUpdate('cellar/bottles/' + id, { rackCol:col, rackRow:row }); showToast('Placed at Col ' + col + ' · Row ' + row); }
+    catch(e){ showToast('Could not place bottle'); }
+    return;
+  }
+  if(occupant){ inspect = (inspect===occupant.id ? null : occupant.id); render(); }
+};
+window.rackMove = function(id){ placing = id; inspect = null; showToast('Tap the new slot'); render(); };
+window.rackUnplace = async function(id){
+  try{ await dbUpdate('cellar/bottles/' + id, { rackCol:null, rackRow:null }); inspect = null; showToast('Moved to the tray'); }
+  catch(e){ showToast('Could not unplace'); }
+};
+window.rackMarkOpened = function(id){ placing = null; inspect = null; openMarkOpened(id); };
+window.rackCancel = function(){ placing = null; inspect = null; render(); };
+window.rackEditCol = async function(col){
+  if(!isAdmin()) return;
+  const cols = (rackLayout && rackLayout.cols) || {};
+  const val = prompt('Column ' + col + ' label:', cols[col] || '');
+  if(val===null) return;
+  try{ await dbSet('cellar/rack_layout/cols/' + col, val.trim()); }
+  catch(e){ showToast('Could not save label'); }
+};
 
 function palateHTML(){
   return `<div class="shead"><p>What the ratings keep confirming. This sharpens with every pour you log.</p></div>
@@ -985,6 +1113,7 @@ onAuthStateChanged(auth, async (user)=>{
   if(!initialized){
     initialized = true;
     await seedIfEmpty();
+    await ensureRackLayout();
     subscribe();
     setView('buy');
   }
