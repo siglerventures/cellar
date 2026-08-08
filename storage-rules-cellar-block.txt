@@ -1,29 +1,45 @@
-// ADDITIVE Firebase STORAGE rule for the shared philinity-893d2 bucket.
-// Storage rules are SEPARATE from the Realtime Database rules — they live in
-// Firebase console → Storage → Rules (not the Database → Rules tab).
-//
-// Add this match block INSIDE your existing `match /b/{bucket}/o { ... }`,
-// alongside whatever blocks are already there (e.g. Eats). Do NOT replace the
-// file or remove another app's match block.
-//
-// Rev 1.1: any authenticated user may read/write cellar label photos. This
-// matches the spec (§5b) and the household-private posture; can be tightened to
-// the /cellar roster later alongside the RTDB hardening.
-
-match /cellar/bottles/{bottleId}/{file} {
-  allow read, write: if request.auth != null;
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Eats photos — Phil/Trinity only
+    match /eats/{allPaths=**} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' ||
+        request.auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1'
+      );
+    }
+    // FoodSwipe photos — Phil/Trinity only
+    match /foodswipe/{allPaths=**} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' ||
+        request.auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1'
+      );
+    }
+    // House data (Command Center) — Phil/Trinity only
+    match /house_data/{allPaths=**} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' ||
+        request.auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1'
+      );
+    }
+    // AutoFlag — any signed-in user (admins + installers)
+    match /autoflag/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    // Command Center (AI photo uploads, etc.) — Phil/Trinity only
+    match /command_center/{allPaths=**} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == 'CuJigrzCbRfFFsM7uqe0mix46xH3' ||
+        request.auth.uid == 'g4stabGPKiWAE23NTw6oUsqawWf1'
+      );
+    }
+    // Wine Cellar — wine label photos; any signed-in roster member
+    match /wine_cellar/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    // Default deny — anything not explicitly allowed above is rejected
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
 }
-
-// ---------------------------------------------------------------------------
-// Full-file shape, for reference — merge the cellar block into YOUR existing file:
-//
-// rules_version = '2';
-// service firebase.storage {
-//   match /b/{bucket}/o {
-//     // ... existing app blocks (eats, etc.) stay exactly as they are ...
-//
-//     match /cellar/bottles/{bottleId}/{file} {
-//       allow read, write: if request.auth != null;
-//     }
-//   }
-// }
