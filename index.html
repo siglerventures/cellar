@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 1.9</title>
+<title>The Cellar Ledger — Rev 2.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -64,11 +64,24 @@
   .snap:hover{border-color:var(--gold)}
   .snap svg{width:17px;height:17px}
   .snap.busy{opacity:.6;pointer-events:none}
-  .photoprev{display:none;align-items:center;gap:10px;margin-bottom:14px}
-  .photoprev.show{display:flex}
-  .photoprev img{width:52px;height:52px;object-fit:cover;border-radius:4px;border:1px solid var(--line)}
-  .photoprev button{background:none;border:none;color:var(--parch-dim);font-size:11px;cursor:pointer;text-decoration:underline;font-family:'Inter'}
-  .photoprev button:hover{color:#c0635c}
+  /* ── Photo intake (camera · library · drag-drop · paste · gallery) ── */
+  .pintake{border:1px dashed var(--line);border-radius:4px;padding:12px;margin-bottom:14px;transition:.15s}
+  .pintake.drag{border-color:var(--gold);background:rgba(201,163,92,0.08)}
+  .pi-btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .pi-btn{display:inline-flex;align-items:center;gap:7px;font-family:'Inter';font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--gold);background:transparent;border:1px solid var(--line);border-radius:3px;padding:8px 12px;cursor:pointer;transition:.15s}
+  .pi-btn:hover{border-color:var(--gold)}
+  .pi-btn.dashed{border-style:dashed;cursor:default;color:var(--parch-dim)}
+  .pi-tip{font-size:11px;color:var(--gold-dim);margin-bottom:8px}
+  .pi-strip{display:flex;gap:10px;flex-wrap:wrap}
+  .pi-thumb{position:relative;width:72px;height:72px}
+  .pi-thumb img{width:72px;height:72px;object-fit:cover;border-radius:4px;border:1px solid var(--line);cursor:pointer;display:block}
+  .pi-thumb.is-main img{border-color:var(--gold)}
+  .pi-x{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;background:#9a5a55;color:#fff;border:none;font-size:11px;line-height:1;cursor:pointer;padding:0;font-weight:700}
+  .pi-main{position:absolute;left:2px;bottom:2px;font-size:8.5px;letter-spacing:.05em;font-weight:700;border:none;border-radius:2px;padding:2px 5px;cursor:pointer;font-family:'Inter'}
+  .pi-thumb.is-main .pi-main{background:var(--gold);color:var(--ink);cursor:default}
+  .pi-thumb:not(.is-main) .pi-main{background:rgba(15,7,8,0.8);color:var(--parch)}
+  .pi-empty{font-size:12px;color:var(--parch-dim);font-style:italic}
+  .aiph-badge{position:absolute;top:-6px;right:-6px;background:var(--gold);color:var(--ink);font-size:10px;font-weight:700;border-radius:50%;min-width:16px;height:16px;line-height:16px;padding:0 3px;text-align:center}
   .thumb{width:46px;height:46px;object-fit:cover;border-radius:4px;border:1px solid var(--line);cursor:pointer;float:right;margin:0 0 6px 12px}
   #imgModal{padding:0;background:rgba(15,7,8,0.94);cursor:zoom-out}
   #imgModal img{max-width:94vw;max-height:92vh;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
@@ -298,7 +311,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 1.9</div>
+    <div class="auth-rev">Rev 2.0</div>
   </div>
 </div>
 
@@ -333,12 +346,8 @@
   <div class="quick" id="quickPanel">
     <div class="qhead"><h3>Log a pour</h3><button class="qclose" title="Close" onclick="closeLogPanel()">✕</button></div>
     <input class="qname" id="q-name" placeholder="Wine name">
-    <button class="snap" id="q-snap" onclick="document.getElementById('q-photo').click()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      Snap the label
-    </button>
-    <input type="file" id="q-photo" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this,'q')">
-    <div class="photoprev" id="q-photoprev"><img id="q-photoimg" alt="label"><button onclick="clearPhoto('q')">Remove photo</button></div>
+    <div class="qlabel">Photos — the first is scanned for details &amp; used as the card image</div>
+    <div class="pintake" id="q-intake" ondragover="piDragOver(event,'q')" ondragleave="piDragLeave(event,'q')" ondrop="piDrop(event,'q')"></div>
     <div class="scanstatus" id="q-scanstatus"></div>
     <div class="scout" id="scoutPanel">
       <div class="scout-head"><span class="scout-fit" id="scout-fit">—</span><span class="scout-band" id="scout-band"></span></div>
@@ -378,8 +387,12 @@
   </div>
   <div class="askwrap" id="askwrap">
     <div class="askrow">
-      <input id="askInput" placeholder="Ask about your collection — “What should I open tonight?”" onkeydown="if(event.key==='Enter')askAIGo()">
+      <input id="askInput" placeholder="Ask anything, or: “Add the 2019 La Gerla Brunello — 8.5, earthy, buy again”" onkeydown="if(event.key==='Enter')askAIGo()">
+      <button class="askbtn" style="position:relative" title="Attach photos (up to 4)" onclick="piToggleAiPanel()">📷<span class="aiph-badge" id="aiphBadge" style="display:none">0</span></button>
       <button onclick="askAIGo()">Ask</button>
+    </div>
+    <div id="ai-intake-wrap" style="display:none;margin-top:10px">
+      <div class="pintake" id="ai-intake" ondragover="piDragOver(event,'ai')" ondragleave="piDragLeave(event,'ai')" ondrop="piDrop(event,'ai')"></div>
     </div>
     <div class="askanswer" id="askAnswer"></div>
   </div>
@@ -397,7 +410,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 1.9</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.0</span>
   </footer>
 </div>
 
@@ -456,12 +469,9 @@
       <input id="ca-predlow" placeholder="Predicted low" type="number" step="0.5">
       <input id="ca-predhigh" placeholder="Predicted high" type="number" step="0.5">
     </div>
-    <button class="snap" id="ca-snap" style="margin-top:12px" onclick="document.getElementById('ca-photo').click()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      Add a label photo
-    </button>
-    <input type="file" id="ca-photo" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this,'ca')">
-    <div class="photoprev" id="ca-photoprev"><img id="ca-photoimg" alt="label"><button onclick="clearPhoto('ca')">Remove photo</button></div>
+    <div class="qlabel" style="margin-top:12px">Photos — the first is scanned for details &amp; used as the card image</div>
+    <div class="pintake" id="ca-intake" ondragover="piDragOver(event,'ca')" ondragleave="piDragLeave(event,'ca')" ondrop="piDrop(event,'ca')"></div>
+    <div class="scanstatus" id="ca-scanstatus"></div>
     <div class="ca-suggest" id="ca-suggest">
       <div class="cs-msg" id="cs-msg"></div>
       <div class="cs-actions"><button class="cs-btn" id="cs-accept" onclick="acceptSuggestedSlot()">Use this slot</button><button class="cs-btn ghost" onclick="clearSuggestedSlot()">Add unplaced</button></div>
@@ -479,7 +489,8 @@
   <div class="modal-card">
     <h3 id="dt-name">—</h3>
     <div class="msub" id="dt-meta">—</div>
-    <div id="dt-photo"></div>
+    <div class="qlabel">Photos — first is the card image</div>
+    <div class="pintake" id="dt-intake" ondragover="piDragOver(event,'dt')" ondragleave="piDragLeave(event,'dt')" ondrop="piDrop(event,'dt')"></div>
     <div class="qlabel">Score</div>
     <div class="scorepad" id="dtScorepad"></div>
     <div class="halfrow"><button class="half" id="dtHalfbtn" onclick="dtToggleHalf()">+ ½ point</button><span class="scoreEcho" id="dtScoreEcho"></span></div>
@@ -526,7 +537,7 @@ const db = getDatabase(app);
 const storage = getStorage(app);
 const functions = getFunctions(app);   // us-central1 (default) — matches the deployed scanLabel
 const scanLabelFn = httpsCallable(functions, 'scanLabel');
-const askAIFn = httpsCallable(functions, 'askAI');
+const askAIFn = httpsCallable(functions, 'cellarAskAI');   // `askAI` (unprefixed) belongs to Eats — never call or deploy over it
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
@@ -567,9 +578,13 @@ let view = 'all';
 let sortMode = 'rating';   // 'rating' | 'newest' | 'az' — sort chips on All Bottles / Buy-Again
 let dtDraft = { id:null, score:null, half:false, tag:null, buy:false };  // detail-modal edit state
 let subscribed = false;
-let draft = { score:null, half:false, tag:null, buy:false, photo:null };
+let draft = { score:null, half:false, tag:null, buy:false };
 let openDraft = { id:null, score:null, half:false, tag:null, buy:false };
-let caPhoto = null;   // add-to-cellar pending photo (compressed data URL)
+// Photo intake per context — q (log), ca (add-to-cellar), dt (detail modal), ai (Ask AI).
+// Each entry: {dataUrl} for new pics, {path,url} for already-uploaded ones. Index 0 = MAIN.
+let piStore = { q:[], ca:[], dt:[], ai:[] };
+let piScanned = { q:false, ca:false };  // first photo per form triggers a scanLabel run
+let dtRemoved = [];                     // Storage paths to delete when the detail modal saves
 let search = '';      // current search filter
 let lastScout = null; // last scanned wine details (for scout quick-actions)
 let rackLayout = {};  // cellar/rack_layout — per-cell category labels
@@ -787,6 +802,8 @@ buildTags(document.getElementById('openTags'), (k,btn,c)=>{ const was=openDraft.
 // Detail-modal pad
 buildScorepad(document.getElementById('dtScorepad'), (v)=>{ dtDraft.score=v; paintScore(document.getElementById('dtScorepad'), v); echo('dtScoreEcho', dtDraft); });
 buildTags(document.getElementById('dtTags'), (k,btn,c)=>{ const was=dtDraft.tag===k; dtDraft.tag=was?null:k; paintTag(document.getElementById('dtTags'), was?null:k, btn, c); });
+// Photo intakes start empty (renders the buttons + file inputs into each surface)
+['q','ca','dt','ai'].forEach(piRender);
 
 // ── TOP ACTION ROW + COLLAPSIBLE LOG PANEL ──
 function openLogPanel(){ document.getElementById('quickPanel').classList.add('show'); }
@@ -796,10 +813,10 @@ window.toggleLogPanel = function(){
   p.classList.toggle('show');
   if(p.classList.contains('show')) p.scrollIntoView({behavior:'smooth', block:'start'});
 };
-// Wine Scan — open the existing image intake; the scan fills the log form.
-window.actionWineScan = function(){ openLogPanel(); document.getElementById('q-photo').click(); };
+// Wine Scan — open the camera intake; the scan fills the log form.
+window.actionWineScan = function(){ openLogPanel(); const el=document.getElementById('q-pi-cam'); if(el) el.click(); };
 // At a wine shop — same server-side scan; the scout verdict panel answers "buy it?".
-window.actionShopScan = function(){ openLogPanel(); document.getElementById('q-photo').click(); };
+window.actionShopScan = function(){ openLogPanel(); const el=document.getElementById('q-pi-cam'); if(el) el.click(); };
 
 // ── ASK AI (server-side only — question + compact collection summary → askAI Cloud Function) ──
 function collectionSummary(){
@@ -822,15 +839,57 @@ window.askAIGo = async function(){
   const out = document.getElementById('askAnswer');
   out.className='askanswer show thinking'; out.textContent='Consulting the cellar…';
   try{
-    const res = await askAIFn({ question:q, collectionSummary: collectionSummary() });
+    const res = await askAIFn({ question:q, collectionSummary: collectionSummary(), attachedPhotos: piStore.ai.length });
     const r = res && res.data;
-    if(r && r.ok){ out.className='askanswer show'; out.textContent = r.answer || ''; }
+    if(r && r.ok){ out.className='askanswer show'; out.textContent = await handleAIAnswer(r.answer || ''); }
     else { out.className='askanswer show thinking'; out.textContent = (r && r.error) || 'Couldn’t get an answer — try again.'; }
   }catch(e){
-    console.warn('[Cellar] askAI failed:', e);
-    out.className='askanswer show thinking'; out.textContent='Ask AI isn’t available yet — the askAI function may still need deploying.';
+    console.warn('[Cellar] cellarAskAI failed:', e);
+    out.className='askanswer show thinking'; out.textContent='Ask AI isn’t available yet — the cellarAskAI function may still need deploying.';
   }
 };
+// If the answer carries an {"action":"add", ...} block, add the bottle (with any attached pics).
+async function handleAIAnswer(answer){
+  let text = String(answer).replace(/```(?:json)?/gi,'').replace(/```/g,'');
+  const idx = text.indexOf('{"action"');
+  if(idx===-1) return text.trim();
+  const end = text.lastIndexOf('}');
+  if(end<=idx) return text.trim();
+  let action=null;
+  try{ action = JSON.parse(text.slice(idx, end+1)); }catch(e){ return text.trim(); }
+  text = (text.slice(0,idx) + text.slice(end+1)).trim();
+  const b = action && action.action==='add' && action.bottle;
+  if(!b || !b.name) return text;
+  const status = b.status==='cellared' ? 'cellared' : 'opened';
+  let score = Number(b.score);
+  score = isFinite(score) ? Math.max(1, Math.min(10, Math.round(score*2)/2)) : null;
+  const tag = TAGS.some(t=>t.k===b.tag) ? b.tag : null;
+  const now = Date.now();
+  const uid = (auth.currentUser && auth.currentUser.uid) || '';
+  try{
+    const r = push(ref(db, 'cellar/bottles'));
+    const ups = await uploadPhotos(r.key, piStore.ai);
+    await set(r, {
+      name:String(b.name).slice(0,140),
+      producer:String(b.producer||''), region:String(b.region||''), grape:String(b.grape||''),
+      vintage:String(b.vintage||''), abv:String(b.abv||'').replace('%','').trim(),
+      status, qty: status==='cellared' ? Math.max(1, Number(b.qty)||1) : 0,
+      predLow:null, predHigh:null,
+      score: status==='opened' ? score : null,
+      tag, buyAgain:!!b.buyAgain, notes:String(b.notes||''),
+      photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
+      photos: ups.length?ups:null,
+      addedBy:uid, addedAt:now, openedAt: status==='opened' ? now : null
+    });
+    piReset('ai');
+    document.getElementById('askInput').value='';
+    showToast('✅ Added — ' + b.name);
+    return (text ? text+'\n' : '') + '✅ Added “' + b.name + '” to ' + (status==='cellared' ? 'the cellar.' : 'your tasting log.');
+  }catch(e){
+    console.warn('[Cellar] AI add failed:', e);
+    return (text ? text+'\n' : '') + '⚠️ Couldn’t save that bottle — try adding it by hand.';
+  }
+}
 
 // ── SORT CHIPS ──
 window.setSort = function(m){ sortMode = m; render(); };
@@ -856,7 +915,11 @@ window.openDetail = function(id){
   const meta=[w.producer,w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
   const state = w.status==='cellared' ? ('Cellared'+((w.rackCol&&w.rackRow)?' · '+slotCode(w.rackCol,w.rackRow):'')+(Number(w.qty)>1?' · ×'+w.qty:'')) : 'Opened';
   document.getElementById('dt-meta').textContent = [state, meta].filter(Boolean).join(' — ');
-  document.getElementById('dt-photo').innerHTML = w.photoUrl ? `<img class="thumb" style="float:none;margin:0 0 12px;width:64px;height:64px" src="${esc(w.photoUrl)}" alt="label" onclick="viewImage('${esc(w.photoUrl)}')">` : '';
+  dtRemoved = [];
+  piStore.dt = (Array.isArray(w.photos) && w.photos.length)
+    ? w.photos.filter(p=>p && p.url).map(p=>({ path:p.path||null, url:p.url }))
+    : (w.photoUrl ? [{ path:w.photoPath||null, url:w.photoUrl }] : []);
+  piRender('dt');
   paintScore(document.getElementById('dtScorepad'), whole==null?-1:whole);
   const tagBtn = document.querySelector('#dtTags .tag[data-k="'+(w.tag||'')+'"]');
   paintTag(document.getElementById('dtTags'), w.tag||null, tagBtn, w.tag?tagInfo(w.tag).c:null);
@@ -874,10 +937,16 @@ window.saveDetail = async function(){
   const w = bottles[dtDraft.id]; if(!w){ closeDetail(); return; }
   const score = dtDraft.score==null ? null : dtDraft.score + (dtDraft.half?0.5:0);
   try{
+    document.getElementById('dtStatus').textContent='⏳ Saving…';
+    const ups = await uploadPhotos(dtDraft.id, piStore.dt);
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
       score, tag:dtDraft.tag, buyAgain:dtDraft.buy,
-      notes:document.getElementById('dt-notes').value.trim()
+      notes:document.getElementById('dt-notes').value.trim(),
+      photos: ups.length?ups:null,
+      photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
     });
+    dtRemoved.forEach(p=>deleteObject(storageRef(storage, p)).catch(()=>{}));
+    dtRemoved = [];
     closeDetail();
     showToast('Saved — ' + (w.name||'bottle'));
   }catch(e){ document.getElementById('dtStatus').textContent='❌ ' + (e.message||e); }
@@ -885,10 +954,10 @@ window.saveDetail = async function(){
 window.deleteDetail = async function(){
   const id = dtDraft.id; const w = bottles[id]; if(!w){ closeDetail(); return; }
   if(!confirm('Remove this bottle?')) return;
-  const photoPath = w.photoPath;
+  const paths = bottlePhotoPaths(w);
   try{
     await dbRemove('cellar/bottles/' + id);
-    if(photoPath){ deleteObject(storageRef(storage, photoPath)).catch(()=>{}); }
+    paths.forEach(p=>deleteObject(storageRef(storage, p)).catch(()=>{}));
     closeDetail();
     showToast('Removed — ' + (w.name||'bottle'));
   }catch(e){ document.getElementById('dtStatus').textContent='❌ Delete failed'; }
@@ -914,22 +983,96 @@ function compressImage(file, maxEdge=1600, quality=0.8){
     img.src=url;
   });
 }
-window.handlePhoto = async function(input, which){
-  const file=input.files && input.files[0];
-  input.value='';
-  if(!file) return;
-  const snap=document.getElementById(which+'-snap');
-  if(snap) snap.classList.add('busy');
-  let dataUrl;
-  try{
-    dataUrl=await compressImage(file);
-    if(which==='q') draft.photo=dataUrl; else caPhoto=dataUrl;
-    document.getElementById(which+'-photoimg').src=dataUrl;
-    document.getElementById(which+'-photoprev').classList.add('show');
-  }catch(e){ showToast('Could not read that photo — try again.'); if(snap) snap.classList.remove('busy'); return; }
-  await scanAndFill(dataUrl, which);
-  if(snap) snap.classList.remove('busy');
+// ── PHOTO INTAKE (Eats-style): camera · library · drag-drop · Ctrl+V paste · gallery ──
+const PI_MAX = { q:12, ca:12, dt:12, ai:4 };
+function piRender(ctx){
+  const host = document.getElementById(ctx+'-intake'); if(!host) return;
+  const cam=ctx+'-pi-cam', lib=ctx+'-pi-lib';
+  let html = `<div class="pi-btns">
+    <button class="pi-btn" onclick="document.getElementById('${cam}').click()">📷 Take photo</button>
+    <button class="pi-btn" onclick="document.getElementById('${lib}').click()">🖼 Choose from library</button>
+    <span class="pi-btn dashed">🖱 Drag &amp; drop here</span>
+  </div>
+  <div class="pi-tip">💡 Tip: copy an image anywhere, then <b>Ctrl+V</b> pastes it straight in</div>
+  <input type="file" id="${cam}" accept="image/*" capture="environment" multiple style="display:none" onchange="piFiles(this,'${ctx}')">
+  <input type="file" id="${lib}" accept="image/*" multiple style="display:none" onchange="piFiles(this,'${ctx}')">`;
+  const list = piStore[ctx];
+  if(!list.length){
+    html += '<div class="pi-empty">No photos yet.</div>';
+  }else{
+    html += '<div class="pi-strip">' + list.map((p,i)=>{
+      const src = p.dataUrl || p.url;
+      return `<div class="pi-thumb ${i===0?'is-main':''}">
+        <img src="${src}" alt="photo ${i+1}" onclick="viewImage(this.src)">
+        <button class="pi-x" title="Remove" onclick="piRemove('${ctx}',${i})">✕</button>
+        ${i===0?'<span class="pi-main">MAIN</span>':`<button class="pi-main" title="Use as card image" onclick="piSetMain('${ctx}',${i})">★ main</button>`}
+      </div>`;
+    }).join('') + '</div>';
+  }
+  host.innerHTML = html;
+  if(ctx==='ai'){
+    const b=document.getElementById('aiphBadge');
+    if(b){ b.style.display = list.length ? '' : 'none'; b.textContent = list.length; }
+  }
+}
+window.piFiles = function(input, ctx){ const files=[...(input.files||[])]; input.value=''; piAddFiles(ctx, files); };
+async function piAddFiles(ctx, files){
+  for(const f of files){
+    if(!f || !f.type || !f.type.startsWith('image/')) continue;
+    if(piStore[ctx].length >= PI_MAX[ctx]){ showToast('Max '+PI_MAX[ctx]+' photos here — remove one first'); break; }
+    try{
+      const dataUrl = await compressImage(f);
+      piStore[ctx].push({ dataUrl });
+      piRender(ctx);
+      if((ctx==='q'||ctx==='ca') && !piScanned[ctx]){ piScanned[ctx]=true; scanAndFill(dataUrl, ctx); }
+    }catch(e){ showToast('Could not read that photo — try again.'); }
+  }
+}
+window.piRemove = function(ctx,i){
+  const p = piStore[ctx][i];
+  if(ctx==='dt' && p && p.path) dtRemoved.push(p.path);
+  piStore[ctx].splice(i,1);
+  piRender(ctx);
 };
+window.piSetMain = function(ctx,i){ const l=piStore[ctx]; const [p]=l.splice(i,1); l.unshift(p); piRender(ctx); };
+window.piDragOver = function(e,ctx){ e.preventDefault(); document.getElementById(ctx+'-intake').classList.add('drag'); };
+window.piDragLeave = function(e,ctx){ document.getElementById(ctx+'-intake').classList.remove('drag'); };
+window.piDrop = function(e,ctx){
+  e.preventDefault();
+  document.getElementById(ctx+'-intake').classList.remove('drag');
+  piAddFiles(ctx, [...((e.dataTransfer && e.dataTransfer.files) || [])]);
+};
+window.piToggleAiPanel = function(){
+  const w=document.getElementById('ai-intake-wrap');
+  w.style.display = (w.style.display==='none') ? '' : 'none';
+};
+// Paste routes to whichever photo surface is open: detail modal > add-to-cellar > Ask AI panel > log form.
+function piPasteTarget(){
+  if(document.getElementById('detailModal').classList.contains('open')) return 'dt';
+  if(document.getElementById('cellarAddModal').classList.contains('open')) return 'ca';
+  const aw=document.getElementById('ai-intake-wrap');
+  if(aw.style.display!=='none' && document.getElementById('askwrap').classList.contains('show')) return 'ai';
+  if(document.getElementById('quickPanel').classList.contains('show')) return 'q';
+  return null;
+}
+document.addEventListener('paste', (e)=>{
+  const ctx = piPasteTarget(); if(!ctx) return;
+  const items = e.clipboardData && e.clipboardData.items; if(!items) return;
+  const files=[];
+  for(const it of items){ if(it.type && it.type.startsWith('image/')){ const f=it.getAsFile(); if(f) files.push(f); } }
+  if(files.length){ e.preventDefault(); piAddFiles(ctx, files); showToast('📋 Pasted'); }
+});
+// Upload any new dataUrl photos for a bottle; pass through already-uploaded ones. Returns [{path,url}].
+async function uploadPhotos(bottleId, list){
+  const out=[];
+  for(const p of list){
+    if(p.url && p.path !== undefined){ out.push({ path:p.path||null, url:p.url }); continue; }
+    if(!p.dataUrl) continue;
+    try{ out.push(await uploadLabel(bottleId, p.dataUrl)); }
+    catch(e){ showToast('A photo upload failed — continuing without it'); }
+  }
+  return out;
+}
 
 // ── LABEL SCAN via the scanLabel Cloud Function ──
 function setScanStatus(which, msg, kind){
@@ -1019,7 +1162,7 @@ window.scoutToCellar = ()=>{
   set('ca-name', d.name || d.producer); set('ca-prod', d.producer); set('ca-region', d.region);
   set('ca-grape', d.grape); set('ca-vintage', d.vintage); set('ca-abv', d.abv);
   set('ca-predlow', d.predLow); set('ca-predhigh', d.predHigh);
-  if(draft.photo){ caPhoto=draft.photo; document.getElementById('ca-photoimg').src=draft.photo; document.getElementById('ca-photoprev').classList.add('show'); }
+  if(piStore.q.length){ piStore.ca = piStore.q.map(p=>({ ...p })); piScanned.ca = true; piRender('ca'); }
   showCaSuggest(d);
 };
 window.scoutToBuylist = async function(){
@@ -1032,12 +1175,12 @@ window.scoutToBuylist = async function(){
     dismissScout();
   }catch(e){ showToast('Could not add to wishlist'); }
 };
-window.clearPhoto = function(which){
-  if(which==='q') draft.photo=null; else caPhoto=null;
-  document.getElementById(which+'-photoprev').classList.remove('show');
-  document.getElementById(which+'-photoimg').removeAttribute('src');
-  setScanStatus(which, '', '');
-};
+function piReset(ctx){
+  piStore[ctx]=[];
+  if(ctx in piScanned) piScanned[ctx]=false;
+  piRender(ctx);
+  if(ctx==='q'||ctx==='ca') setScanStatus(ctx, '', '');
+}
 // Upload compressed label to Storage under the bottle id; return {path,url}.
 async function uploadLabel(bottleId, dataUrl){
   const path='wine_cellar/bottles/'+bottleId+'/label_'+Date.now()+'.jpg';
@@ -1064,11 +1207,7 @@ window.logPour = async function(){
   const uid = (auth.currentUser && auth.currentUser.uid) || '';
   try{
     const r = push(ref(db, 'cellar/bottles'));
-    let photoPath=null, photoUrl=null;
-    if(draft.photo){
-      try{ const up=await uploadLabel(r.key, draft.photo); photoPath=up.path; photoUrl=up.url; }
-      catch(e){ showToast('Photo upload failed — logged without it'); }
-    }
+    const ups = await uploadPhotos(r.key, piStore.q);
     await set(r, {
       name,
       producer:document.getElementById('q-prod').value.trim(),
@@ -1078,7 +1217,9 @@ window.logPour = async function(){
       abv:document.getElementById('q-abv').value.replace('%','').trim(),
       status:'opened', qty:0, predLow:null, predHigh:null,
       score:draft.score+(draft.half?0.5:0), tag:draft.tag, buyAgain:draft.buy,
-      notes:document.getElementById('q-notes').value.trim(), photoPath, photoUrl,
+      notes:document.getElementById('q-notes').value.trim(),
+      photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
+      photos: ups.length?ups:null,
       addedBy:uid, addedAt:now, openedAt:now
     });
     resetQuickLog();
@@ -1089,9 +1230,9 @@ window.logPour = async function(){
 };
 function resetQuickLog(){
   ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-notes'].forEach(id=>document.getElementById(id).value='');
-  clearPhoto('q');
+  piReset('q');
   dismissScout();
-  draft={score:null,half:false,tag:null,buy:false,photo:null};
+  draft={score:null,half:false,tag:null,buy:false};
   paintScore(document.getElementById('scorepad'), -1);
   paintTag(document.getElementById('tags'), null, null, null);
   document.getElementById('halfbtn').classList.remove('on');
@@ -1101,12 +1242,19 @@ function resetQuickLog(){
 }
 
 // ── DELETE ──
+function bottlePhotoPaths(w){
+  if(!w) return [];
+  const paths = new Set();
+  if(w.photoPath) paths.add(w.photoPath);
+  (Array.isArray(w.photos)?w.photos:[]).forEach(p=>{ if(p && p.path) paths.add(p.path); });
+  return [...paths];
+}
 window.del = async function(id){
   if(!confirm('Remove this bottle?')) return;
-  const photoPath = bottles[id] && bottles[id].photoPath;
+  const paths = bottlePhotoPaths(bottles[id]);
   try{
     await dbRemove('cellar/bottles/' + id);
-    if(photoPath){ deleteObject(storageRef(storage, photoPath)).catch(()=>{}); }
+    paths.forEach(p=>deleteObject(storageRef(storage, p)).catch(()=>{}));
   }catch(e){ showToast('Delete failed'); }
 };
 
@@ -1145,7 +1293,7 @@ window.confirmOpen = async function(){
       await set(r, {
         name:w.name, producer:w.producer||'', region:w.region||'', grape:w.grape||'', vintage:w.vintage||'',
         abv:w.abv||'', status:'opened', qty:0, predLow:null, predHigh:null,
-        score:finalScore, tag:openDraft.tag, buyAgain:openDraft.buy, notes:w.notes||'', photoPath:w.photoPath||null, photoUrl:w.photoUrl||null,
+        score:finalScore, tag:openDraft.tag, buyAgain:openDraft.buy, notes:w.notes||'', photoPath:w.photoPath||null, photoUrl:w.photoUrl||null, photos:w.photos||null,
         addedBy:uid, addedAt:now, openedAt:now
       });
     }else{
@@ -1162,7 +1310,7 @@ window.confirmOpen = async function(){
 window.openCellarAdd = ()=>{
   ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ca-qty').value = '1';
-  clearPhoto('ca');
+  piReset('ca');
   caSuggest = null;
   document.getElementById('ca-suggest').classList.remove('show');
   document.getElementById('cellarAddStatus').textContent='';
@@ -1184,11 +1332,7 @@ window.addCellarBottle = async function(){
   }
   try{
     const r = push(ref(db, 'cellar/bottles'));
-    let photoPath=null, photoUrl=null;
-    if(caPhoto){
-      try{ const up=await uploadLabel(r.key, caPhoto); photoPath=up.path; photoUrl=up.url; }
-      catch(e){ showToast('Photo upload failed — added without it'); }
-    }
+    const ups = await uploadPhotos(r.key, piStore.ca);
     await set(r, {
       name,
       producer:document.getElementById('ca-prod').value.trim(),
@@ -1198,7 +1342,9 @@ window.addCellarBottle = async function(){
       abv:document.getElementById('ca-abv').value.replace('%','').trim(),
       status:'cellared', qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1),
       predLow: pl===''?null:Number(pl), predHigh: ph===''?null:Number(ph),
-      score:null, tag:null, buyAgain:false, notes:'', photoPath, photoUrl,
+      score:null, tag:null, buyAgain:false, notes:'',
+      photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
+      photos: ups.length?ups:null,
       rackCol:placeCol, rackRow:placeRow,
       addedBy:uid, addedAt:now, openedAt:null
     });

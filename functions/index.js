@@ -11,10 +11,13 @@
 //          firebase deploy --only functions:scanLabel --project philinity-893d2
 // -----------------------------------------------------------------------------
 
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const Anthropic = require('@anthropic-ai/sdk');
+const admin = require('firebase-admin');
+
+if (!admin.apps.length) admin.initializeApp();
 
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
@@ -72,12 +75,50 @@ function coerceScore(v) {
   return Math.max(1, Math.min(10, n));
 }
 
-// ── askAI: natural-language questions answered from the user's real collection ──
-// Input: { question, collectionSummary } — the client builds the compact summary
-// from already-loaded bottles, so this reads nothing server-side. Returns
-// { ok, answer } as plain text. Deploy scoped:
-//   firebase deploy --only functions:askAI --project philinity-893d2
-exports.askAI = onCall(
+// ── askAI: EATS' function — restored compatibility proxy ─────────────────────
+// ⚠️ The name `askAI` belongs to the EATS app. Cellar's Rev 1.8 deploy briefly
+// overwrote it; this export restores Eats' exact contract so both apps work:
+//   POST { app, system, messages }  +  Authorization: Bearer <Firebase ID token>
+//   → raw Anthropic message JSON ({ content:[{type:'text',text}], ... })
+// Cellar's own Q&A lives in `cellarAskAI` below. Deploy both together:
+//   firebase deploy --only functions:cellar:askAI,functions:cellar:cellarAskAI
+exports.askAI = onRequest(
+  { secrets: [ANTHROPIC_API_KEY], cors: true, memory: '512MiB', timeoutSeconds: 120 },
+  async (req, res) => {
+    if (req.method !== 'POST') { res.status(405).json({ error: { message: 'POST only' } }); return; }
+    try {
+      const m = String(req.get('Authorization') || '').match(/^Bearer (.+)$/);
+      if (!m) { res.status(401).json({ error: { message: 'Sign in first.' } }); return; }
+      await admin.auth().verifyIdToken(m[1]);
+    } catch (e) {
+      res.status(401).json({ error: { message: 'Invalid auth token — refresh and sign in again.' } });
+      return;
+    }
+    const body = req.body || {};
+    const messages = Array.isArray(body.messages) ? body.messages : null;
+    if (!messages || !messages.length) { res.status(400).json({ error: { message: 'No messages supplied.' } }); return; }
+    const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
+    try {
+      const message = await client.messages.create({
+        model: MODEL,
+        max_tokens: 2048,
+        system: typeof body.system === 'string' ? body.system : undefined,
+        messages
+      });
+      res.status(200).json(message);
+    } catch (err) {
+      console.error('[askAI proxy] failed:', err);
+      res.status(500).json({ error: { message: (err && err.message) || 'AI call failed.' } });
+    }
+  }
+);
+
+// ── cellarAskAI: Cellar's Q&A + add-a-bottle over the real collection ────────
+// Input: { question, collectionSummary, attachedPhotos } (photos are uploaded by
+// the client; attachedPhotos is just a count so the model knows pics exist).
+// Returns { ok, answer } — the answer may end with a JSON action block
+// {"action":"add","bottle":{...}} which the client executes.
+exports.cellarAskAI = onCall(
   { secrets: [ANTHROPIC_API_KEY], cors: true, memory: '512MiB', timeoutSeconds: 60 },
   async (request) => {
     if (!request.auth) {
@@ -93,6 +134,7 @@ exports.askAI = onCall(
     let summaryJson = JSON.stringify(summary.slice(0, 500));
     if (summaryJson.length > 60000) summaryJson = summaryJson.slice(0, 60000);
 
+    const attachedPhotos = Number(request.data && request.data.attachedPhotos) || 0;
     const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
     try {
       const message = await client.messages.create({
@@ -107,14 +149,29 @@ exports.askAI = onCall(
             "Counts must be computed from the data. Keep it concise (a short paragraph",
             "or a brief list), plain text, no markdown headers.",
             "",
+            "SPECIAL CASE — adding a bottle: if the owner is asking you to ADD or LOG a",
+            "bottle (e.g. \"add the 2019 La Gerla Brunello, I'd give it an 8.5, earthy,",
+            "buy again\"), reply with ONE short confirmation sentence followed by a JSON",
+            "block on its own lines, exactly this shape (no markdown fences):",
+            '{"action":"add","bottle":{"name":"","producer":"","region":"","grape":"",',
+            '"vintage":"","abv":"","status":"opened","qty":1,"score":null,"tag":null,',
+            '"buyAgain":false,"notes":""}}',
+            "Rules for the block: status is \"opened\" if they tasted/rated it, else",
+            "\"cellared\"; score is 1-10 in 0.5 steps or null; tag is ONE of earthy,",
+            "smoke, big, aged, fruity, light, funky, off — or null; put any of their",
+            "impressions, context, or likings into notes verbatim-ish; leave unknown",
+            "fields as empty string/null. Never invent a rating they didn't give.",
+            (attachedPhotos > 0 ? "The owner attached " + attachedPhotos + " photo(s) which the app will save onto the new bottle automatically." : ""),
+            "For ordinary questions, do NOT output any JSON — plain text only.",
+            "",
             "The owner's palate: " + PALATE,
             "",
             "Collection (JSON; status 'cellared' = unopened on hand, 'opened' = already",
             "tasted & rated; rating is out of 10; buyAgain = flagged to reorder):",
             summaryJson,
             "",
-            "Question: " + question
-          ].join('\n')
+            "Owner's message: " + question
+          ].filter(Boolean).join('\n')
         }]
       });
       const answer = (message.content || [])
@@ -124,7 +181,7 @@ exports.askAI = onCall(
         .trim();
       return { ok: true, answer };
     } catch (err) {
-      console.error('[askAI] failed:', err);
+      console.error('[cellarAskAI] failed:', err);
       return { ok: false, error: (err && err.message) || 'Ask AI failed — try again.' };
     }
   }
