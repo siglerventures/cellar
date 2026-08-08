@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 1.5</title>
+<title>The Cellar Ledger — Rev 1.6</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -226,6 +226,20 @@
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c0d10;border:1px solid var(--line);color:var(--parch);font-size:13px;padding:11px 18px;border-radius:4px;z-index:120;opacity:0;transition:.25s;pointer-events:none}
   .toast.show{opacity:1}
   @media(max-width:520px){.lb-row{grid-template-columns:28px 44px 1fr auto}.logbtn{width:100%;margin-left:0;margin-top:4px}.mgrid{grid-template-columns:1fr}}
+  /* ── RESPONSIVE: wider desktop container + tiled card grids (font size unchanged) ── */
+  .card-grid{display:block}
+  .narrow{margin:0 auto}
+  @media(min-width:768px){
+    .wrap{max-width:1100px}
+    .quick,.narrow{max-width:760px;margin-left:auto;margin-right:auto}
+    /* Tile lists into a fluid grid; same cards, just bordered tiles side by side. */
+    .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start}
+    .card-grid>.wine,.card-grid>.lb-row,.card-grid>.wl-row{border-bottom:none;border:1px solid var(--line);border-radius:5px;padding:14px 16px;background:var(--glass)}
+  }
+  @media(min-width:1200px){
+    .wrap{max-width:1440px}
+    .rack-wrap{max-height:80vh}
+  }
 </style>
 </head>
 <body>
@@ -241,7 +255,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 1.5</div>
+    <div class="auth-rev">Rev 1.6</div>
   </div>
 </div>
 
@@ -314,7 +328,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 1.5</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 1.6</span>
   </footer>
 </div>
 
@@ -992,7 +1006,7 @@ function render(){
     const list = opened.filter(w=>w.buyAgain).filter(matchSearch).sort((a,b)=>b.score-a.score);
     let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers, ranked by score.</p></div>';
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No buy-again bottles yet. Flag the keepers as you log them.</p></div>'; return; }
-    c.innerHTML = html + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`; }).join('');
+    c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`; }).join('') + '</div>';
     return;
   }
 
@@ -1002,7 +1016,7 @@ function render(){
   const list = all.filter(matchSearch).slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
   let html = '<div class="shead"><p>Everything — opened &amp; cellared, newest first.</p></div>';
   if(!list.length){ c.innerHTML = html + '<div class="empty"><p>Nothing logged yet. Score a pour above.</p></div>'; return; }
-  c.innerHTML = html + list.map(w=>{
+  c.innerHTML = html + '<div class="card-grid">' + list.map(w=>{
     const ti=tagInfo(w.tag);
     if(w.status==='cellared'){
       const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
@@ -1013,7 +1027,7 @@ function render(){
     }
     const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
     return `<div class="wine"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
-  }).join('');
+  }).join('') + '</div>';
 }
 
 // ── RACK MAP: labels, matching, placement ──
@@ -1209,14 +1223,14 @@ window.rackEditCell = async function(col, row){
 };
 
 function palateHTML(){
-  return `<div class="shead"><p>What the ratings keep confirming. This sharpens with every pour you log.</p></div>
+  return `<div class="narrow"><div class="shead"><p>What the ratings keep confirming. This sharpens with every pour you log.</p></div>
   <div class="axis"><div class="axis-top"><span class="axis-name">Earthy / Savory / Dried-fruit</span><span class="axis-tag core">Core driver</span></div><div class="bar"><i style="width:95%"></i></div></div>
   <div class="axis"><div class="axis-top"><span class="axis-name">Body / Weight / Concentration</span><span class="axis-tag core">Matters</span></div><div class="bar"><i style="width:88%"></i></div></div>
   <div class="axis"><div class="axis-top"><span class="axis-name">Structure — tannin &amp; acid grip</span><span class="axis-tag core">Likes it</span></div><div class="bar"><i style="width:82%"></i></div></div>
   <div class="axis"><div class="axis-top"><span class="axis-name">Bottle age / Tertiary complexity</span><span class="axis-tag">Favors aged</span></div><div class="bar"><i style="width:78%"></i></div></div>
   <div class="axis"><div class="axis-top"><span class="axis-name">Smoke / Leather / Meat</span><span class="axis-tag">Bonus — 7→9</span></div><div class="bar"><i style="width:70%"></i></div></div>
   <div class="axis"><div class="axis-top"><span class="axis-name">Excess SO₂ · light/tart/funky natural</span><span class="axis-tag" style="color:#9a5a55">Turn-off</span></div><div class="bar"><i style="width:14%;background:linear-gradient(90deg,#3a1418,#9a5a55)"></i></div></div>
-  <div class="palate-sum">Earthy, savory, structured European reds with real weight — bottle age welcome, smoke and leather a bonus. Light/tart/funky and SO₂-sharp lose. Nebbiolo has underperformed (two lowest scores).</div>`;
+  <div class="palate-sum">Earthy, savory, structured European reds with real weight — bottle age welcome, smoke and leather a bonus. Light/tart/funky and SO₂-sharp lose. Nebbiolo has underperformed (two lowest scores).</div></div>`;
 }
 
 // ── WISHLIST (buy list) ──
@@ -1225,7 +1239,7 @@ function wishlistHTML(){
   let html = '<div class="shead"><p>Want-to-try list — scout a bottle in the store, or add one by hand.</p></div>';
   html += `<div class="wl-add"><input id="wl-name" placeholder="Wine name"><input id="wl-region" placeholder="Region (optional)"><button onclick="addBuylistItem()">Add</button></div>`;
   if(!list.length){ return html + '<div class="empty"><p>Nothing on the wishlist yet.</p></div>'; }
-  return html + list.map(w=>`<div class="wl-row"><div><div class="wl-name">${esc(w.name)}</div>${w.region?`<div class="wl-meta">${esc(w.region)}</div>`:''}${w.note?`<div class="wl-note">${esc(w.note)}</div>`:''}</div><button class="del" title="Remove" onclick="removeBuylistItem('${w.id}')">✕</button></div>`).join('');
+  return html + '<div class="card-grid">' + list.map(w=>`<div class="wl-row"><div><div class="wl-name">${esc(w.name)}</div>${w.region?`<div class="wl-meta">${esc(w.region)}</div>`:''}${w.note?`<div class="wl-note">${esc(w.note)}</div>`:''}</div><button class="del" title="Remove" onclick="removeBuylistItem('${w.id}')">✕</button></div>`).join('') + '</div>';
 }
 window.addBuylistItem = async function(){
   const name=(document.getElementById('wl-name').value||'').trim();
