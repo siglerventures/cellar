@@ -72,6 +72,64 @@ function coerceScore(v) {
   return Math.max(1, Math.min(10, n));
 }
 
+// ── askAI: natural-language questions answered from the user's real collection ──
+// Input: { question, collectionSummary } — the client builds the compact summary
+// from already-loaded bottles, so this reads nothing server-side. Returns
+// { ok, answer } as plain text. Deploy scoped:
+//   firebase deploy --only functions:askAI --project philinity-893d2
+exports.askAI = onCall(
+  { secrets: [ANTHROPIC_API_KEY], cors: true, memory: '512MiB', timeoutSeconds: 60 },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in to ask about the cellar.');
+    }
+    const question = request.data && String(request.data.question || '').trim();
+    if (!question) {
+      throw new HttpsError('invalid-argument', 'No question supplied.');
+    }
+    let summary = (request.data && request.data.collectionSummary) || [];
+    if (!Array.isArray(summary)) summary = [];
+    // Keep the prompt bounded even if the client sends a huge cellar.
+    let summaryJson = JSON.stringify(summary.slice(0, 500));
+    if (summaryJson.length > 60000) summaryJson = summaryJson.slice(0, 60000);
+
+    const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
+    try {
+      const message = await client.messages.create({
+        model: MODEL,
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            "You are the sommelier for a private wine cellar app. Answer the owner's",
+            "question using ONLY the collection data below (their real bottles) plus",
+            "general wine knowledge. Be specific — name actual bottles from the data.",
+            "Counts must be computed from the data. Keep it concise (a short paragraph",
+            "or a brief list), plain text, no markdown headers.",
+            "",
+            "The owner's palate: " + PALATE,
+            "",
+            "Collection (JSON; status 'cellared' = unopened on hand, 'opened' = already",
+            "tasted & rated; rating is out of 10; buyAgain = flagged to reorder):",
+            summaryJson,
+            "",
+            "Question: " + question
+          ].join('\n')
+        }]
+      });
+      const answer = (message.content || [])
+        .filter((b) => b.type === 'text')
+        .map((b) => b.text)
+        .join('')
+        .trim();
+      return { ok: true, answer };
+    } catch (err) {
+      console.error('[askAI] failed:', err);
+      return { ok: false, error: (err && err.message) || 'Ask AI failed — try again.' };
+    }
+  }
+);
+
 exports.scanLabel = onCall(
   { secrets: [ANTHROPIC_API_KEY], cors: true, memory: '512MiB', timeoutSeconds: 60 },
   async (request) => {

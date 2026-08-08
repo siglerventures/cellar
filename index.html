@@ -20,7 +20,41 @@
   .stats{display:flex;justify-content:center;gap:clamp(24px,7vw,60px);margin-top:22px}
   .stat b{display:block;font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:var(--gold);line-height:1}
   .stat span{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--parch-dim)}
-  .quick{background:var(--glass);border:1px solid var(--line);border-radius:4px;padding:18px clamp(14px,3vw,22px);margin-bottom:30px}
+  .quick{display:none;background:var(--glass);border:1px solid var(--line);border-radius:4px;padding:18px clamp(14px,3vw,22px);margin-bottom:30px}
+  .quick.show{display:block}
+  .qclose{background:none;border:none;color:var(--parch-dim);font-size:17px;cursor:pointer;padding:2px 6px;line-height:1}
+  .qclose:hover{color:var(--parch)}
+  /* ── Top action row ── */
+  .actionrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .act{flex:1 1 150px;font-family:'Inter';font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;border-radius:3px;padding:13px 10px;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+  .act svg{width:16px;height:16px;flex-shrink:0}
+  .act.primary{color:var(--ink);background:var(--gold);border:none}
+  .act.primary:hover{background:#d8b56c}
+  .act.ghosty{color:var(--gold);background:transparent;border:1px solid var(--line)}
+  .act.ghosty:hover{border-color:var(--gold)}
+  /* ── Ask AI ── */
+  .askbtn{font-family:'Inter';font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--gold);background:transparent;border:1px solid var(--line);border-radius:3px;padding:7px 12px;cursor:pointer;transition:.15s;white-space:nowrap}
+  .askbtn:hover{border-color:var(--gold)}
+  .askwrap{display:none;border:1px solid var(--line);border-radius:4px;padding:14px 15px;margin-bottom:18px;background:rgba(201,163,92,0.05)}
+  .askwrap.show{display:block}
+  .askrow{display:flex;gap:8px}
+  .askrow input{flex:1;font-family:'Inter';font-size:14px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:10px 12px}
+  .askrow input:focus{outline:none;border-color:var(--gold)}
+  .askrow button{font-family:'Inter';font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--ink);background:var(--gold);border:none;border-radius:3px;padding:0 16px;cursor:pointer}
+  .askanswer{display:none;font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--parch);line-height:1.45;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);white-space:pre-wrap}
+  .askanswer.show{display:block}
+  .askanswer.thinking{font-style:italic;color:var(--parch-dim)}
+  /* ── Sort chips ── */
+  .chiprow{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .sortchip{font-family:'Inter';font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--parch-dim);background:rgba(236,227,210,0.04);border:1px solid var(--line);border-radius:20px;padding:6px 14px;cursor:pointer;transition:.14s}
+  .sortchip:hover{color:var(--parch)}
+  .sortchip.on{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+  /* ── Bottle detail modal ── */
+  .modal-card textarea{font-family:'Inter';font-size:14px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:10px 12px;width:100%;margin-bottom:12px;min-height:72px;resize:vertical}
+  .modal-card textarea:focus{outline:none;border-color:var(--gold)}
+  .dt-del{margin-left:auto;color:#c0635c!important;border-color:rgba(192,99,92,.4)!important}
+  .dt-del:hover{border-color:#c0635c!important}
+  .wine,.lb-row{cursor:pointer}
   .qhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
   .qhead h3{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600}
   .qhead em{font-style:normal;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dim)}
@@ -279,8 +313,24 @@
     </div>
   </header>
 
-  <div class="quick">
-    <div class="qhead"><h3>Log a pour</h3><em>score &rarr; log</em></div>
+  <!-- ── TOP ACTION ROW ── -->
+  <div class="actionrow">
+    <button class="act primary" onclick="toggleLogPanel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      Log a pour
+    </button>
+    <button class="act ghosty" onclick="actionWineScan()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Wine Scan
+    </button>
+    <button class="act ghosty" onclick="actionShopScan()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      At a wine shop
+    </button>
+  </div>
+
+  <div class="quick" id="quickPanel">
+    <div class="qhead"><h3>Log a pour</h3><button class="qclose" title="Close" onclick="closeLogPanel()">✕</button></div>
     <input class="qname" id="q-name" placeholder="Wine name">
     <button class="snap" id="q-snap" onclick="document.getElementById('q-photo').click()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -318,17 +368,27 @@
     </div>
   </div>
 
-  <div class="tabs">
-    <button class="vtab on" data-view="buy" onclick="setView('buy')">Buy-Again Leaderboard</button>
-    <button class="vtab" data-view="cellar" onclick="setView('cellar')">Cellar</button>
-    <button class="vtab" data-view="all" onclick="setView('all')">All Bottles</button>
-    <button class="vtab" data-view="wishlist" onclick="setView('wishlist')">Wishlist</button>
-    <button class="vtab" data-view="palate" onclick="setView('palate')">The Palate</button>
-  </div>
+  <!-- ── SEARCH + ASK AI ── -->
   <div class="searchrow" id="searchrow">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-    <input id="searchbar" placeholder="Search name, producer, region, grape…" oninput="onSearch(this.value)">
+    <input id="searchbar" placeholder="Search name, producer, region, grape, tag, notes…" oninput="onSearch(this.value)">
     <button id="searchclear" onclick="clearSearch()" style="display:none">✕</button>
+    <button class="askbtn" onclick="toggleAskAI()">✦ Ask AI</button>
+  </div>
+  <div class="askwrap" id="askwrap">
+    <div class="askrow">
+      <input id="askInput" placeholder="Ask about your collection — “What should I open tonight?”" onkeydown="if(event.key==='Enter')askAIGo()">
+      <button onclick="askAIGo()">Ask</button>
+    </div>
+    <div class="askanswer" id="askAnswer"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="vtab on" data-view="all" onclick="setView('all')">All Bottles</button>
+    <button class="vtab" data-view="buy" onclick="setView('buy')">Buy-Again</button>
+    <button class="vtab" data-view="cellar" onclick="setView('cellar')">Cellar</button>
+    <button class="vtab" data-view="palate" onclick="setView('palate')">The Palate</button>
+    <button class="vtab" data-view="wishlist" onclick="setView('wishlist')">Wishlist</button>
   </div>
   <div id="content"></div>
 
@@ -413,6 +473,31 @@
   </div>
 </div>
 
+<!-- ── BOTTLE DETAIL / EDIT MODAL ── -->
+<div class="modal" id="detailModal">
+  <div class="modal-card">
+    <h3 id="dt-name">—</h3>
+    <div class="msub" id="dt-meta">—</div>
+    <div id="dt-photo"></div>
+    <div class="qlabel">Score</div>
+    <div class="scorepad" id="dtScorepad"></div>
+    <div class="halfrow"><button class="half" id="dtHalfbtn" onclick="dtToggleHalf()">+ ½ point</button><span class="scoreEcho" id="dtScoreEcho"></span></div>
+    <div class="qlabel">Tag — one dominant impression</div>
+    <div class="tags" id="dtTags"></div>
+    <div class="mrow" style="margin-top:4px">
+      <button class="buyflag" id="dtBuyflag" onclick="dtToggleBuy()"><span class="dot"></span> Buy again</button>
+    </div>
+    <div class="qlabel" style="margin-top:14px">Notes / comments</div>
+    <textarea id="dt-notes" placeholder="Tasting notes, where you had it, who you shared it with…"></textarea>
+    <div class="mrow">
+      <button class="mbtn" onclick="saveDetail()">Save</button>
+      <button class="mbtn ghost" onclick="closeDetail()">Close</button>
+      <button class="mbtn ghost dt-del" onclick="deleteDetail()">Delete</button>
+    </div>
+    <div class="mstatus" id="dtStatus"></div>
+  </div>
+</div>
+
 <!-- ── IMAGE LIGHTBOX ── -->
 <div class="modal" id="imgModal" onclick="closeImg()"><img id="imgFull" alt="label"></div>
 
@@ -440,6 +525,7 @@ const db = getDatabase(app);
 const storage = getStorage(app);
 const functions = getFunctions(app);   // us-central1 (default) — matches the deployed scanLabel
 const scanLabelFn = httpsCallable(functions, 'scanLabel');
+const askAIFn = httpsCallable(functions, 'askAI');
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
@@ -476,7 +562,9 @@ const dbRemove = (p) => remove(ref(db, p));
 // ── STATE ──
 let bottles = {};   // id -> bottle
 let buylist = {};   // id -> item
-let view = 'buy';
+let view = 'all';
+let sortMode = 'rating';   // 'rating' | 'newest' | 'az' — sort chips on All Bottles / Buy-Again
+let dtDraft = { id:null, score:null, half:false, tag:null, buy:false };  // detail-modal edit state
 let subscribed = false;
 let draft = { score:null, half:false, tag:null, buy:false, photo:null };
 let openDraft = { id:null, score:null, half:false, tag:null, buy:false };
@@ -695,6 +783,115 @@ buildTags(document.getElementById('tags'), (k,btn,c)=>{ const was=draft.tag===k;
 // Mark-opened pad
 buildScorepad(document.getElementById('openScorepad'), (v)=>{ openDraft.score=v; paintScore(document.getElementById('openScorepad'), v); echo('openScoreEcho', openDraft); });
 buildTags(document.getElementById('openTags'), (k,btn,c)=>{ const was=openDraft.tag===k; openDraft.tag=was?null:k; paintTag(document.getElementById('openTags'), was?null:k, btn, c); });
+// Detail-modal pad
+buildScorepad(document.getElementById('dtScorepad'), (v)=>{ dtDraft.score=v; paintScore(document.getElementById('dtScorepad'), v); echo('dtScoreEcho', dtDraft); });
+buildTags(document.getElementById('dtTags'), (k,btn,c)=>{ const was=dtDraft.tag===k; dtDraft.tag=was?null:k; paintTag(document.getElementById('dtTags'), was?null:k, btn, c); });
+
+// ── TOP ACTION ROW + COLLAPSIBLE LOG PANEL ──
+function openLogPanel(){ document.getElementById('quickPanel').classList.add('show'); }
+window.closeLogPanel = function(){ document.getElementById('quickPanel').classList.remove('show'); };
+window.toggleLogPanel = function(){
+  const p = document.getElementById('quickPanel');
+  p.classList.toggle('show');
+  if(p.classList.contains('show')) p.scrollIntoView({behavior:'smooth', block:'start'});
+};
+// Wine Scan — open the existing image intake; the scan fills the log form.
+window.actionWineScan = function(){ openLogPanel(); document.getElementById('q-photo').click(); };
+// At a wine shop — same server-side scan; the scout verdict panel answers "buy it?".
+window.actionShopScan = function(){ openLogPanel(); document.getElementById('q-photo').click(); };
+
+// ── ASK AI (server-side only — question + compact collection summary → askAI Cloud Function) ──
+function collectionSummary(){
+  const arr = asArr(bottles).map(w=>({
+    name:w.name||'', producer:w.producer||'', region:w.region||'', grape:w.grape||'',
+    vintage:w.vintage||'', abv:w.abv||'', rating:(w.score==null?null:Number(w.score)),
+    tag:w.tag||null, buyAgain:!!w.buyAgain, status:w.status||'', qty:Number(w.qty)||0
+  }));
+  // Keep the payload compact; notes are already stripped (never included above).
+  return arr;
+}
+window.toggleAskAI = function(){
+  const w = document.getElementById('askwrap');
+  w.classList.toggle('show');
+  if(w.classList.contains('show')) document.getElementById('askInput').focus();
+};
+window.askAIGo = async function(){
+  const q = document.getElementById('askInput').value.trim();
+  if(!q) return;
+  const out = document.getElementById('askAnswer');
+  out.className='askanswer show thinking'; out.textContent='Consulting the cellar…';
+  try{
+    const res = await askAIFn({ question:q, collectionSummary: collectionSummary() });
+    const r = res && res.data;
+    if(r && r.ok){ out.className='askanswer show'; out.textContent = r.answer || ''; }
+    else { out.className='askanswer show thinking'; out.textContent = (r && r.error) || 'Couldn’t get an answer — try again.'; }
+  }catch(e){
+    console.warn('[Cellar] askAI failed:', e);
+    out.className='askanswer show thinking'; out.textContent='Ask AI isn’t available yet — the askAI function may still need deploying.';
+  }
+};
+
+// ── SORT CHIPS ──
+window.setSort = function(m){ sortMode = m; render(); };
+function chipRowHTML(){
+  const chips = [['rating','Rating'],['newest','Newest'],['az','A–Z']];
+  return '<div class="chiprow">' + chips.map(c=>`<button class="sortchip ${sortMode===c[0]?'on':''}" onclick="setSort('${c[0]}')">${c[1]}</button>`).join('') + '</div>';
+}
+function sortValRating(w){ return w.score!=null ? Number(w.score) : (w.predHigh!=null ? Number(w.predHigh)-100 : -1000); }
+function applySort(list){
+  const l = list.slice();
+  if(sortMode==='az') return l.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''), undefined, {sensitivity:'base'}));
+  if(sortMode==='newest') return l.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  return l.sort((a,b)=>sortValRating(b)-sortValRating(a) || (b.addedAt||0)-(a.addedAt||0));
+}
+
+// ── BOTTLE DETAIL / EDIT MODAL ──
+window.openDetail = function(id){
+  const w = bottles[id]; if(!w) return;
+  const whole = w.score==null ? null : Math.floor(Number(w.score));
+  const half = w.score!=null && (Number(w.score)-whole)>=0.5;
+  dtDraft = { id, score:whole, half, tag:w.tag||null, buy:!!w.buyAgain };
+  document.getElementById('dt-name').textContent = w.name || '—';
+  const meta=[w.producer,w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
+  const state = w.status==='cellared' ? ('Cellared'+((w.rackCol&&w.rackRow)?' · '+slotCode(w.rackCol,w.rackRow):'')+(Number(w.qty)>1?' · ×'+w.qty:'')) : 'Opened';
+  document.getElementById('dt-meta').textContent = [state, meta].filter(Boolean).join(' — ');
+  document.getElementById('dt-photo').innerHTML = w.photoUrl ? `<img class="thumb" style="float:none;margin:0 0 12px;width:64px;height:64px" src="${esc(w.photoUrl)}" alt="label" onclick="viewImage('${esc(w.photoUrl)}')">` : '';
+  paintScore(document.getElementById('dtScorepad'), whole==null?-1:whole);
+  const tagBtn = document.querySelector('#dtTags .tag[data-k="'+(w.tag||'')+'"]');
+  paintTag(document.getElementById('dtTags'), w.tag||null, tagBtn, w.tag?tagInfo(w.tag).c:null);
+  document.getElementById('dtHalfbtn').classList.toggle('on', half);
+  document.getElementById('dtBuyflag').classList.toggle('on', !!w.buyAgain);
+  echo('dtScoreEcho', dtDraft);
+  document.getElementById('dt-notes').value = w.notes || '';
+  document.getElementById('dtStatus').textContent='';
+  document.getElementById('detailModal').classList.add('open');
+};
+window.closeDetail = ()=>document.getElementById('detailModal').classList.remove('open');
+window.dtToggleHalf = ()=>{ dtDraft.half=!dtDraft.half; document.getElementById('dtHalfbtn').classList.toggle('on',dtDraft.half); echo('dtScoreEcho',dtDraft); };
+window.dtToggleBuy = ()=>{ dtDraft.buy=!dtDraft.buy; document.getElementById('dtBuyflag').classList.toggle('on',dtDraft.buy); };
+window.saveDetail = async function(){
+  const w = bottles[dtDraft.id]; if(!w){ closeDetail(); return; }
+  const score = dtDraft.score==null ? null : dtDraft.score + (dtDraft.half?0.5:0);
+  try{
+    await dbUpdate('cellar/bottles/' + dtDraft.id, {
+      score, tag:dtDraft.tag, buyAgain:dtDraft.buy,
+      notes:document.getElementById('dt-notes').value.trim()
+    });
+    closeDetail();
+    showToast('Saved — ' + (w.name||'bottle'));
+  }catch(e){ document.getElementById('dtStatus').textContent='❌ ' + (e.message||e); }
+};
+window.deleteDetail = async function(){
+  const id = dtDraft.id; const w = bottles[id]; if(!w){ closeDetail(); return; }
+  if(!confirm('Remove this bottle?')) return;
+  const photoPath = w.photoPath;
+  try{
+    await dbRemove('cellar/bottles/' + id);
+    if(photoPath){ deleteObject(storageRef(storage, photoPath)).catch(()=>{}); }
+    closeDetail();
+    showToast('Removed — ' + (w.name||'bottle'));
+  }catch(e){ document.getElementById('dtStatus').textContent='❌ Delete failed'; }
+};
 
 function echo(id, d){ const e=document.getElementById(id); if(d.score==null){ e.textContent=''; return; } e.textContent=(d.score+(d.half?0.5:0)).toFixed(1); }
 
@@ -884,8 +1081,9 @@ window.logPour = async function(){
       addedBy:uid, addedAt:now, openedAt:now
     });
     resetQuickLog();
+    closeLogPanel();
     showToast('Logged — ' + name);
-    if(view==='palate') setView('all');
+    setView('all');
   }catch(e){ showToast('Save failed: ' + (e.message||e)); }
 };
 function resetQuickLog(){
@@ -1012,14 +1210,14 @@ window.addCellarBottle = async function(){
 };
 
 // ── VIEWS + RENDER ──
-window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); document.getElementById('searchrow').style.display = (v==='palate'||v==='cellar') ? 'none' : ''; render(); };
+window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; render(); };
 window.onSearch = function(v){ search=(v||'').trim().toLowerCase(); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
 window.clearSearch = function(){ search=''; document.getElementById('searchbar').value=''; document.getElementById('searchclear').style.display='none'; render(); };
-function matchSearch(w){ if(!search) return true; return [w.name,w.producer,w.region,w.grape,w.vintage].filter(Boolean).join(' ').toLowerCase().includes(search); }
+function matchSearch(w){ if(!search) return true; return [w.name,w.producer,w.region,w.grape,w.vintage,w.notes,w.tag,w.tag?tagInfo(w.tag).t:''].filter(Boolean).join(' ').toLowerCase().includes(search); }
 function scoreClass(r){ return r>=7?'s-hi':r>=5?'s-mid':'s-lo'; }
 function fmt(n){ return Number(n).toFixed(1).replace(/\.0$/,''); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function thumbHTML(w){ return w.photoUrl ? `<img class="thumb" src="${esc(w.photoUrl)}" alt="label" onclick="viewImage('${esc(w.photoUrl)}')">` : ''; }
+function thumbHTML(w){ return w.photoUrl ? `<img class="thumb" src="${esc(w.photoUrl)}" alt="label" onclick="event.stopPropagation();viewImage('${esc(w.photoUrl)}')">` : ''; }
 function asArr(map){ return Object.keys(map||{}).map(id=>Object.assign({id}, map[id])); }
 
 function render(){
@@ -1036,19 +1234,19 @@ function render(){
   if(view==='wishlist'){ c.innerHTML = wishlistHTML(); return; }
 
   if(view==='buy'){
-    const list = opened.filter(w=>w.buyAgain).filter(matchSearch).sort((a,b)=>b.score-a.score);
-    let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers, ranked by score.</p></div>';
+    const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch));
+    let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers.</p></div>' + chipRowHTML();
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No buy-again bottles yet. Flag the keepers as you log them.</p></div>'; return; }
-    c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`; }).join('') + '</div>';
+    c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`; }).join('') + '</div>';
     return;
   }
 
   if(view==='cellar'){ c.innerHTML = rackHTML(); return; }
 
   // all
-  const list = all.filter(matchSearch).slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-  let html = '<div class="shead"><p>Everything — opened &amp; cellared, newest first.</p></div>';
-  if(!list.length){ c.innerHTML = html + '<div class="empty"><p>Nothing logged yet. Score a pour above.</p></div>'; return; }
+  const list = applySort(all.filter(matchSearch));
+  let html = '<div class="shead"><p>Everything — opened &amp; cellared. Tap a bottle to view or edit it.</p></div>' + chipRowHTML();
+  if(!list.length){ c.innerHTML = html + '<div class="empty"><p>Nothing logged yet. Tap “Log a pour” above.</p></div>'; return; }
   c.innerHTML = html + '<div class="card-grid">' + list.map(w=>{
     const ti=tagInfo(w.tag);
     if(w.status==='cellared'){
@@ -1056,10 +1254,10 @@ function render(){
       const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
       const qty = Number(w.qty)||1;
       const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>` : '';
-      return `<div class="wine"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
+      return `<div class="wine" onclick="openDetail('${w.id}')"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="event.stopPropagation();openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
     }
     const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
-    return `<div class="wine"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="event.stopPropagation();toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
   }).join('') + '</div>';
 }
 
@@ -1405,7 +1603,7 @@ onAuthStateChanged(auth, async (user)=>{
     await seedIfEmpty();
     await ensureRackLayout();
     subscribe();
-    setView('buy');
+    setView('all');
   }
 });
 
