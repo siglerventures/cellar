@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 1.4</title>
+<title>The Cellar Ledger — Rev 1.5</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -83,20 +83,48 @@
   .tray-chip em{font-style:normal;opacity:.6}
   .tray-chip.on em{opacity:.85}
   .rack-tray-empty{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch-dim);margin-bottom:16px}
-  .rack-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:4px;padding:10px;background:rgba(15,7,8,0.4)}
-  .rack-grid{display:grid;grid-template-columns:26px repeat(20,minmax(30px,1fr));gap:3px;min-width:720px}
+  .slot-badge{display:inline-block;font-size:9px;letter-spacing:.06em;font-weight:700;color:var(--gold);border:1px solid var(--gold-dim);border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+  /* toolbar: zoom + column jump + edit-labels */
+  .rack-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .rack-tools .rt-group{display:flex;align-items:center;gap:5px}
+  .rt-btn{font-family:'Inter';font-size:11px;letter-spacing:.06em;font-weight:600;color:var(--parch-dim);background:transparent;border:1px solid var(--line);border-radius:3px;padding:6px 10px;cursor:pointer;transition:.14s}
+  .rt-btn:hover{border-color:var(--gold-dim);color:var(--parch)}
+  .rt-btn.on{color:var(--gold);border-color:var(--gold)}
+  .rt-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--parch-dim);font-weight:600}
+  .rt-jump{font-family:'Inter';font-size:12px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:6px 8px}
+  .rt-jump option{background:#1c0d10}
+  .rack-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:4px;padding:10px;background:rgba(15,7,8,0.4);max-height:72vh;position:relative}
+  .rack-grid{display:grid;grid-template-columns:var(--rh) repeat(20,var(--cw));gap:3px;width:max-content}
+  .rack-grid.z1{--cw:30px;--rh:24px;--ch:24px}
+  .rack-grid.z2{--cw:46px;--rh:26px;--ch:40px}
+  .rack-grid.z3{--cw:74px;--rh:30px;--ch:62px}
   .rack-colhead{font-size:8px;line-height:1.05;text-align:center;color:var(--gold-dim);font-weight:600;padding:2px 1px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;align-self:end;min-height:30px}
   .rack-colhead.editable{cursor:pointer}
   .rack-colhead.editable:hover{color:var(--gold)}
-  .rack-rowhead{font-size:9px;color:var(--parch-dim);display:flex;align-items:center;justify-content:center}
-  .rack-slot{height:24px;border:1px solid var(--line);border-radius:2px;background:rgba(236,227,210,0.03);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.1s}
+  .rack-rowhead{font-size:9px;color:var(--parch-dim);display:flex;align-items:center;justify-content:center;position:sticky;left:0;background:#160a0c;z-index:2}
+  .rack-slot{height:var(--ch);border:1px solid var(--line);border-radius:2px;background:rgba(236,227,210,0.03);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;transition:.1s;padding:1px;text-align:center}
   .rack-slot:hover{border-color:var(--gold-dim)}
   .rack-slot.filled{background:linear-gradient(180deg,var(--garnet),#360f16);border-color:var(--gold-dim)}
   .rack-slot.filled:hover{border-color:var(--gold)}
   .rack-slot.filled.sel{outline:2px solid var(--gold);outline-offset:1px}
   .rack-slot.target{border-color:var(--gold-dim);border-style:dashed}
   .rack-slot.target:hover{background:rgba(201,163,92,0.14)}
+  .rack-slot.drop-hi{outline:2px dashed var(--gold);outline-offset:1px;background:rgba(201,163,92,0.16)}
+  .rack-slot.flash{animation:slotflash 1s ease-in-out 0s 4}
+  @keyframes slotflash{0%,100%{box-shadow:0 0 0 0 rgba(201,163,92,0)}50%{box-shadow:0 0 0 3px rgba(201,163,92,0.85);outline:2px solid var(--gold)}}
   .slot-v{font-size:8.5px;color:var(--gold);font-weight:600;pointer-events:none}
+  .slot-name{font-size:8px;line-height:1.02;color:var(--parch);pointer-events:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+  .slot-lbl{font-size:7.5px;line-height:1;color:var(--parch-dim);opacity:.5;pointer-events:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .slot-thumb{width:100%;max-width:34px;height:auto;max-height:32px;object-fit:cover;border-radius:2px;pointer-events:none;margin-bottom:1px}
+  .rack-grid.z1 .slot-name,.rack-grid.z1 .slot-lbl,.rack-grid.z1 .slot-thumb{display:none}
+  .rack-grid.z2 .slot-thumb{display:none}
+  .ca-suggest{display:none;border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin:4px 0 12px;background:rgba(201,163,92,0.07)}
+  .ca-suggest.show{display:block}
+  .ca-suggest .cs-msg{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch)}
+  .ca-suggest .cs-msg b{font-style:normal;font-weight:600;color:var(--gold)}
+  .ca-suggest .cs-actions{display:flex;gap:8px;margin-top:8px}
+  .ca-suggest .cs-btn{font-size:11px;letter-spacing:.06em;font-weight:600;color:var(--gold);background:transparent;border:1px solid var(--line);border-radius:3px;padding:6px 12px;cursor:pointer;font-family:'Inter'}
+  .ca-suggest .cs-btn.ghost{color:var(--parch-dim)}
   .qlabel{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--parch-dim);font-weight:600;margin-bottom:8px}
   .scorepad{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;border-radius:3px}
   .sbtn{flex:1;min-width:30px;font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch-dim);background:rgba(236,227,210,0.04);border:1px solid var(--line);border-radius:3px;padding:8px 0;cursor:pointer;transition:.12s}
@@ -213,7 +241,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 1.4</div>
+    <div class="auth-rev">Rev 1.5</div>
   </div>
 </div>
 
@@ -286,7 +314,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 1.4</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 1.5</span>
   </footer>
 </div>
 
@@ -351,6 +379,10 @@
     </button>
     <input type="file" id="ca-photo" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this,'ca')">
     <div class="photoprev" id="ca-photoprev"><img id="ca-photoimg" alt="label"><button onclick="clearPhoto('ca')">Remove photo</button></div>
+    <div class="ca-suggest" id="ca-suggest">
+      <div class="cs-msg" id="cs-msg"></div>
+      <div class="cs-actions"><button class="cs-btn" id="cs-accept" onclick="acceptSuggestedSlot()">Use this slot</button><button class="cs-btn ghost" onclick="clearSuggestedSlot()">Add unplaced</button></div>
+    </div>
     <div class="mrow" style="margin-top:8px">
       <button class="mbtn" onclick="addCellarBottle()">Add bottle</button>
       <button class="mbtn ghost" onclick="closeCellarAddModal()">Cancel</button>
@@ -429,18 +461,50 @@ let openDraft = { id:null, score:null, half:false, tag:null, buy:false };
 let caPhoto = null;   // add-to-cellar pending photo (compressed data URL)
 let search = '';      // current search filter
 let lastScout = null; // last scanned wine details (for scout quick-actions)
-let rackLayout = {};  // cellar/rack_layout — editable column labels
-let placing = null;   // bottle id currently being placed / moved on the rack
+let rackLayout = {};  // cellar/rack_layout — per-cell category labels
+let placing = null;   // bottle id currently being placed / moved (tap flow)
 let inspect = null;   // placed bottle id currently inspected
+let dragId = null;    // bottle id currently being dragged (HTML5 DnD)
+let rackZoom = 2;     // 1 = small · 2 = medium · 3 = large
+let rackEdit = false; // edit-labels mode (admin)
+let flashSlot = null; // "col_row" to flash after a scan-to-place suggestion
+let caSuggest = null; // {col,row,label} scan-to-place suggestion for Add-to-Cellar
 
 // ── RACK MAP (physical cellar grid: 20 columns × 29 rows) ──
 const RACK_COLS = 20, RACK_ROWS = 29;
+// Column defaults — seed labels + the type→column matcher for scan-to-place.
+// Labels are DATA (stored per cell in cellar/rack_layout/cells); these are only
+// the initial seed and a fallback. A column can vary down its rows (edit in-app).
+// Only the columns Phil has confirmed are seeded; 4–11 stay blank ("Col N")
+// until he labels them in-app (or sends the layout so I can seed them).
 const DEFAULT_COL_LABELS = {
   1:'Whiskey → Vodka', 2:'Mixers ↔ Brut', 3:'Riesling',
   12:'Amarone / Valpolicella', 13:'CdP / S. Rhône', 14:'Brunello / Sangiovese',
   15:'Rioja / Tempranillo', 16:'Red Blends', 17:'Red Blends', 18:'Red Blends',
   19:'Red Blends', 20:'Red Blends'
 };
+// Varietal / region → canonical keywords, matched against a column's label tokens.
+const VARIETAL_SYNONYMS = [
+  {re:/riesling|gew[uü]rz|kabinett|spatlese|sp[aä]tlese/, keys:['riesling']},
+  {re:/amarone|valpolicella|corvina|ripasso|recioto/, keys:['amarone','valpolicella']},
+  {re:/ch[aâ]teauneuf|\bcdp\b|c[oô]tes?[- ]du[- ]rh[oô]ne|rh[oô]ne|gigondas|vacqueyras|grenache|\bgsm\b|cornas|hermitage/, keys:['cdp','rhône','rhone','rhne']},
+  {re:/brunello|montalcino|sangiovese|chianti|vino nobile|montepulciano|super.?tuscan/, keys:['brunello','sangiovese']},
+  {re:/rioja|tempranillo|graciano|ribera del duero|toro|mencia|menc[ií]a|bierzo/, keys:['rioja','tempranillo']},
+  {re:/pinot noir|bourgogne|burgundy|c[oô]te de|nuits|gevrey|volnay|pommard/, keys:['pinot','noir']},
+  {re:/syrah|shiraz|petite sirah/, keys:['syrah','shiraz']},
+  {re:/zinfandel|primitivo/, keys:['zinfandel']},
+  {re:/cabernet sauvignon|cab sauv|\bcabernet\b|napa/, keys:['cabernet']},
+  {re:/merlot|malbec|carmen[eè]re/, keys:['merlot','malbec']},
+  {re:/bordeaux|m[eé]doc|saint.?est[eè]phe|margaux|pauillac|pomerol|saint.?[eé]milion|meritage|red blend|proprietary|gsm blend/, keys:['red','blends','blend']},
+  {re:/whisk|bourbon|scotch|\brye\b/, keys:['whiskey','whisky']},
+  {re:/vodka/, keys:['vodka']},
+  {re:/\bgin\b|\brum\b|tequila|mezcal|mixer|tonic|vermouth|aperitivo|amaro/, keys:['mixers','mixer']},
+  {re:/champagne|\bbrut\b|cava|prosecco|sparkling|cr[eé]mant|franciacorta/, keys:['brut','sparkling']},
+  {re:/ros[eé]\b/, keys:['rosé','rose']},
+  {re:/moscato|muscat/, keys:['moscato']},
+  {re:/white zin/, keys:['white','zin']},
+  {re:/sauvignon blanc|chardonnay|pinot gris|pinot grigio|albari[nñ]o|verdejo|viognier|chenin|white blend/, keys:['white','blends','blend']}
+];
 
 const TAGS=[
   {k:'earthy',t:'Earthy / Savory',c:'#c9a35c'},
@@ -523,14 +587,23 @@ async function seedIfEmpty(){
   }catch(e){ console.warn('[Cellar] seed failed:', e); }
 }
 
-// Seed the rack column labels once (admin only — writes are role-gated).
+// Seed per-cell labels once (admin only — writes are role-gated). Stored at
+// cellar/rack_layout/cells/{col}_{row}.label so a column can vary down its rows.
+// Cols 4–11 are left blank for Phil to define; migrates a Rev 1.4 cols-only doc.
 async function ensureRackLayout(){
   try{
     if(!isAdmin()) return;
     const snap = await dbGet('cellar/rack_layout');
-    if(snap.exists()) return;
-    await dbSet('cellar/rack_layout', { cols: DEFAULT_COL_LABELS, colCount: RACK_COLS, rowCount: RACK_ROWS });
-    console.log('[Cellar] Rack layout seeded.');
+    const cur = snap.val() || {};
+    if(cur.cells) return;
+    const cells = {};
+    for(let c=1;c<=RACK_COLS;c++){
+      const label = DEFAULT_COL_LABELS[c];
+      if(!label) continue;
+      for(let r=1;r<=RACK_ROWS;r++) cells[c+'_'+r] = { label };
+    }
+    await dbUpdate('cellar/rack_layout', { cells, colCount: RACK_COLS, rowCount: RACK_ROWS });
+    console.log('[Cellar] Rack layout cells seeded.');
   }catch(e){ console.warn('[Cellar] rack layout seed failed:', e); }
 }
 
@@ -630,6 +703,7 @@ async function scanAndFill(dataUrl, which){
     fillScanFields(which, r.data);
     setScanStatus(which, 'Filled from the label — check the details.', '');
     if(which==='q') showScout(r.data);
+    if(which==='ca') showCaSuggest(r.data);
   }catch(e){
     console.warn('[Cellar] scan failed:', e);
     setScanStatus(which, 'Scan isn’t available yet — type the details in and score it.', 'err');
@@ -664,6 +738,35 @@ function showScout(d){
   panel.classList.add('show');
 }
 window.dismissScout = ()=>{ lastScout=null; document.getElementById('scoutPanel').classList.remove('show'); };
+
+// ── SCAN-TO-PLACE: after a label scan in Add-to-Cellar, suggest the right slot ──
+function showCaSuggest(d){
+  const box = document.getElementById('ca-suggest');
+  const msgEl = document.getElementById('cs-msg');
+  const acceptBtn = document.getElementById('cs-accept');
+  const s = suggestPlacement(d);
+  caSuggest = null;
+  if(s.kind==='ok'){
+    caSuggest = { col:s.col, row:s.row };
+    let msg = `Place in <b>${esc(slotCode(s.col,s.row))}</b> — ${esc(s.label)} (col ${s.col}, row ${s.row}).`;
+    if(s.ambiguous && s.alt) msg += ` Could also be ${esc(s.alt.label)} (col ${s.alt.col}) — change if wrong.`;
+    msgEl.innerHTML = msg; acceptBtn.style.display = '';
+  }else if(s.kind==='overflow'){
+    caSuggest = { col:s.col, row:s.row };
+    msgEl.innerHTML = `${esc(s.fullLabel)} (col ${s.fullCol}) is full — suggesting <b>${esc(slotCode(s.col,s.row))}</b> nearby (${esc(s.label)}).`;
+    acceptBtn.style.display = '';
+  }else if(s.kind==='full'){
+    msgEl.innerHTML = `Every ${esc(s.fullLabel)} slot is full — add it unplaced and find room on the rack.`;
+    acceptBtn.style.display = 'none';
+  }else{
+    msgEl.innerHTML = `Couldn’t match this to a labelled column — add it unplaced, then drag it where it belongs.`;
+    acceptBtn.style.display = 'none';
+  }
+  box.classList.add('show');
+}
+window.acceptSuggestedSlot = function(){ if(caSuggest){ showToast('Will place at ' + slotCode(caSuggest.col, caSuggest.row) + ' on add'); } };
+window.clearSuggestedSlot = function(){ caSuggest = null; document.getElementById('ca-suggest').classList.remove('show'); showToast('Will add unplaced'); };
+
 window.scoutToCellar = ()=>{
   const d = lastScout; if(!d){ return; }
   openCellarAdd();
@@ -672,6 +775,7 @@ window.scoutToCellar = ()=>{
   set('ca-grape', d.grape); set('ca-vintage', d.vintage); set('ca-abv', d.abv);
   set('ca-predlow', d.predLow); set('ca-predhigh', d.predHigh);
   if(draft.photo){ caPhoto=draft.photo; document.getElementById('ca-photoimg').src=draft.photo; document.getElementById('ca-photoprev').classList.add('show'); }
+  showCaSuggest(d);
 };
 window.scoutToBuylist = async function(){
   const d = lastScout; if(!d) return;
@@ -813,6 +917,8 @@ window.openCellarAdd = ()=>{
   ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ca-qty').value = '1';
   clearPhoto('ca');
+  caSuggest = null;
+  document.getElementById('ca-suggest').classList.remove('show');
   document.getElementById('cellarAddStatus').textContent='';
   document.getElementById('cellarAddModal').classList.add('open');
 };
@@ -824,6 +930,12 @@ window.addCellarBottle = async function(){
   const ph = document.getElementById('ca-predhigh').value.trim();
   const now = Date.now();
   const uid = (auth.currentUser && auth.currentUser.uid) || '';
+  // Apply the scan-to-place suggestion (revalidate the row in case it filled up).
+  let placeCol=null, placeRow=null;
+  if(caSuggest){
+    const row = placedAt(caSuggest.col, caSuggest.row) ? firstOpenRow(caSuggest.col) : caSuggest.row;
+    if(row){ placeCol=caSuggest.col; placeRow=row; }
+  }
   try{
     const r = push(ref(db, 'cellar/bottles'));
     let photoPath=null, photoUrl=null;
@@ -841,16 +953,19 @@ window.addCellarBottle = async function(){
       status:'cellared', qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1),
       predLow: pl===''?null:Number(pl), predHigh: ph===''?null:Number(ph),
       score:null, tag:null, buyAgain:false, notes:'', photoPath, photoUrl,
+      rackCol:placeCol, rackRow:placeRow,
       addedBy:uid, addedAt:now, openedAt:null
     });
+    caSuggest = null;
     closeCellarAddModal();
-    showToast('Added to cellar — ' + name);
+    if(placeCol){ flashSlot = placeCol+'_'+placeRow; showToast('Added — ' + name + ' → ' + slotCode(placeCol,placeRow)); }
+    else { showToast('Added to cellar — ' + name); }
     setView('cellar');
   }catch(e){ document.getElementById('cellarAddStatus').textContent='❌ ' + (e.message||e); }
 };
 
 // ── VIEWS + RENDER ──
-window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); document.getElementById('searchrow').style.display = (v==='palate'||v==='cellar') ? 'none' : ''; render(); };
+window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); document.getElementById('searchrow').style.display = (v==='palate'||v==='cellar') ? 'none' : ''; render(); };
 window.onSearch = function(v){ search=(v||'').trim().toLowerCase(); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
 window.clearSearch = function(){ search=''; document.getElementById('searchbar').value=''; document.getElementById('searchclear').style.display='none'; render(); };
 function matchSearch(w){ if(!search) return true; return [w.name,w.producer,w.region,w.grape,w.vintage].filter(Boolean).join(' ').toLowerCase().includes(search); }
@@ -893,11 +1008,84 @@ function render(){
       const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
       const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
       const qty = Number(w.qty)||1;
-      return `<div class="wine"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
+      const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>` : '';
+      return `<div class="wine"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
     }
     const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
     return `<div class="wine"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="del('${w.id}')">✕</button></div>`;
   }).join('');
+}
+
+// ── RACK MAP: labels, matching, placement ──
+function colLetter(col){ return String.fromCharCode(64 + col); }        // 1→A … 20→T
+function slotCode(col,row){ return colLetter(col) + '-' + row; }
+function cellLabel(col,row){
+  const cs = rackLayout && rackLayout.cells;
+  const v = cs && cs[col+'_'+row];
+  return (v && v.label) || DEFAULT_COL_LABELS[col] || ('Col ' + col);
+}
+function colLabels(col){                                                 // distinct labels down a column
+  const set = new Set(); const cs = (rackLayout && rackLayout.cells) || {};
+  for(let r=1;r<=RACK_ROWS;r++){ const v = cs[col+'_'+r]; if(v && v.label) set.add(v.label); }
+  if(!set.size && DEFAULT_COL_LABELS[col]) set.add(DEFAULT_COL_LABELS[col]);
+  return [...set];
+}
+function repLabel(col){ return cellLabel(col, 1); }
+function placedAt(col,row){ return asArr(bottles).find(w=>w.status==='cellared' && Number(w.rackCol)===col && Number(w.rackRow)===row) || null; }
+function firstOpenRow(col){ for(let r=1;r<=RACK_ROWS;r++){ if(!placedAt(col,r)) return r; } return null; }
+function nearestOpenColumn(pref){
+  for(let d=1; d<RACK_COLS; d++){
+    for(const c of [pref-d, pref+d]){
+      if(c>=1 && c<=RACK_COLS){ const r = firstOpenRow(c); if(r) return {col:c, row:r}; }
+    }
+  }
+  return null;
+}
+// Type → column matcher (reads the LIVE per-cell labels, so it follows Phil's edits)
+function normText(s){ return (s==null?'':String(s)).toLowerCase(); }
+function toTokens(s){ return normText(s).split(/[^a-zà-ÿ]+/).filter(t=>t.length>2); }
+function bottleKeys(b){
+  const text = normText([b.name,b.producer,b.region,b.grape].filter(Boolean).join(' '));
+  const keys = new Set(toTokens(text));
+  VARIETAL_SYNONYMS.forEach(s=>{ if(s.re.test(text)) s.keys.forEach(k=>keys.add(k)); });
+  return keys;
+}
+function matchColumns(b){
+  const keys = bottleKeys(b);
+  const out = [];
+  for(let c=1;c<=RACK_COLS;c++){
+    const cset = new Set(); colLabels(c).forEach(l=>toTokens(l).forEach(t=>cset.add(t)));
+    let score = 0; keys.forEach(k=>{ if(cset.has(k)) score++; });
+    if(score>0) out.push({ col:c, score, label:repLabel(c) });
+  }
+  return out.sort((a,b)=>b.score-a.score || a.col-b.col);
+}
+function suggestPlacement(b){
+  const ranked = matchColumns(b);
+  if(!ranked.length) return { kind:'none' };
+  const top = ranked[0].score;
+  const tied = ranked.filter(r=>r.score===top).sort((a,b)=>a.col-b.col);
+  const distinctLabels = [...new Set(tied.map(r=>r.label))];
+  for(const r of tied){ const row = firstOpenRow(r.col); if(row) return { kind:'ok', col:r.col, row, label:r.label, ambiguous:distinctLabels.length>1, alt:ranked.find(x=>x.label!==r.label)||null }; }
+  const ov = nearestOpenColumn(tied[0].col);
+  if(ov) return { kind:'overflow', col:ov.col, row:ov.row, label:cellLabel(ov.col,ov.row), fullCol:tied[0].col, fullLabel:tied[0].label };
+  return { kind:'full', fullLabel:tied[0].label };
+}
+async function placeBottle(id, col, row){
+  const mover = bottles[id]; if(!mover) return;
+  if(mover.status!=='cellared'){ showToast('Only cellared bottles go on the rack'); return; }
+  const occupant = placedAt(col,row);
+  if(occupant && occupant.id===id){ inspect=null; render(); return; }
+  const updates = {};
+  updates['cellar/bottles/'+id+'/rackCol'] = col;
+  updates['cellar/bottles/'+id+'/rackRow'] = row;
+  if(occupant){                                            // swap — occupant takes the mover's old slot (or the tray)
+    updates['cellar/bottles/'+occupant.id+'/rackCol'] = (mover.rackCol!=null ? mover.rackCol : null);
+    updates['cellar/bottles/'+occupant.id+'/rackRow'] = (mover.rackRow!=null ? mover.rackRow : null);
+  }
+  inspect = null;
+  try{ await dbUpdate('/', updates); showToast(occupant ? ('Swapped with ' + occupant.name) : ('Placed at ' + slotCode(col,row))); }
+  catch(e){ showToast('Could not place bottle'); }
 }
 
 // ── RACK MAP RENDER ──
@@ -906,69 +1094,82 @@ function rackHTML(){
   const placed = {}, unplaced = [];
   cellared.forEach(w=>{
     const col = Number(w.rackCol), row = Number(w.rackRow);
-    if(col>=1 && col<=RACK_COLS && row>=1 && row<=RACK_ROWS) placed[col+'-'+row] = w;
+    if(col>=1 && col<=RACK_COLS && row>=1 && row<=RACK_ROWS) placed[col+'_'+row] = w;
     else unplaced.push(w);
   });
   unplaced.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-  const cols = (rackLayout && rackLayout.cols) || {};
   const admin = isAdmin();
+
+  // Toolbar — zoom · column jump · edit labels
+  const jumpOpts = Array.from({length:RACK_COLS},(_,i)=>{ const c=i+1; return `<option value="${c}">${colLetter(c)} · ${esc(repLabel(c))}</option>`; }).join('');
+  const tools = `<div class="rack-tools">
+    <div class="rt-group"><span class="rt-lbl">Zoom</span><button class="rt-btn ${rackZoom===1?'on':''}" onclick="rackZoomSet(1)">S</button><button class="rt-btn ${rackZoom===2?'on':''}" onclick="rackZoomSet(2)">M</button><button class="rt-btn ${rackZoom===3?'on':''}" onclick="rackZoomSet(3)">L</button></div>
+    <div class="rt-group"><span class="rt-lbl">Jump</span><select class="rt-jump" onchange="rackJump(this.value)"><option value="">Column…</option>${jumpOpts}</select></div>
+    ${admin?`<button class="rt-btn ${rackEdit?'on':''}" onclick="rackToggleEdit()">${rackEdit?'✓ Done editing':'Edit labels'}</button>`:''}
+  </div>`;
 
   // Action / status bar
   let bar;
-  if(placing && bottles[placing]){
-    bar = `<div class="rack-bar"><span class="rb-msg">Placing <b>${esc(bottles[placing].name)}</b> — tap an empty slot.</span><span class="rb-actions"><button class="scout-btn ghost" onclick="rackCancel()">Cancel</button></span></div>`;
+  if(rackEdit){
+    bar = `<div class="rack-bar rb-hint"><span class="rb-msg">Editing labels — tap a <b>column header</b> to label the whole column, or a <b>slot</b> to label just that one.</span></div>`;
+  }else if(placing && bottles[placing]){
+    bar = `<div class="rack-bar"><span class="rb-msg">Placing <b>${esc(bottles[placing].name)}</b> — tap a slot (drops onto a full one swap).</span><span class="rb-actions"><button class="scout-btn ghost" onclick="rackCancel()">Cancel</button></span></div>`;
   }else if(inspect && bottles[inspect]){
     const w = bottles[inspect];
-    const loc = (w.rackCol && w.rackRow) ? `Col ${w.rackCol} · Row ${w.rackRow}` : 'unplaced';
+    const loc = (w.rackCol && w.rackRow) ? slotCode(w.rackCol,w.rackRow) + ' · ' + esc(cellLabel(w.rackCol,w.rackRow)) : 'unplaced';
     bar = `<div class="rack-bar"><span class="rb-msg"><b>${esc(w.name)}</b> — ${loc}</span><span class="rb-actions"><button class="scout-btn" onclick="rackMove('${inspect}')">Move</button><button class="scout-btn" onclick="rackUnplace('${inspect}')">Unplace</button><button class="scout-btn" onclick="rackMarkOpened('${inspect}')">Mark opened</button><button class="scout-btn ghost" onclick="rackCancel()">Close</button></span></div>`;
   }else{
-    bar = `<div class="rack-bar rb-hint"><span class="rb-msg">Tap a bottle below, then tap a slot to place it. Tap a filled slot to move or open it.</span></div>`;
+    bar = `<div class="rack-bar rb-hint"><span class="rb-msg">Tap a bottle below then a slot to place it — or drag it. Tap a filled slot to move or open it.</span></div>`;
   }
 
-  // Tray of unplaced bottles
+  // Tray of unplaced bottles (draggable)
   let tray = `<div class="rack-tray-head"><span>Unplaced — ${unplaced.length}</span><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>`;
   if(unplaced.length){
     tray += '<div class="rack-tray">' + unplaced.map(w=>{
       const vin = w.vintage ? ` <em>’${esc(String(w.vintage).slice(-2))}</em>` : '';
-      return `<button class="tray-chip ${placing===w.id?'on':''}" onclick="rackTapBottle('${w.id}')">${esc(w.name)}${vin}</button>`;
+      return `<button class="tray-chip ${placing===w.id?'on':''}" draggable="true" ondragstart="rackDragStart(event,'${w.id}')" onclick="rackTapBottle('${w.id}')">${esc(w.name)}${vin}</button>`;
     }).join('') + '</div>';
   }else{
     tray += '<div class="rack-tray-empty">Every bottle is on the rack.</div>';
   }
 
   // Grid: header row (corner + 20 col labels), then 29 rows of (row# + 20 slots)
-  let grid = '<div class="rack-grid"><div></div>';
+  let grid = `<div class="rack-grid z${rackZoom}"><div></div>`;
   for(let c=1;c<=RACK_COLS;c++){
-    const label = cols[c] || ('Col ' + c);
-    grid += `<div class="rack-colhead${admin?' editable':''}" title="${esc(label)}"${admin?` onclick="rackEditCol(${c})"`:''}>${esc(label)}</div>`;
+    const label = repLabel(c);
+    grid += `<div class="rack-colhead${admin?' editable':''}" title="${esc(label)} (col ${c})"${admin?` onclick="rackEditColLabel(${c})"`:''}>${esc(label)}</div>`;
   }
   for(let r=1;r<=RACK_ROWS;r++){
     grid += `<div class="rack-rowhead">${r}</div>`;
     for(let c=1;c<=RACK_COLS;c++){
-      const w = placed[c+'-'+r];
+      const w = placed[c+'_'+r];
+      const flash = flashSlot===(c+'_'+r) ? ' flash' : '';
       if(w){
-        const vin = w.vintage ? String(w.vintage).replace(/[^0-9]/g,'').slice(-2) : '';
-        const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ');
-        grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}" title="${esc(title)}" onclick="rackTapSlot(${c},${r})"><span class="slot-v">${esc(vin||'●')}</span></div>`;
+        const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ') + ' · ' + slotCode(c,r);
+        const thumb = w.photoUrl ? `<img class="slot-thumb" src="${esc(w.photoUrl)}" alt="">` : '';
+        grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}${flash}" data-cell="${c}_${r}" draggable="${rackEdit?'false':'true'}" ondragstart="rackDragStart(event,'${w.id}')" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(title)}" onclick="rackTapSlot(${c},${r})">${thumb}<span class="slot-name">${esc(w.name)}</span></div>`;
       }else{
-        grid += `<div class="rack-slot${placing?' target':''}" onclick="rackTapSlot(${c},${r})"></div>`;
+        const lbl = cellLabel(c,r);
+        grid += `<div class="rack-slot${placing?' target':''}${flash}" data-cell="${c}_${r}" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(lbl)} · ${slotCode(c,r)}" onclick="rackTapSlot(${c},${r})"><span class="slot-lbl">${esc(lbl)}</span></div>`;
       }
     }
   }
   grid += '</div>';
 
-  return `<div class="shead"><p>Your physical rack — 20 columns × 29 rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</p></div>${bar}${tray}<div class="rack-wrap">${grid}</div>`;
+  if(flashSlot){
+    const key = flashSlot;
+    setTimeout(()=>{ const el=document.querySelector('.rack-wrap [data-cell="'+key+'"]'); if(el){ const wrap=el.closest('.rack-wrap'); wrap.scrollLeft=Math.max(0, el.offsetLeft - wrap.clientWidth/2); wrap.scrollTop=Math.max(0, el.offsetTop - wrap.clientHeight/2); } }, 40);
+    setTimeout(()=>{ if(flashSlot===key){ flashSlot=null; } }, 4300);
+  }
+
+  return `<div class="shead"><p>Your physical rack — 20 columns × 29 rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</p></div>${tools}${bar}${tray}<div class="rack-wrap">${grid}</div>`;
 }
+// Interaction — tap
 window.rackTapBottle = function(id){ placing = (placing===id ? null : id); inspect = null; render(); };
 window.rackTapSlot = async function(col, row){
-  const occupant = asArr(bottles).find(w=>w.status==='cellared' && Number(w.rackCol)===col && Number(w.rackRow)===row);
-  if(placing){
-    if(occupant && occupant.id!==placing){ showToast('That slot is taken.'); return; }
-    const id = placing; placing = null;
-    try{ await dbUpdate('cellar/bottles/' + id, { rackCol:col, rackRow:row }); showToast('Placed at Col ' + col + ' · Row ' + row); }
-    catch(e){ showToast('Could not place bottle'); }
-    return;
-  }
+  if(rackEdit){ return rackEditCell(col, row); }
+  if(placing){ const id = placing; placing = null; await placeBottle(id, col, row); return; }
+  const occupant = placedAt(col,row);
   if(occupant){ inspect = (inspect===occupant.id ? null : occupant.id); render(); }
 };
 window.rackMove = function(id){ placing = id; inspect = null; showToast('Tap the new slot'); render(); };
@@ -978,12 +1179,32 @@ window.rackUnplace = async function(id){
 };
 window.rackMarkOpened = function(id){ placing = null; inspect = null; openMarkOpened(id); };
 window.rackCancel = function(){ placing = null; inspect = null; render(); };
-window.rackEditCol = async function(col){
+// Interaction — drag & drop (desktop-first; tap is the touch-safe path)
+window.rackDragStart = function(e, id){ dragId = id; try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', id); }catch(_){} };
+window.rackDragOver = function(e){ if(rackEdit) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(_){} e.currentTarget.classList.add('drop-hi'); };
+window.rackDragLeave = function(e){ e.currentTarget.classList.remove('drop-hi'); };
+window.rackDrop = function(e, col, row){ e.preventDefault(); e.currentTarget.classList.remove('drop-hi'); const id = dragId || (e.dataTransfer && e.dataTransfer.getData('text/plain')); dragId = null; if(id) placeBottle(id, col, row); };
+// Zoom · jump · label editing
+window.rackZoomSet = function(z){ rackZoom = z; render(); };
+window.rackJump = function(v){ if(!v) return; const el=document.querySelector('.rack-wrap [data-cell="'+Number(v)+'_1"]'); if(el){ const wrap=el.closest('.rack-wrap'); wrap.scrollLeft=Math.max(0, el.offsetLeft - 40); } };
+window.rackToggleEdit = function(){ if(!isAdmin()){ showToast('Admins only'); return; } rackEdit = !rackEdit; placing=null; inspect=null; render(); };
+window.rackEditColLabel = async function(col){
   if(!isAdmin()) return;
-  const cols = (rackLayout && rackLayout.cols) || {};
-  const val = prompt('Column ' + col + ' label:', cols[col] || '');
+  const cur = repLabel(col); const seed = cur===('Col '+col) ? '' : cur;
+  const val = prompt('Label for ALL of column ' + col + ' (' + colLetter(col) + '):', seed);
   if(val===null) return;
-  try{ await dbSet('cellar/rack_layout/cols/' + col, val.trim()); }
+  const v = val.trim(); const updates = {};
+  for(let r=1;r<=RACK_ROWS;r++) updates['cellar/rack_layout/cells/'+col+'_'+r] = v ? { label:v } : null;
+  try{ await dbUpdate('/', updates); showToast('Column ' + colLetter(col) + ' labelled'); }
+  catch(e){ showToast('Could not save label'); }
+};
+window.rackEditCell = async function(col, row){
+  if(!isAdmin()) return;
+  const cur = cellLabel(col,row); const seed = cur===('Col '+col) ? '' : cur;
+  const val = prompt('Label for slot ' + slotCode(col,row) + ' only:', seed);
+  if(val===null) return;
+  const v = val.trim();
+  try{ await dbSet('cellar/rack_layout/cells/'+col+'_'+row, v ? { label:v } : null); showToast('Slot ' + slotCode(col,row) + ' labelled'); }
   catch(e){ showToast('Could not save label'); }
 };
 
