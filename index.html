@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 1.8</title>
+<title>The Cellar Ledger — Rev 1.9</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -129,7 +129,9 @@
   .rt-jump option{background:#1c0d10}
   /* Cellar/rack view breaks out of the app's centered column to full viewport width. */
   .rack-view{padding:0 clamp(10px,2vw,24px)}
-  .rack-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:4px;padding:10px;background:rgba(15,7,8,0.4);max-height:78vh;position:relative}
+  /* Horizontal scroll stays contained (narrow screens pan columns); vertically the
+     box grows to fit all 29 rows so the PAGE scrolls — no inner vertical scrollbar. */
+  .rack-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:4px;padding:10px;background:rgba(15,7,8,0.4);position:relative}
   /* width:100% + minmax(min,1fr): on desktop all 20 columns fill the width (no scroll);
      when too narrow to hold 20 at their min, the grid overflows and .rack-wrap scrolls. */
   .rack-grid{display:grid;grid-template-columns:var(--rh) repeat(20,minmax(var(--cw),1fr));gap:3px;width:100%}
@@ -280,7 +282,6 @@
   }
   @media(min-width:1200px){
     .wrap{max-width:1440px}
-    .rack-wrap{max-height:80vh}
   }
 </style>
 </head>
@@ -297,7 +298,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 1.8</div>
+    <div class="auth-rev">Rev 1.9</div>
   </div>
 </div>
 
@@ -396,7 +397,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 1.8</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 1.9</span>
   </footer>
 </div>
 
@@ -1412,7 +1413,7 @@ function rackHTML(){
   setTimeout(()=>{ const rv=document.getElementById('rackView'); if(rv) applyRackFullBleed(rv); }, 0);
   if(flashSlot){
     const key = flashSlot;
-    setTimeout(()=>{ const el=document.querySelector('.rack-wrap [data-cell="'+key+'"]'); if(el){ const wrap=el.closest('.rack-wrap'); wrap.scrollLeft=Math.max(0, el.offsetLeft - wrap.clientWidth/2); wrap.scrollTop=Math.max(0, el.offsetTop - wrap.clientHeight/2); } }, 60);
+    setTimeout(()=>{ const el=document.querySelector('.rack-wrap [data-cell="'+key+'"]'); if(el){ try{ el.scrollIntoView({behavior:'smooth', block:'center', inline:'center'}); }catch(_){ el.scrollIntoView(); } } }, 60);
     setTimeout(()=>{ if(flashSlot===key){ flashSlot=null; } }, 4300);
   }
 
