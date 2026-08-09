@@ -3,14 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.52</title>
+<title>The Cellar Ledger — Rev 2.53</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{--ink:#0f0708;--garnet:#5a1620;--gold:#c9a35c;--gold-dim:#8c7038;--parch:#ece3d2;--parch-dim:#a89f8c;--line:rgba(201,163,92,0.22);--glass:rgba(236,227,210,0.04);--green:#6fae6a}
+  :root{color-scheme:dark}   /* native dropdowns, scrollbars, pickers render dark */
   *{box-sizing:border-box;margin:0;padding:0}
+  select{background:#1c0d10;color:var(--parch)}
+  select option{background:#1c0d10;color:var(--parch)}
   body{font-family:'Inter',sans-serif;color:var(--parch);background:linear-gradient(180deg,#000000 0%,#000000 55%,#171012 100%);background-attachment:fixed;min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
   .wrap{max-width:880px;margin:0 auto;padding:clamp(12px,2.5vw,22px) clamp(16px,4vw,40px) 80px}
   header{text-align:center;margin-bottom:14px}
@@ -243,7 +246,7 @@
   .rt-btn.on{color:var(--gold);border-color:var(--gold)}
   .rt-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--parch-dim);font-weight:600}
   .rt-jump{font-family:'Inter';font-size:12px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:6px 8px}
-  .rt-jump option{background:#1c0d10}
+  .rt-jump option{background:#1c0d10;color:var(--parch)}
   .rs-wrap{position:relative}
   .rt-find{font-family:'Inter';font-size:12px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:6px 9px;width:190px;max-width:44vw}
   .rt-find:focus{outline:none;border-color:var(--gold-dim)}
@@ -485,7 +488,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.52</div>
+    <div class="auth-rev">Rev 2.53</div>
   </div>
 </div>
 
@@ -514,7 +517,8 @@
 
   <div class="quick" id="quickPanel">
     <div class="qhead"><h3>Log a pour</h3><button class="qclose" title="Close" onclick="closeLogPanel()">✕</button></div>
-    <input class="qname" id="q-name" placeholder="Wine name">
+    <input class="qname" id="q-name" placeholder="Name">
+    <select id="q-kind" class="rt-jump" style="width:100%;margin-bottom:12px"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
     <div class="qlabel">Photos — the first is scanned for details &amp; used as the card image</div>
     <div class="pintake" id="q-intake" ondragover="piDragOver(event,'q')" ondragleave="piDragLeave(event,'q')" ondrop="piDrop(event,'q')"></div>
     <div class="scanstatus" id="q-scanstatus"></div>
@@ -597,7 +601,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.52</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.53</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -648,7 +652,8 @@
   <div class="modal-card">
     <h3>Add to cellar</h3>
     <div class="msub">An unopened bottle you're holding. Score it later when you open it.</div>
-    <input id="ca-name" placeholder="Wine name">
+    <input id="ca-name" placeholder="Name">
+    <select id="ca-kind" class="rt-jump" style="width:100%;margin-bottom:12px"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
     <div class="mgrid">
       <input id="ca-prod" placeholder="Producer">
       <input id="ca-region" placeholder="Region">
@@ -1688,13 +1693,13 @@ function fillScanFields(which, d){
   const set=(id,v)=>{ const el=document.getElementById(id); if(el && v) el.value=v; };
   if(which==='q'){
     document.getElementById('q-name').value = d.name || d.producer || '';
-    if(d.kind && KINDS.some(k=>k[0]===d.kind)) document.getElementById('q-kind').value = d.kind;
+    if(d.kind && KINDS.some(k=>k[0]===d.kind)){ const ke=document.getElementById('q-kind'); if(ke) ke.value = d.kind; }
     set('q-prod', d.producer); set('q-region', d.region); set('q-grape', d.grape);
     set('q-vintage', d.vintage); set('q-abv', d.abv);
     document.getElementById('moregrid').classList.add('show');
   }else{
     document.getElementById('ca-name').value = d.name || d.producer || '';
-    if(d.kind && KINDS.some(k=>k[0]===d.kind)) document.getElementById('ca-kind').value = d.kind;
+    if(d.kind && KINDS.some(k=>k[0]===d.kind)){ const ke=document.getElementById('ca-kind'); if(ke) ke.value = d.kind; }
     set('ca-prod', d.producer); set('ca-region', d.region); set('ca-grape', d.grape);
     set('ca-vintage', d.vintage); set('ca-abv', d.abv);
     if(d.predLow!=null) document.getElementById('ca-predlow').value = d.predLow;
@@ -1807,7 +1812,7 @@ window.logPour = async function(){
       grape:document.getElementById('q-grape').value.trim(),
       vintage:document.getElementById('q-vintage').value.trim(),
       abv:document.getElementById('q-abv').value.replace('%','').trim(),
-      status:'opened', qty:0, predLow:null, predHigh:null, price:parsePriceInput('q-price'), vendor:document.getElementById('q-vendor').value.trim(),
+      status:'opened', qty:0, predLow:null, predHigh:null, price:parsePriceInput('q-price'), vendor:document.getElementById('q-vendor').value.trim(), kind:(document.getElementById('q-kind')||{value:'wine'}).value,
       score:draft.score+(draft.half?0.5:0), tags:draft.tags.slice(), tag:(draft.tags[0]||null), buyAgain:draft.buy,
       notes:document.getElementById('q-notes').value.trim(),
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
@@ -1823,7 +1828,7 @@ window.logPour = async function(){
 };
 function resetQuickLog(){
   ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-price','q-vendor','q-notes'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('q-kind').value = (kindFilter==='all') ? 'wine' : kindFilter;
+  { const ke=document.getElementById('q-kind'); if(ke) ke.value = (kindFilter==='all') ? 'wine' : kindFilter; }
   piReset('q');
   dismissScout();
   draft={score:null,half:false,tags:[],buy:false};
@@ -2000,7 +2005,7 @@ window.confirmOpen = async function(){
 window.openCellarAdd = ()=>{
   ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ca-qty').value = '1';
-  document.getElementById('ca-kind').value = (kindFilter==='all') ? 'wine' : kindFilter;
+  { const ke=document.getElementById('ca-kind'); if(ke) ke.value = (kindFilter==='all') ? 'wine' : kindFilter; }
   piReset('ca');
   caSuggest = null;
   document.getElementById('ca-suggest').classList.remove('show');
@@ -2060,7 +2065,7 @@ window.addCellarBottle = async function(){
       vintage:document.getElementById('ca-vintage').value.trim(),
       abv:document.getElementById('ca-abv').value.replace('%','').trim(),
       status:'cellared', qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1),
-      predLow: pl===''?null:Number(pl), predHigh: ph===''?null:Number(ph), price:parsePriceInput('ca-price'), vendor:document.getElementById('ca-vendor').value.trim(),
+      predLow: pl===''?null:Number(pl), predHigh: ph===''?null:Number(ph), price:parsePriceInput('ca-price'), vendor:document.getElementById('ca-vendor').value.trim(), kind:(document.getElementById('ca-kind')||{value:'wine'}).value,
       score:null, tag:null, buyAgain:false, notes:'',
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
       photos: ups.length?ups:null,
@@ -3095,6 +3100,20 @@ onAuthStateChanged(auth, async (user)=>{
   }
 });
 
+// ── STARTUP SELF-CHECK ───────────────────────────────────────────────────────
+// Two incidents (whoami, dt-kind) were caused by an element being removed in a
+// parallel PR while code still referenced it. This flags that loudly at load.
+(function integrityCheck(){
+  const critical = ['quickPanel','wsPanel','askwrap','askInput','askAnswer','kindRow','searchrow','searchbar',
+    'detailModal','dtScorepad','dtTags','dtHalfbtn','dtBuyflag','dt-name','dt-meta','dt-notes','dt-price',
+    'dt-vendor','dt-grape','dt-kind','dt-vintage','dt-abv','dtOpenBtn','dtMergeBtn','dtStatus',
+    'q-name','q-kind','q-intake','ca-name','ca-kind','ca-intake','ws-intake','ai-intake-wrap',
+    'openModal','cellarAddModal','accessModal','archiveModal','dataModal','rackModal','content','toast','auth-gate','authError'];
+  const missing = critical.filter(id=>!document.getElementById(id));
+  if(missing.length){
+    console.error('⚠️ [Cellar] INTEGRITY: missing element(s) — a merge likely dropped HTML that code still references:', missing.join(', '));
+  }
+})();
 // Show auth gate on load
 document.getElementById('auth-gate').style.display='flex';
 </script>
