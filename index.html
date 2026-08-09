@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.2</title>
+<title>The Cellar Ledger — Rev 2.3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{--ink:#0f0708;--garnet:#5a1620;--gold:#c9a35c;--gold-dim:#8c7038;--parch:#ece3d2;--parch-dim:#a89f8c;--line:rgba(201,163,92,0.22);--glass:rgba(236,227,210,0.04);--green:#6fae6a}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Inter',sans-serif;color:var(--parch);background:radial-gradient(ellipse 120% 80% at 50% -10%,#3a1019 0%,transparent 55%),linear-gradient(180deg,#15080a 0%,#0f0708 100%);background-attachment:fixed;min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
+  body{font-family:'Inter',sans-serif;color:var(--parch);background:linear-gradient(180deg,#000000 0%,#000000 55%,#171012 100%);background-attachment:fixed;min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
   .wrap{max-width:880px;margin:0 auto;padding:clamp(12px,2.5vw,22px) clamp(16px,4vw,40px) 80px}
   header{text-align:center;margin-bottom:14px}
   .eyebrow{font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:12px}
@@ -260,7 +260,7 @@
   footer button:hover{color:var(--gold)}
   .rev{color:var(--gold-dim)}
   /* ── Auth gate ── */
-  #auth-gate{display:none;position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse 120% 80% at 50% -10%,#3a1019 0%,transparent 55%),linear-gradient(180deg,#15080a 0%,#0f0708 100%);align-items:center;justify-content:center;padding:24px}
+  #auth-gate{display:none;position:fixed;inset:0;z-index:100;background:linear-gradient(180deg,#000000 0%,#000000 55%,#171012 100%);align-items:center;justify-content:center;padding:24px}
   .auth-card{max-width:400px;width:100%;text-align:center}
   .auth-card .eyebrow{margin-bottom:14px}
   .auth-card h1{font-size:clamp(38px,11vw,60px);margin-bottom:6px}
@@ -320,7 +320,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.2</div>
+    <div class="auth-rev">Rev 2.3</div>
   </div>
 </div>
 
@@ -421,7 +421,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.2</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.3</span>
   </footer>
 </div>
 
