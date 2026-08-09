@@ -11,14 +11,10 @@
 //          firebase deploy --only functions:scanLabel --project philinity-893d2
 // -----------------------------------------------------------------------------
 
-const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const Anthropic = require('@anthropic-ai/sdk');
-const admin = require('firebase-admin');
-
-if (!admin.apps.length) admin.initializeApp();
-
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
 // Keep this codebase off other apps' functions in the shared project.
@@ -74,44 +70,6 @@ function coerceScore(v) {
   if (!isFinite(n)) return null;
   return Math.max(1, Math.min(10, n));
 }
-
-// ── askAI: EATS' function — restored compatibility proxy ─────────────────────
-// ⚠️ The name `askAI` belongs to the EATS app. Cellar's Rev 1.8 deploy briefly
-// overwrote it; this export restores Eats' exact contract so both apps work:
-//   POST { app, system, messages }  +  Authorization: Bearer <Firebase ID token>
-//   → raw Anthropic message JSON ({ content:[{type:'text',text}], ... })
-// Cellar's own Q&A lives in `cellarAskAI` below. Deploy both together:
-//   firebase deploy --only functions:cellar:askAI,functions:cellar:cellarAskAI
-exports.askAI = onRequest(
-  { secrets: [ANTHROPIC_API_KEY], cors: true, memory: '512MiB', timeoutSeconds: 120 },
-  async (req, res) => {
-    if (req.method !== 'POST') { res.status(405).json({ error: { message: 'POST only' } }); return; }
-    try {
-      const m = String(req.get('Authorization') || '').match(/^Bearer (.+)$/);
-      if (!m) { res.status(401).json({ error: { message: 'Sign in first.' } }); return; }
-      await admin.auth().verifyIdToken(m[1]);
-    } catch (e) {
-      res.status(401).json({ error: { message: 'Invalid auth token — refresh and sign in again.' } });
-      return;
-    }
-    const body = req.body || {};
-    const messages = Array.isArray(body.messages) ? body.messages : null;
-    if (!messages || !messages.length) { res.status(400).json({ error: { message: 'No messages supplied.' } }); return; }
-    const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
-    try {
-      const message = await client.messages.create({
-        model: MODEL,
-        max_tokens: 2048,
-        system: typeof body.system === 'string' ? body.system : undefined,
-        messages
-      });
-      res.status(200).json(message);
-    } catch (err) {
-      console.error('[askAI proxy] failed:', err);
-      res.status(500).json({ error: { message: (err && err.message) || 'AI call failed.' } });
-    }
-  }
-);
 
 // ── cellarAskAI: Cellar's Q&A + add-a-bottle over the real collection ────────
 // Input: { question, collectionSummary, attachedPhotos } (photos are uploaded by
