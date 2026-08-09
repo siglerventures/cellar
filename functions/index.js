@@ -71,6 +71,87 @@ function coerceScore(v) {
   return Math.max(1, Math.min(10, n));
 }
 
+// ── cellarScanMenu: photograph a restaurant wine list or shop shelf ──────────
+// Input: { images:[{base64, mediaType}] (max 4), collectionSummary }.
+// Reads every wine visible, ranks them for THIS taster using the palate +
+// their real rating history, and returns { ok, data:{context, summary, wines} }
+// with wines best-first. Deploy scoped:
+//   firebase deploy --only functions:cellar:cellarScanMenu --project philinity-893d2
+exports.cellarScanMenu = onCall(
+  { secrets: [ANTHROPIC_API_KEY], cors: true, memory: '512MiB', timeoutSeconds: 120 },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in to scan.');
+    }
+    let images = (request.data && request.data.images) || [];
+    if (!Array.isArray(images)) images = [];
+    images = images.filter((i) => i && typeof i.base64 === 'string' && i.base64).slice(0, 4);
+    if (!images.length) {
+      throw new HttpsError('invalid-argument', 'No images supplied.');
+    }
+    let summary = (request.data && request.data.collectionSummary) || [];
+    if (!Array.isArray(summary)) summary = [];
+    let summaryJson = JSON.stringify(summary.slice(0, 500));
+    if (summaryJson.length > 40000) summaryJson = summaryJson.slice(0, 40000);
+
+    const prompt = [
+      "These photo(s) show either a RESTAURANT WINE LIST/MENU or a WINE-SHOP SHELF.",
+      "Identify every wine you can read (name, vintage and price if shown), then rank",
+      "them for THIS specific taster — best first — using the palate below plus their",
+      "real rating history (collection JSON: 'opened' wines have their actual 1-10",
+      "ratings). Prefer wines similar to their proven wins; downrank their known misses.",
+      "Respond with ONLY a JSON object (no markdown, no backticks):",
+      '{"context":"menu" or "shelf",',
+      ' "summary": one sentence naming the single top pick and why it fits,',
+      ' "wines":[{"name":"","vintage":"","price":"","predLow":n,"predHigh":n,',
+      '  "fit":"love"|"like"|"maybe"|"pass","verdict":"max ~18 words why"}]}',
+      "Include at most 12 wines (the most relevant), best first. predLow/predHigh are",
+      "predicted scores 1-10 (.5 steps ok). Use empty strings for unreadable fields.",
+      "",
+      "The taster's palate: " + PALATE,
+      "",
+      "Their collection & ratings (JSON):",
+      summaryJson
+    ].join('\n');
+
+    const content = images.map((i) => ({
+      type: 'image',
+      source: { type: 'base64', media_type: i.mediaType || 'image/jpeg', data: i.base64 }
+    }));
+    content.push({ type: 'text', text: prompt });
+
+    const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
+    try {
+      const message = await client.messages.create({
+        model: MODEL,
+        max_tokens: 2048,
+        messages: [{ role: 'user', content }]
+      });
+      const parsed = parseModelJson(message);
+      const wines = (Array.isArray(parsed.wines) ? parsed.wines : []).slice(0, 12).map((w) => ({
+        name: String(w.name || '').trim(),
+        vintage: String(w.vintage || '').trim(),
+        price: String(w.price || '').trim(),
+        predLow: coerceScore(w.predLow),
+        predHigh: coerceScore(w.predHigh),
+        fit: ['love', 'like', 'maybe', 'pass'].includes(w.fit) ? w.fit : 'maybe',
+        verdict: String(w.verdict || '').trim()
+      })).filter((w) => w.name);
+      return {
+        ok: true,
+        data: {
+          context: parsed.context === 'shelf' ? 'shelf' : 'menu',
+          summary: String(parsed.summary || '').trim(),
+          wines
+        }
+      };
+    } catch (err) {
+      console.error('[cellarScanMenu] failed:', err);
+      return { ok: false, error: (err && err.message) || 'Scan failed — try a closer shot.' };
+    }
+  }
+);
+
 // ── cellarAskAI: Cellar's Q&A + add-a-bottle over the real collection ────────
 // Input: { question, collectionSummary, attachedPhotos } (photos are uploaded by
 // the client; attachedPhotos is just a count so the model knows pics exist).
