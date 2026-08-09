@@ -35,8 +35,11 @@ const PALATE = [
 ].join(' ');
 
 const PROMPT = [
-  "This is a wine bottle label. Respond with ONLY a JSON object (no markdown, no",
-  "backticks, no preamble) with exactly these keys:",
+  "This is a label photo from a home bar/cellar collection — usually WINE, but",
+  "possibly bourbon/whiskey, tequila, vodka, a mixer/liqueur, or a cigar band.",
+  "Respond with ONLY a JSON object (no markdown, no backticks, no preamble)",
+  "with exactly these keys:",
+  '- "kind": one of "wine", "bourbon", "tequila", "vodka", "mixer", "cigar"',
   '- "name": the wine\'s name or cuvée (NOT the producer)',
   '- "producer": the producer / winery',
   '- "region": appellation + area/country',
@@ -199,13 +202,14 @@ exports.cellarAskAI = onCall(
             "BOTTLE, each on its own lines, exactly this shape (no markdown fences):",
             '{"action":"add","bottle":{"name":"","producer":"","region":"","grape":"",',
             '"vintage":"","abv":"","status":"opened","qty":1,"score":null,"tag":null,',
-            '"buyAgain":false,"notes":"","price":null,"vendor":""}}',
+            '"buyAgain":false,"notes":"","price":null,"vendor":"","kind":"wine"}}',
             "Rules per block: status is \"opened\" if they tasted/rated it, else",
             "\"cellared\" (receipt purchases are cellared); score is 1-10 in 0.5 steps",
             "or null; tag is ONE of earthy, smoke, big, aged, fruity, light, funky,",
             "off — or null; price is the per-bottle number without $ (use the pre-tax",
             "line price; do NOT add tax lines or totals as bottles); vendor is the",
-            "store/restaurant name if stated; put impressions or context into notes;",
+            "store/restaurant name if stated; kind is wine unless it's clearly bourbon,",
+            "tequila, vodka, a mixer, or a cigar; put impressions or context into notes;",
             "leave unknown fields empty/null. Never invent a rating they didn't give.",
             "Fill region/grape/producer from your wine knowledge when the name makes",
             "them unambiguous.",
@@ -267,6 +271,7 @@ exports.scanLabel = onCall(
       const w = parseModelJson(message);
       const fit = ['love', 'like', 'maybe', 'pass'].includes(w.fit) ? w.fit : 'maybe';
       const data = {
+        kind: ['wine','bourbon','tequila','vodka','mixer','cigar'].includes(w.kind) ? w.kind : 'wine',
         name: String(w.name || '').trim(),
         producer: String(w.producer || '').trim(),
         region: String(w.region || '').trim(),
