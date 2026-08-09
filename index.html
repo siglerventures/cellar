@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.56</title>
+<title>The Cellar Ledger — Rev 2.57</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.56</div>
+    <div class="auth-rev">Rev 2.57</div>
   </div>
 </div>
 
@@ -519,7 +519,11 @@
     </button>
     <button class="act ghosty" onclick="actionWineScan()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      Wine Scan
+      Drink Scanner
+    </button>
+    <button class="act ghosty" onclick="openCellarAdd()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      Add Bottle
     </button>
   </div>
 
@@ -563,8 +567,8 @@
 
   <!-- ── WINE SCAN: menu / shelf → "what should I get?" ── -->
   <div class="quick" id="wsPanel">
-    <div class="qhead"><h3>Wine Scan</h3><button class="qclose" title="Close" onclick="closeWsPanel()">✕</button></div>
-    <div class="qlabel">Snap a pic of a Menu or a Wine shelf — up to 4 photos</div>
+    <div class="qhead"><h3>Drink Scanner</h3><button class="qclose" title="Close" onclick="closeWsPanel()">✕</button></div>
+    <div class="qlabel">Recommendations only — nothing is saved. Snap a menu, wine list, or liquor shelf (up to 4 photos)</div>
     <div class="pintake" id="ws-intake" ondragover="piDragOver(event,'ws')" ondragleave="piDragLeave(event,'ws')" ondrop="piDrop(event,'ws')"></div>
     <div class="mrow">
       <button class="mbtn" id="wsGo" onclick="wsScan()">🍷 What should I get?</button>
@@ -609,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.56</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.57</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -658,8 +662,8 @@
 <!-- ── ADD TO CELLAR MODAL ── -->
 <div class="modal" id="cellarAddModal">
   <div class="modal-card">
-    <h3>Add to cellar</h3>
-    <div class="msub">An unopened bottle you're holding. Score it later when you open it.</div>
+    <h3>Add a bottle</h3>
+    <div class="msub">A bottle you own — into the cellar, bar, or humidor. Score it later when you open it.</div>
     <input id="ca-name" placeholder="Name">
     <select id="ca-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('ca')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
     <div class="mgrid">
@@ -728,6 +732,16 @@
 </div>
 
 <!-- ── ARCHIVE HISTORY ── -->
+<!-- ── BARCODE SCANNER ── -->
+<div class="modal" id="bcModal">
+  <div class="modal-card" style="max-width:420px">
+    <h3>Scan barcode</h3>
+    <div class="msub" id="bcStatus">Point the camera at the barcode…</div>
+    <video id="bcVideo" playsinline muted style="width:100%;border-radius:6px;border:1px solid var(--line);background:#000;min-height:220px"></video>
+    <div class="mrow" style="margin-top:12px"><button class="mbtn ghost" onclick="bcClose()">Cancel</button></div>
+  </div>
+</div>
+
 <!-- ── DATA MANAGER ── -->
 <div class="modal" id="dataModal">
   <div class="modal-card">
@@ -1207,10 +1221,23 @@ function renderWsResults(d){
     const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
     const fit = ['love','like','maybe','pass'].includes(w.fit) ? w.fit : 'maybe';
     const meta = [w.vintage, w.price].filter(Boolean).join(' · ');
-    return `<div class="lb-row ${i===0?'top':''}" style="cursor:default"><div class="rank">${i+1}</div><div class="lscore" style="font-size:24px">${esc(band)}</div><div><div class="lname">${w.kind&&w.kind!=='wine'?kindEmoji(w.kind)+' ':''}${esc(w.name)}</div>${meta?`<div class="lmeta">${esc(meta)}</div>`:''}<div class="lmeta" style="margin-top:4px"><span class="scout-fit fit-${fit}" style="font-size:9.5px;padding:2px 8px">${FIT_LABEL[fit]||'Toss-up'}</span> ${esc(w.verdict||'')}</div></div><button class="scout-btn" style="align-self:center;white-space:nowrap" onclick="wsToWishlist(${i})">＋ Wishlist</button></div>`;
+    return `<div class="lb-row ${i===0?'top':''}" style="cursor:default"><div class="rank">${i+1}</div><div class="lscore" style="font-size:24px">${esc(band)}</div><div><div class="lname">${w.kind&&w.kind!=='wine'?kindEmoji(w.kind)+' ':''}${esc(w.name)}</div>${meta?`<div class="lmeta">${esc(meta)}</div>`:''}<div class="lmeta" style="margin-top:4px"><span class="scout-fit fit-${fit}" style="font-size:9.5px;padding:2px 8px">${FIT_LABEL[fit]||'Toss-up'}</span> ${esc(w.verdict||'')}</div></div><span style="display:flex;flex-direction:column;gap:6px;align-self:center"><button class="scout-btn" style="white-space:nowrap" onclick="wsToCellar(${i})">＋ Own it</button><button class="scout-btn ghost" style="white-space:nowrap" onclick="wsToWishlist(${i})">＋ Wishlist</button></span></div>`;
   }).join('');
   el.innerHTML = html;
 }
+// "＋ Own it" — turn a scanner recommendation into a prefilled Add-a-bottle.
+window.wsToCellar = function(i){
+  const w = lastWsWines[i]; if(!w || !w.name) return;
+  closeWsPanel();
+  openCellarAdd();
+  document.getElementById('ca-name').value = w.name;
+  if(w.vintage) document.getElementById('ca-vintage').value = w.vintage;
+  const pn = Number(String(w.price||'').replace(/[^0-9.]/g,''));
+  if(isFinite(pn) && pn>0) document.getElementById('ca-price').value = pn;
+  if(w.kind && KINDS.some(k=>k[0]===w.kind)){ document.getElementById('ca-kind').value = w.kind; applyKindFields('ca'); }
+  if(w.predLow!=null) document.getElementById('ca-predlow').value = w.predLow;
+  if(w.predHigh!=null) document.getElementById('ca-predhigh').value = w.predHigh;
+};
 window.wsToWishlist = async function(i){
   const w = lastWsWines[i]; if(!w || !w.name) return;
   try{
@@ -1606,9 +1633,10 @@ const PI_MAX = { q:12, ca:12, dt:12, ai:4, ws:4 };
 function piRender(ctx){
   const host = document.getElementById(ctx+'-intake'); if(!host) return;
   const cam=ctx+'-pi-cam', lib=ctx+'-pi-lib';
+  const bcBtn = (ctx==='q'||ctx==='ca') ? `<button class="pi-btn" onclick="bcOpen('${ctx}')">▍▍ Barcode</button>` : '';
   let html = `<div class="pi-btns">
     <button class="pi-btn" onclick="document.getElementById('${cam}').click()">📷 Take photo</button>
-    <button class="pi-btn" onclick="document.getElementById('${lib}').click()">🖼 Choose from library</button>
+    <button class="pi-btn" onclick="document.getElementById('${lib}').click()">🖼 Choose from library</button>${bcBtn}
     <span class="pi-btn dashed">🖱 Drag &amp; drop here</span>
   </div>
   <div class="pi-tip">💡 Tip: copy an image anywhere, then <b>Ctrl+V</b> pastes it straight in</div>
@@ -1668,6 +1696,73 @@ window.piToggleAiPanel = function(){
   const w=document.getElementById('ai-intake-wrap');
   w.style.display = (w.style.display==='none') ? '' : 'none';
 };
+// ── BARCODE SCANNER: decode UPC/EAN with the browser, look up Open Food Facts ──
+let bcStream = null, bcCtx = null, bcRunning = false;
+window.bcOpen = async function(ctx){
+  if(!('BarcodeDetector' in window)){
+    showToast('Barcode scanning isn\u2019t supported in this browser — snap the label instead');
+    return;
+  }
+  bcCtx = ctx;
+  document.getElementById('bcStatus').textContent = 'Point the camera at the barcode…';
+  document.getElementById('bcModal').classList.add('open');
+  try{
+    bcStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' }, audio:false });
+    const v = document.getElementById('bcVideo');
+    v.srcObject = bcStream;
+    await v.play();
+    bcRunning = true;
+    const detector = new BarcodeDetector({ formats:['ean_13','ean_8','upc_a','upc_e','code_128'] });
+    const tick = async ()=>{
+      if(!bcRunning) return;
+      try{
+        const codes = await detector.detect(v);
+        if(codes && codes.length && codes[0].rawValue){
+          bcRunning = false;
+          const code = codes[0].rawValue;
+          document.getElementById('bcStatus').textContent = 'Found ' + code + ' — looking it up…';
+          await bcLookup(code);
+          return;
+        }
+      }catch(e){ /* keep scanning */ }
+      setTimeout(tick, 250);
+    };
+    tick();
+  }catch(e){
+    document.getElementById('bcStatus').textContent = 'Camera unavailable — allow camera access, or snap the label instead.';
+  }
+};
+window.bcClose = function(){
+  bcRunning = false;
+  if(bcStream){ bcStream.getTracks().forEach(t=>t.stop()); bcStream = null; }
+  document.getElementById('bcModal').classList.remove('open');
+};
+async function bcLookup(code){
+  try{
+    const res = await fetch('https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(code) + '.json');
+    const j = await res.json();
+    const p = j && j.product;
+    if(!p || !(p.product_name || p.brands)){
+      document.getElementById('bcStatus').textContent = '\u274c ' + code + ' isn\u2019t in the open database — snap the label instead (it reads more anyway).';
+      return;
+    }
+    const ctx = bcCtx;
+    const set = (id,v)=>{ const el=document.getElementById(ctx+'-'+id); if(el && v) el.value = v; };
+    set('name', p.product_name || p.brands);
+    set('prod', p.brands || '');
+    // rough kind guess from category tags
+    const cats = (p.categories_tags || []).join(' ');
+    const kindGuess = /whisk|bourbon/.test(cats) ? 'bourbon' : /tequila|mezcal/.test(cats) ? 'tequila' : /vodka/.test(cats) ? 'vodka' : /wine/.test(cats) ? 'wine' : null;
+    if(kindGuess){ const ke=document.getElementById(ctx+'-kind'); if(ke){ ke.value = kindGuess; applyKindFields(ctx); } }
+    const abv = p.nutriments && (p.nutriments.alcohol || p.nutriments.alcohol_100g);
+    if(abv) set('abv', String(abv));
+    bcClose();
+    showToast('\u2705 Filled from barcode — ' + (p.product_name || p.brands));
+  }catch(e){
+    document.getElementById('bcStatus').textContent = '\u274c Lookup failed (offline?) — snap the label instead.';
+  }
+}
+
 // Paste routes to whichever photo surface is open: detail modal > add-to-cellar > Ask AI panel > log form.
 function piPasteTarget(){
   if(document.getElementById('detailModal').classList.contains('open')) return 'dt';
