@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.35</title>
+<title>The Cellar Ledger — Rev 2.36</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -223,6 +223,8 @@
   .tray-chip.on{background:var(--gold);color:var(--ink);border-color:var(--gold)}
   .tray-chip em{font-style:normal;opacity:.6}
   .tray-chip.on em{opacity:.85}
+  .tray-x{font-weight:700;color:var(--gold);margin-left:2px}
+  .tray-chip.on .tray-x{color:var(--ink)}
   .rack-tray-empty{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch-dim);margin-bottom:16px}
   .slot-badge{display:inline-block;font-size:9px;letter-spacing:.06em;font-weight:700;color:var(--gold);border:1px solid var(--gold-dim);border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:middle}
   /* toolbar: zoom + column jump + edit-labels */
@@ -429,7 +431,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.35</div>
+    <div class="auth-rev">Rev 2.36</div>
   </div>
 </div>
 
@@ -542,7 +544,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.35</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.36</span>
   </footer>
 </div>
 
@@ -2287,12 +2289,17 @@ function rackHTML(){
     bar = `<div class="rack-bar rb-hint"><span class="rb-msg">Tap a bottle below then a slot to place it — or drag it. Tap a filled slot to move or open it.</span></div>`;
   }
 
-  // Tray of unplaced bottles (draggable)
+  // Tray of unplaced bottles (draggable). Identical bottles (same wine) collapse into
+  // one chip with a ×N count; placing/dragging acts on one bottle, so N ticks down.
   let tray = `<div class="rack-tray-head"><span>Unplaced — ${unplaced.length}</span><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>`;
   if(unplaced.length){
-    tray += '<div class="rack-tray">' + unplaced.map(w=>{
-      const vin = w.vintage ? ` <em>’${esc(String(w.vintage).slice(-2))}</em>` : '';
-      return `<button class="tray-chip ${placing===w.id?'on':''}" draggable="true" ondragstart="rackDragStart(event,'${w.id}')" onclick="rackTapBottle('${w.id}')">${esc(w.name)}${vin}</button>`;
+    tray += '<div class="rack-tray">' + groupBrowse(unplaced).map(g=>{
+      const rep = g[0];
+      const vin = rep.vintage ? ` <em>’${esc(String(rep.vintage).replace(/[^0-9]/g,'').slice(-2))}</em>` : '';
+      const cnt = g.length>1 ? ` <b class="tray-x">×${g.length}</b>` : '';
+      const on = g.some(r=>placing===r.id) ? 'on' : '';
+      const ttl = esc([rep.name,rep.producer,rep.vintage].filter(Boolean).join(' · ')) + (g.length>1?(' — '+g.length+' bottles'):'');
+      return `<button class="tray-chip ${on}" draggable="true" ondragstart="rackDragStart(event,'${rep.id}')" onclick="rackTapBottle('${rep.id}')" title="${ttl}">${esc(rep.name)}${vin}${cnt}</button>`;
     }).join('') + '</div>';
   }else{
     tray += '<div class="rack-tray-empty">Every bottle is on the rack.</div>';
