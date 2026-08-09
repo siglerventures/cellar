@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.31</title>
+<title>The Cellar Ledger — Rev 2.32</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,7 +73,7 @@
   /* ── Bottle detail modal ── */
   .modal-card textarea{font-family:'Inter';font-size:14px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:10px 12px;width:100%;margin-bottom:12px;min-height:72px;resize:vertical}
   .modal-card textarea:focus{outline:none;border-color:var(--gold)}
-  .dt-save{margin-left:auto}
+  .dt-close{margin-left:auto}
   .dt-open{padding:9px 15px!important;white-space:nowrap;flex-shrink:0}
   .dt-year{max-width:96px;margin-bottom:0!important}
   .dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
@@ -419,7 +419,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.31</div>
+    <div class="auth-rev">Rev 2.32</div>
   </div>
 </div>
 
@@ -464,7 +464,7 @@
     <div class="qlabel">Score</div>
     <div class="scorepad" id="scorepad"></div>
     <div class="halfrow"><button class="half" id="halfbtn" onclick="toggleHalf()">+ ½ point</button><span class="scoreEcho" id="scoreEcho"></span></div>
-    <div class="qlabel">Tag — one dominant impression</div>
+    <div class="qlabel">Flavor tags — pick any that apply</div>
     <div class="tags" id="tags"></div>
     <div class="qbottom">
       <button class="buyflag" id="buyflag" onclick="toggleBuy()"><span class="dot"></span> Buy again</button>
@@ -532,7 +532,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.31</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.32</span>
   </footer>
 </div>
 
@@ -562,7 +562,7 @@
     <div class="qlabel">Score</div>
     <div class="scorepad" id="openScorepad"></div>
     <div class="halfrow"><button class="half" id="openHalfbtn" onclick="toggleOpenHalf()">+ ½ point</button><span class="scoreEcho" id="openScoreEcho"></span></div>
-    <div class="qlabel">Tag — one dominant impression</div>
+    <div class="qlabel">Flavor tags — pick any that apply</div>
     <div class="tags" id="openTags"></div>
     <div class="mrow" style="margin-top:14px">
       <button class="buyflag" id="openBuyflag" onclick="toggleOpenBuy()"><span class="dot"></span> Buy again</button>
@@ -618,7 +618,7 @@
     <div class="qlabel">Score</div>
     <div class="scorepad" id="dtScorepad"></div>
     <div class="halfrow"><button class="half" id="dtHalfbtn" onclick="dtToggleHalf()">+ ½ point</button><span class="scoreEcho" id="dtScoreEcho"></span></div>
-    <div class="qlabel">Tag — one dominant impression</div>
+    <div class="qlabel">Flavor tags — pick any that apply</div>
     <div class="tags" id="dtTags"></div>
     <div class="mrow" style="margin-top:4px">
       <button class="buyflag" id="dtBuyflag" onclick="dtToggleBuy()"><span class="dot"></span> Buy again</button>
@@ -635,8 +635,8 @@
     <textarea id="dt-notes" placeholder="Tasting notes, where you had it, who you shared it with…"></textarea>
     <div class="mrow">
       <button class="mbtn ghost dt-archive" onclick="archiveDetail()">Archive</button>
+      <button class="mbtn ghost dt-close" onclick="closeDetail()">Close</button>
       <button class="mbtn dt-save" onclick="saveDetail()">Save</button>
-      <button class="mbtn ghost" onclick="closeDetail()">Close</button>
     </div>
     <div class="mstatus" id="dtStatus"></div>
   </div>
@@ -724,10 +724,10 @@ let sortMode = 'rating';   // 'rating' | 'newest' | 'az' — sort chips on All B
 let listMode = 'browse';   // 'browse' | 'list' | 'kanban' — collection display mode (All Bottles / Logged)
 let listSort = { key:'score', dir:-1 };  // List-mode column sort: key + direction (1 asc, -1 desc)
 try{ const _m=localStorage.getItem('cellar_listmode'); if(['browse','list','kanban'].includes(_m)) listMode=_m; }catch(_){}
-let dtDraft = { id:null, score:null, half:false, tag:null, buy:false };  // detail-modal edit state
+let dtDraft = { id:null, score:null, half:false, tags:[], buy:false };  // detail-modal edit state
 let subscribed = false;
-let draft = { score:null, half:false, tag:null, buy:false };
-let openDraft = { id:null, score:null, half:false, tag:null, buy:false };
+let draft = { score:null, half:false, tags:[], buy:false };
+let openDraft = { id:null, score:null, half:false, tags:[], buy:false };
 // Photo intake per context — q (log), ca (add-to-cellar), dt (detail modal), ai (Ask AI).
 // Each entry: {dataUrl} for new pics, {path,url} for already-uploaded ones. Index 0 = MAIN.
 let piStore = { q:[], ca:[], dt:[], ai:[], ws:[] };
@@ -812,6 +812,10 @@ const TAGS=[
   {k:'off',t:'Off / SO₂',c:'#9a5a55'}
 ];
 const tagInfo = k => TAGS.find(t=>t.k===k) || {t:k,c:'#a89f8c'};
+// Bottles now carry `tags` (array); fall back to the legacy single `tag` for older records.
+function bottleTags(w){ return (Array.isArray(w.tags) && w.tags.length) ? w.tags : (w.tag ? [w.tag] : []); }
+function tagChipsHTML(w){ return bottleTags(w).map(k=>{ const ti=tagInfo(k); return `<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`; }).join(''); }
+function toggleTagKey(arr, k){ const i=arr.indexOf(k); if(i>=0) arr.splice(i,1); else arr.push(k); return arr; }
 
 // ── SEED (imported once, if /cellar/bottles is empty) ──
 const SEED_RATED=[
@@ -937,21 +941,25 @@ function buildTags(el, onPick){
   });
 }
 function paintScore(el, v){ el.querySelectorAll('.sbtn').forEach(b=>b.classList.toggle('on', +b.dataset.v===v)); }
-function paintTag(el, k, btn, c){
-  const was = btn && btn.dataset.k === k && btn.classList.contains('_on');
-  el.querySelectorAll('.tag').forEach(b=>{ b.style.background=''; b.style.color=''; b.style.borderColor=tagInfo(b.dataset.k).c+'55'; b.classList.remove('_on'); });
-  if(k && btn){ btn.style.background=c; btn.style.color='#0f0708'; btn.style.borderColor=c; btn.classList.add('_on'); }
+// Paint every selected tag (multi-select). arr = list of selected tag keys.
+function paintTags(el, arr){
+  arr = arr || [];
+  el.querySelectorAll('.tag').forEach(b=>{
+    const k=b.dataset.k, c=tagInfo(k).c;
+    if(arr.indexOf(k)>=0){ b.style.background=c; b.style.color='#0f0708'; b.style.borderColor=c; b.classList.add('_on'); }
+    else { b.style.background=''; b.style.color=''; b.style.borderColor=c+'55'; b.classList.remove('_on'); }
+  });
 }
 
 // Quick-log pad
 buildScorepad(document.getElementById('scorepad'), (v)=>{ draft.score=v; paintScore(document.getElementById('scorepad'), v); echo('scoreEcho', draft); });
-buildTags(document.getElementById('tags'), (k,btn,c)=>{ const was=draft.tag===k; draft.tag=was?null:k; paintTag(document.getElementById('tags'), was?null:k, btn, c); });
+buildTags(document.getElementById('tags'), (k)=>{ toggleTagKey(draft.tags, k); paintTags(document.getElementById('tags'), draft.tags); });
 // Mark-opened pad
 buildScorepad(document.getElementById('openScorepad'), (v)=>{ openDraft.score=v; paintScore(document.getElementById('openScorepad'), v); echo('openScoreEcho', openDraft); });
-buildTags(document.getElementById('openTags'), (k,btn,c)=>{ const was=openDraft.tag===k; openDraft.tag=was?null:k; paintTag(document.getElementById('openTags'), was?null:k, btn, c); });
+buildTags(document.getElementById('openTags'), (k)=>{ toggleTagKey(openDraft.tags, k); paintTags(document.getElementById('openTags'), openDraft.tags); });
 // Detail-modal pad
 buildScorepad(document.getElementById('dtScorepad'), (v)=>{ dtDraft.score=v; paintScore(document.getElementById('dtScorepad'), v); echo('dtScoreEcho', dtDraft); });
-buildTags(document.getElementById('dtTags'), (k,btn,c)=>{ const was=dtDraft.tag===k; dtDraft.tag=was?null:k; paintTag(document.getElementById('dtTags'), was?null:k, btn, c); });
+buildTags(document.getElementById('dtTags'), (k)=>{ toggleTagKey(dtDraft.tags, k); paintTags(document.getElementById('dtTags'), dtDraft.tags); });
 // Photo intakes start empty (renders the buttons + file inputs into each surface)
 ['q','ca','dt','ai','ws'].forEach(piRender);
 
@@ -1116,7 +1124,7 @@ async function handleAIAnswer(answer){
         status, qty,
         predLow:null, predHigh:null,
         score: status==='opened' ? score : null,
-        tag, buyAgain:!!b.buyAgain, notes:String(b.notes||''),
+        tag, tags:(tag?[tag]:[]), buyAgain:!!b.buyAgain, notes:String(b.notes||""),
         price, vendor:String(b.vendor||''),
         photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
         photos: ups.length?ups:null,
@@ -1186,7 +1194,7 @@ window.openDetail = function(id){
   const w = bottles[id]; if(!w) return;
   const whole = w.score==null ? null : Math.floor(Number(w.score));
   const half = w.score!=null && (Number(w.score)-whole)>=0.5;
-  dtDraft = { id, score:whole, half, tag:w.tag||null, buy:!!w.buyAgain };
+  dtDraft = { id, score:whole, half, tags:bottleTags(w).slice(), buy:!!w.buyAgain };
   document.getElementById('dt-name').textContent = w.name || '—';
   const meta=[w.producer,w.vintage,w.grape,w.region,w.abv?w.abv+'%':'',fmtPrice(w.price),w.vendor?('from '+w.vendor):''].filter(Boolean).join(' · ');
   const state = w.status==='cellared' ? ('Cellared'+((w.rackCol&&w.rackRow)?' · '+slotCode(w.rackCol,w.rackRow):'')+(Number(w.qty)>1?' · ×'+w.qty:'')) : 'Opened';
@@ -1198,8 +1206,7 @@ window.openDetail = function(id){
     : (w.photoUrl ? [{ path:w.photoPath||null, url:w.photoUrl }] : []);
   piRender('dt');
   paintScore(document.getElementById('dtScorepad'), whole==null?-1:whole);
-  const tagBtn = document.querySelector('#dtTags .tag[data-k="'+(w.tag||'')+'"]');
-  paintTag(document.getElementById('dtTags'), w.tag||null, tagBtn, w.tag?tagInfo(w.tag).c:null);
+  paintTags(document.getElementById('dtTags'), dtDraft.tags);
   document.getElementById('dtHalfbtn').classList.toggle('on', half);
   document.getElementById('dtBuyflag').classList.toggle('on', !!w.buyAgain);
   echo('dtScoreEcho', dtDraft);
@@ -1224,7 +1231,7 @@ window.saveDetail = async function(){
     document.getElementById('dtStatus').textContent='⏳ Saving…';
     const ups = await uploadPhotos(dtDraft.id, piStore.dt);
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
-      score, tag:dtDraft.tag, buyAgain:dtDraft.buy, price:parsePriceInput('dt-price'), vendor:document.getElementById('dt-vendor').value.trim(),
+      score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price:parsePriceInput('dt-price'), vendor:document.getElementById('dt-vendor').value.trim(),
       vintage:document.getElementById('dt-vintage').value.trim(),
       abv:document.getElementById('dt-abv').value.replace('%','').trim(), rep:document.getElementById('dt-rep').value.trim(),
       notes:document.getElementById('dt-notes').value.trim(),
@@ -1517,7 +1524,7 @@ window.logPour = async function(){
       vintage:document.getElementById('q-vintage').value.trim(),
       abv:document.getElementById('q-abv').value.replace('%','').trim(),
       status:'opened', qty:0, predLow:null, predHigh:null, price:parsePriceInput('q-price'), vendor:document.getElementById('q-vendor').value.trim(),
-      score:draft.score+(draft.half?0.5:0), tag:draft.tag, buyAgain:draft.buy,
+      score:draft.score+(draft.half?0.5:0), tags:draft.tags.slice(), tag:(draft.tags[0]||null), buyAgain:draft.buy,
       notes:document.getElementById('q-notes').value.trim(),
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
       photos: ups.length?ups:null,
@@ -1534,9 +1541,9 @@ function resetQuickLog(){
   ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-price','q-vendor','q-notes'].forEach(id=>document.getElementById(id).value='');
   piReset('q');
   dismissScout();
-  draft={score:null,half:false,tag:null,buy:false};
+  draft={score:null,half:false,tags:[],buy:false};
   paintScore(document.getElementById('scorepad'), -1);
-  paintTag(document.getElementById('tags'), null, null, null);
+  paintTags(document.getElementById('tags'), []);
   document.getElementById('halfbtn').classList.remove('on');
   document.getElementById('buyflag').classList.remove('on');
   document.getElementById('scoreEcho').textContent='';
@@ -1606,10 +1613,10 @@ window.toggleBuyList = async function(id){
 // ── MARK OPENED FLOW ──
 window.openMarkOpened = function(id){
   const w = bottles[id]; if(!w) return;
-  openDraft = { id, score:null, half:false, tag:null, buy:false };
+  openDraft = { id, score:null, half:false, tags:[], buy:false };
   document.getElementById('openWineName').textContent = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ');
   paintScore(document.getElementById('openScorepad'), -1);
-  paintTag(document.getElementById('openTags'), null, null, null);
+  paintTags(document.getElementById('openTags'), []);
   document.getElementById('openHalfbtn').classList.remove('on');
   document.getElementById('openBuyflag').classList.remove('on');
   document.getElementById('openScoreEcho').textContent='';
@@ -1632,13 +1639,13 @@ window.confirmOpen = async function(){
       await set(r, {
         name:w.name, producer:w.producer||'', region:w.region||'', grape:w.grape||'', vintage:w.vintage||'',
         abv:w.abv||'', status:'opened', qty:0, predLow:null, predHigh:null,
-        score:finalScore, tag:openDraft.tag, buyAgain:openDraft.buy, notes:w.notes||'', photoPath:w.photoPath||null, photoUrl:w.photoUrl||null, photos:w.photos||null,
+        score:finalScore, tags:openDraft.tags.slice(), tag:(openDraft.tags[0]||null), buyAgain:openDraft.buy, notes:w.notes||'', photoPath:w.photoPath||null, photoUrl:w.photoUrl||null, photos:w.photos||null,
         price:(w.price==null?null:w.price),
         addedBy:uid, addedAt:(w.addedAt||now), openedAt:now
       });
     }else{
       await dbUpdate('cellar/bottles/' + openDraft.id, {
-        status:'opened', qty:0, score:finalScore, tag:openDraft.tag, buyAgain:openDraft.buy, openedAt:now
+        status:'opened', qty:0, score:finalScore, tags:openDraft.tags.slice(), tag:(openDraft.tags[0]||null), buyAgain:openDraft.buy, openedAt:now
       });
     }
     logEvent('opened', { bottleId:openDraft.id, name:w.name, vintage:w.vintage||'', price:(w.price==null?null:w.price) });
@@ -1748,7 +1755,7 @@ function matchSearch(w){
   if(!search) return true;
   const parts = [
     w.name, w.producer, w.region, w.grape, w.vintage, w.abv, w.notes,
-    w.tag ? ('flavor ' + tagInfo(w.tag).t) : '',
+    bottleTags(w).length ? ('flavor ' + bottleTags(w).map(k=>tagInfo(k).t).join(' ')) : '',
     w.status,                                                                   // opened / cellared
     w.buyAgain ? 'buy again keeper' : '',
     (w.score!=null) ? ('rating score ' + fmt(w.score) + ' ' + w.score) : '',
@@ -1805,7 +1812,7 @@ function render(){
     const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch));
     let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers.</p></div>';
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No buy-again bottles yet. Flag the keepers as you log them.</p></div>'; return; }
-    c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div></div>`; }).join('') + '</div>';
+    c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${tagChipsHTML(w)}</div></div>`; }).join('') + '</div>';
     return;
   }
 
@@ -1977,7 +1984,7 @@ function listSortVal(w, key){
   const scored = w.status!=='cellared';
   switch(key){
     case 'name':    return (w.name||'').toLowerCase();
-    case 'tag':     return w.tag ? tagInfo(w.tag).t.toLowerCase() : '~';
+    case 'tag':     { const ts=bottleTags(w); return ts.length ? tagInfo(ts[0]).t.toLowerCase() : '~'; }
     case 'score':   return scored ? Number(w.score) : (w.predLow!=null ? (Number(w.predLow)+Number(w.predHigh!=null?w.predHigh:w.predLow))/2 : -1);
     case 'price':   return (w.price==null||w.price==='') ? -1 : Number(w.price);
     case 'abv':     { const a=parseFloat(String(w.abv||'').replace(/[^0-9.]/g,'')); return isFinite(a)?a:-1; }
@@ -2007,7 +2014,7 @@ function listTrHTML(w){
   const dim = '<span class="lt-dim">—</span>';
   return `<tr onclick="openDetail('${w.id}')">`
     + `<td class="lt-name"><span class="lt-wine">${esc(w.name||'')}</span>${w.producer?`<span class="lt-prod">${esc(w.producer)}</span>`:''}</td>`
-    + `<td>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:dim}</td>`
+    + `<td>${bottleTags(w).length?tagChipsHTML(w):dim}</td>`
     + `<td class="lt-num"><span class="lt-score ${cls}">${esc(score)}</span></td>`
     + `<td class="lt-num">${price?esc(price):dim}</td>`
     + `<td class="lt-num">${w.abv?esc(String(w.abv).replace('%','')+'%'):dim}</td>`
@@ -2040,7 +2047,7 @@ function kanbanCardHTML(w){
 function openedCardHTML(w){
   const ti=tagInfo(w.tag);
   const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':'',fmtPrice(w.price)].filter(Boolean).join(' · ');
-  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div></div>`;
+  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${tagChipsHTML(w)}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div></div>`;
 }
 
 // ── RACK MAP: labels, matching, placement ──
