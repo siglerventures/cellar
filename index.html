@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.39</title>
+<title>The Cellar Ledger — Rev 2.40</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -449,7 +449,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.39</div>
+    <div class="auth-rev">Rev 2.40</div>
   </div>
 </div>
 
@@ -504,7 +504,7 @@
     <div class="moregrid" id="moregrid">
       <input id="q-prod" placeholder="Producer">
       <input id="q-region" placeholder="Region">
-      <input id="q-grape" placeholder="Grape">
+      <input id="q-grape" placeholder="Grape(s) — e.g. 65% Grenache, 15% Syrah">
       <input id="q-vintage" placeholder="Vintage">
       <input id="q-abv" placeholder="ABV %">
       <input id="q-price" placeholder="Price $">
@@ -562,7 +562,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.39</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.40</span>
   </footer>
 </div>
 
@@ -614,7 +614,7 @@
     <div class="mgrid">
       <input id="ca-prod" placeholder="Producer">
       <input id="ca-region" placeholder="Region">
-      <input id="ca-grape" placeholder="Grape">
+      <input id="ca-grape" placeholder="Grape(s) — e.g. 65% Grenache, 15% Syrah">
       <input id="ca-vintage" placeholder="Vintage">
       <input id="ca-abv" placeholder="ABV %">
       <input id="ca-price" placeholder="Price $" type="number" step="0.01" min="0">
@@ -774,6 +774,7 @@ let histLog = {};   // id -> activity event (cellar/history)
 let askLog = {};    // id -> {q,a,at,by} Ask-AI conversation history (cellar/ask_history)
 let view = 'all';
 let sortMode = 'rating';   // 'rating' | 'newest' | 'az' — sort chips on All Bottles / Buy-Again
+let varietalFilter = '';   // 🍇 filter — e.g. 'grenache'; list orders by that grape's share
 let listMode = 'browse';   // 'browse' | 'list' | 'kanban' — collection display mode (All Bottles / Logged)
 let listSort = { key:'score', dir:-1 };  // List-mode column sort: key + direction (1 asc, -1 desc)
 try{ const _m=localStorage.getItem('cellar_listmode'); if(['browse','list','kanban'].includes(_m)) listMode=_m; }catch(_){}
@@ -1247,16 +1248,56 @@ window.deleteAsk = async function(id){
 
 // ── SORT CHIPS ──
 window.setSort = function(m){ sortMode = m; render(); };
+// ── VARIETALS: parsed live from the free-text grape field ────────────────────
+// Understands "Grenache blend", "Tempranillo + Graciano", "Cab/Merlot", and full
+// breakdowns like "65% Grenache Noir, 15% Mourvèdre, 15% Syrah, others 5%".
+const GRAPE_FAMILIES = ['grenache','syrah','shiraz','mourvedre','cinsault','carignan','counoise','clairette','pinot noir','pinot gris','pinot grigio','pinot','merlot','cabernet franc','cabernet','cab','tempranillo','graciano','sangiovese','nebbiolo','barbera','corvina','rondinella','zinfandel','primitivo','malbec','petit verdot','petite sirah','mencia','listan','chardonnay','riesling','sauvignon blanc','viognier','marsanne','roussanne'];
+function deacc(t){ return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+function famOf(name){
+  const n = deacc(name).trim();
+  for(const f of GRAPE_FAMILIES){ if(n.includes(f)) return (f==='shiraz')?'syrah':(f==='primitivo')?'zinfandel':(f==='cab')?'cabernet':(f==='pinot grigio')?'pinot gris':f; }
+  const cleaned = n.replace(/\b(blend|noir|rouge|led|and|others?)\b/g,'').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+  return cleaned.length>2 ? cleaned : '';
+}
+function parseVarietals(text){
+  const out = [];
+  deacc(text).split(/[,;+\/]|\band\b/).forEach(seg=>{
+    seg = seg.trim(); if(!seg) return;
+    const m = seg.match(/(\d{1,3})\s*%/);
+    const pct = m ? Math.min(100, Number(m[1])) : null;
+    const g = seg.replace(/\d{1,3}\s*%/g,'').trim();
+    const fam = famOf(g);
+    if(fam && !out.some(v=>v.fam===fam)) out.push({ fam, pct });
+  });
+  return out;
+}
+// Share of a grape in a bottle: stated % — or 50 for an unquantified mention — or -1 (absent).
+function pctOf(w, fam){ const v = parseVarietals(w.grape).find(x=>x.fam===fam); return v ? (v.pct!=null ? v.pct : 50) : -1; }
+function vMatch(w){ return !varietalFilter || pctOf(w, varietalFilter) >= 0; }
+window.setVarietal = function(v){ varietalFilter = v; render(); };
+function varietalSelectHTML(){
+  const counts = {};
+  activeArr().forEach(w=>parseVarietals(w.grape).forEach(v=>{ counts[v.fam]=(counts[v.fam]||0)+1; }));
+  const fams = Object.keys(counts).sort((a,b)=>counts[b]-counts[a] || a.localeCompare(b));
+  if(!fams.length) return '';
+  const cap = (t)=>t.replace(/\b\w/g,c=>c.toUpperCase());
+  return `<select class="rt-jump" style="border-radius:20px;padding:6px 12px" onchange="setVarietal(this.value)"><option value="">🍇 Varietal…</option>` +
+    fams.map(f=>`<option value="${esc(f)}" ${varietalFilter===f?'selected':''}>${esc(cap(f))} (${counts[f]})</option>`).join('') + `</select>`;
+}
 function chipRowHTML(){
   const chips = [['rating','Rating'],['newest','Newest'],['az','A–Z']];
-  return '<div class="chiprow">' + chips.map(c=>`<button class="sortchip ${sortMode===c[0]?'on':''}" onclick="setSort('${c[0]}')">${c[1]}</button>`).join('') + '</div>';
+  return '<div class="chiprow">' + chips.map(c=>`<button class="sortchip ${sortMode===c[0]?'on':''}" onclick="setSort('${c[0]}')">${c[1]}</button>`).join('') + varietalSelectHTML() +
+    (varietalFilter?`<button class="sortchip on" title="Clear varietal filter" onclick="setVarietal('')">✕ ${esc(varietalFilter.replace(/\b\w/g,c=>c.toUpperCase()))}</button>`:'') + '</div>';
 }
 function sortValRating(w){ return w.score!=null ? Number(w.score) : (w.predHigh!=null ? Number(w.predHigh)-100 : -1000); }
 function applySort(list){
   const l = list.slice();
-  if(sortMode==='az') return l.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''), undefined, {sensitivity:'base'}));
-  if(sortMode==='newest') return l.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-  return l.sort((a,b)=>sortValRating(b)-sortValRating(a) || (b.addedAt||0)-(a.addedAt||0));
+  if(sortMode==='az') l.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''), undefined, {sensitivity:'base'}));
+  else if(sortMode==='newest') l.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  else l.sort((a,b)=>sortValRating(b)-sortValRating(a) || (b.addedAt||0)-(a.addedAt||0));
+  // With a varietal picked, dominance wins: most Grenache (etc.) first; ties keep the base order.
+  if(varietalFilter) l.sort((a,b)=>pctOf(b,varietalFilter)-pctOf(a,varietalFilter));
+  return l;
 }
 
 // ── BOTTLE DETAIL / EDIT MODAL ──
@@ -1945,7 +1986,7 @@ function render(){
   if(view==='wishlist'){ c.innerHTML = wishlistHTML(); return; }
 
   if(view==='buy'){
-    const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch));
+    const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch).filter(vMatch));
     let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers.</p></div>';
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No buy-again bottles yet. Flag the keepers as you log them.</p></div>'; return; }
     c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${tagChipsHTML(w)}</div></div>`; }).join('') + '</div>';
@@ -1955,7 +1996,7 @@ function render(){
   if(view==='cellar'){ c.innerHTML = rackHTML(); return; }
 
   if(view==='logged'){
-    const list = applySort(opened.filter(matchSearch));
+    const list = applySort(opened.filter(matchSearch).filter(vMatch));
     const avg = opened.length ? (opened.reduce((s,w)=>s+Number(w.score||0),0)/opened.length).toFixed(1) : '—';
     let html = `<div class="shead"><p>Every wine you've logged &amp; scored — ${opened.length} total, avg ${avg}.</p></div>`;
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No scored wines yet. Tap “Log a pour” above.</p></div>'; return; }
@@ -1964,7 +2005,7 @@ function render(){
   }
 
   // all
-  const list = applySort(all.filter(matchSearch));
+  const list = applySort(all.filter(matchSearch).filter(vMatch));
   let html = '';
   if(!list.length){ c.innerHTML = html + '<div class="empty"><p>Nothing logged yet. Tap “Log a pour” above.</p></div>'; return; }
   c.innerHTML = html + renderCollection(list);
