@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.51</title>
+<title>The Cellar Ledger — Rev 2.52</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -485,7 +485,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.51</div>
+    <div class="auth-rev">Rev 2.52</div>
   </div>
 </div>
 
@@ -597,7 +597,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.51</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.52</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -699,6 +699,7 @@
       <input id="dt-abv" placeholder="ABV %">
       <input id="dt-vendor" placeholder="Vendor / store">
       <input id="dt-grape" placeholder="Grape(s) — e.g. 65% Grenache, 15% Syrah">
+      <select id="dt-kind" class="rt-jump" style="width:100%"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
       <input id="dt-rep" placeholder="Representative">
     </div>
     <div class="qlabel" style="margin-top:14px">Notes / comments</div>
@@ -1441,7 +1442,7 @@ window.openDetail = function(id){
   document.getElementById('dt-abv').value = w.abv||'';
   document.getElementById('dt-vendor').value = w.vendor||'';
   document.getElementById('dt-grape').value = w.grape||'';
-  document.getElementById('dt-kind').value = kindOf(w);
+  { const ke = document.getElementById('dt-kind'); if(ke) ke.value = kindOf(w); }
   document.getElementById('dt-rep').value = w.rep||'';
   document.getElementById('dtStatus').textContent='';
   document.getElementById('detailModal').classList.add('open');
@@ -1511,7 +1512,7 @@ window.saveDetail = async function(){
     const after  = [nn(score),nn(price),nn(notes),nn(vendor),nn(grape),nn(vintage),nn(abv),nn(rep),(dtDraft.buy?'1':''),dtDraft.tags.join(','),ups.length].join('¦');
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
       score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
-      vintage, abv, rep, notes, kind:document.getElementById('dt-kind').value,
+      vintage, abv, rep, notes, kind:(document.getElementById('dt-kind')||{value:kindOf(w)}).value,
       photos: ups.length?ups:null,
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
     });
