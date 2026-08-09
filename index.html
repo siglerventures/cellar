@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.22</title>
+<title>The Cellar Ledger — Rev 2.23</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,6 +65,22 @@
   .modal-card textarea:focus{outline:none;border-color:var(--gold)}
   .dt-save{margin-left:auto}
   .dt-price{max-width:150px;margin-bottom:0!important}
+  /* ── History & spend ── */
+  .hist-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px}
+  .htile{border:1px solid var(--line);border-radius:5px;background:var(--glass);padding:14px 12px;text-align:center}
+  .htile b{display:block;font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--gold);line-height:1.05}
+  .htile span{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--parch-dim);font-weight:600}
+  .hist-h{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;margin:18px 0 8px}
+  .hist-tablewrap{overflow-x:auto}
+  .hist-table{width:100%;border-collapse:collapse;font-size:13px}
+  .hist-table th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--parch-dim);font-weight:600;text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+  .hist-table td{padding:8px 10px;border-bottom:1px solid var(--line);color:var(--parch)}
+  .hist-table .lt-num{text-align:right}
+  .hist-dim{color:var(--parch-dim);font-size:11px}
+  .hist-feed{display:flex;flex-direction:column}
+  .hist-ev{display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;flex-wrap:wrap}
+  .hist-ev-t{white-space:nowrap;color:var(--gold);font-weight:600;font-size:12px}
+  .hist-ev-b{flex:1;color:var(--parch)}
   .dt-archive{color:var(--gold-dim)!important;border-color:rgba(140,112,56,.5)!important}
   .dt-archive:hover{color:var(--gold)!important;border-color:var(--gold)!important}
   /* Archive history modal */
@@ -389,7 +405,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.22</div>
+    <div class="auth-rev">Rev 2.23</div>
   </div>
 </div>
 
@@ -489,6 +505,7 @@
     <button class="vtab" data-view="cellar" onclick="setView('cellar')">Cellar</button>
     <button class="vtab" data-view="palate" onclick="setView('palate')">The Palate</button>
     <button class="vtab" data-view="wishlist" onclick="setView('wishlist')">Wishlist</button>
+    <button class="vtab" data-view="history" onclick="setView('history')">History</button>
     <div class="tabctrls" id="tabctrls"></div>
   </div>
   <div id="content"></div>
@@ -498,7 +515,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.22</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.23</span>
   </footer>
 </div>
 
@@ -676,6 +693,7 @@ const dbRemove = (p) => remove(ref(db, p));
 // ── STATE ──
 let bottles = {};   // id -> bottle
 let buylist = {};   // id -> item
+let histLog = {};   // id -> activity event (cellar/history)
 let view = 'all';
 let sortMode = 'rating';   // 'rating' | 'newest' | 'az' — sort chips on All Bottles / Buy-Again
 let listMode = 'browse';   // 'browse' | 'list' | 'kanban' — collection display mode (All Bottles / Logged)
@@ -869,6 +887,7 @@ function subscribe(){
   subscribed = true;
   onValue(ref(db, 'cellar/bottles'), snap => { bottles = snap.val() || {}; render(); if(document.getElementById('archiveModal').classList.contains('open')) renderArchiveList(); });
   onValue(ref(db, 'cellar/buylist'), snap => { buylist = snap.val() || {}; render(); });
+  onValue(ref(db, 'cellar/history'), snap => { histLog = snap.val() || {}; if(view==='history') render(); });
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
 }
 
@@ -1037,6 +1056,7 @@ async function handleAIAnswer(answer){
     });
     piReset('ai');
     document.getElementById('askInput').value='';
+    logEvent(status==='opened'?'logged':'added', { bottleId:r.key, name:String(b.name), vintage:String(b.vintage||''), qty:status==='cellared'?Math.max(1,Number(b.qty)||1):1, price:null });
     showToast('✅ Added — ' + b.name);
     return (text ? text+'\n' : '') + '✅ Added “' + b.name + '” to ' + (status==='cellared' ? 'the cellar.' : 'your tasting log.');
   }catch(e){
@@ -1397,6 +1417,7 @@ window.logPour = async function(){
     });
     resetQuickLog();
     closeLogPanel();
+    logEvent('logged', { bottleId:r.key, name, vintage:document.getElementById('q-vintage').value.trim(), qty:1, price:parsePriceInput('q-price') });
     showToast('Logged — ' + name);
     setView('all');
   }catch(e){ showToast('Save failed: ' + (e.message||e)); }
@@ -1423,9 +1444,16 @@ function bottlePhotoPaths(w){
   return [...paths];
 }
 // ── ARCHIVE (soft): nothing is hard-deleted from the main UI; restore from 🗄 Archived ──
+// ── ACTIVITY LOG: every add / open / rack move / archive lands in cellar/history ──
+function logEvent(t, data){
+  try{
+    const r = push(ref(db, 'cellar/history'));
+    set(r, Object.assign({ t, at:Date.now(), by:(auth.currentUser&&auth.currentUser.uid)||'' }, data||{})).catch(e=>console.warn('[Cellar] logEvent failed:', e));
+  }catch(e){ console.warn('[Cellar] logEvent failed:', e); }
+}
 async function archiveBottle(id){
   const w = bottles[id]; if(!w) return false;
-  try{ await dbUpdate('cellar/bottles/' + id, { archived:true, archivedAt:Date.now(), archivedBy:(auth.currentUser&&auth.currentUser.uid)||'' }); return true; }
+  try{ await dbUpdate('cellar/bottles/' + id, { archived:true, archivedAt:Date.now(), archivedBy:(auth.currentUser&&auth.currentUser.uid)||'' }); logEvent('archived',{bottleId:id,name:w.name,vintage:w.vintage||''}); return true; }
   catch(e){ return false; }
 }
 window.del = async function(id){
@@ -1435,7 +1463,7 @@ window.del = async function(id){
 };
 window.restoreBottle = async function(id){
   const w = bottles[id]; if(!w) return;
-  try{ await dbUpdate('cellar/bottles/' + id, { archived:null, archivedAt:null, archivedBy:null }); showToast('Restored — ' + (w.name||'bottle')); renderArchiveList(); }
+  try{ await dbUpdate('cellar/bottles/' + id, { archived:null, archivedAt:null, archivedBy:null }); logEvent('restored',{bottleId:id,name:w.name,vintage:w.vintage||''}); showToast('Restored — ' + (w.name||'bottle')); renderArchiveList(); }
   catch(e){ showToast('Restore failed'); }
 };
 window.purgeBottle = async function(id){
@@ -1497,13 +1525,15 @@ window.confirmOpen = async function(){
         name:w.name, producer:w.producer||'', region:w.region||'', grape:w.grape||'', vintage:w.vintage||'',
         abv:w.abv||'', status:'opened', qty:0, predLow:null, predHigh:null,
         score:finalScore, tag:openDraft.tag, buyAgain:openDraft.buy, notes:w.notes||'', photoPath:w.photoPath||null, photoUrl:w.photoUrl||null, photos:w.photos||null,
-        addedBy:uid, addedAt:now, openedAt:now
+        price:(w.price==null?null:w.price),
+        addedBy:uid, addedAt:(w.addedAt||now), openedAt:now
       });
     }else{
       await dbUpdate('cellar/bottles/' + openDraft.id, {
         status:'opened', qty:0, score:finalScore, tag:openDraft.tag, buyAgain:openDraft.buy, openedAt:now
       });
     }
+    logEvent('opened', { bottleId:openDraft.id, name:w.name, vintage:w.vintage||'', price:(w.price==null?null:w.price) });
     closeOpenModal();
     showToast('Opened — ' + w.name);
   }catch(e){ document.getElementById('openStatus').textContent='❌ ' + (e.message||e); }
@@ -1553,6 +1583,7 @@ window.addCellarBottle = async function(){
     });
     caSuggest = null;
     closeCellarAddModal();
+    logEvent('added', { bottleId:r.key, name, vintage:document.getElementById('ca-vintage').value.trim(), qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1), price:parsePriceInput('ca-price'), slot:placeCol?slotCode(placeCol,placeRow):null });
     if(placeCol){ flashSlot = placeCol+'_'+placeRow; showToast('Added — ' + name + ' → ' + slotCode(placeCol,placeRow)); }
     else { showToast('Added to cellar — ' + name); }
     setView('cellar');
@@ -1568,7 +1599,7 @@ window.goHome = function(){
   setView('all');
   window.scrollTo({ top:0, behavior:'smooth' });
 };
-window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; render(); };
+window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; render(); };
 window.onSearch = function(v){ search=(v||'').trim().toLowerCase(); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
 window.clearSearch = function(){ search=''; document.getElementById('searchbar').value=''; document.getElementById('searchclear').style.display='none'; render(); };
 function matchSearch(w){
@@ -1612,6 +1643,8 @@ function render(){
   }
 
   const c = document.getElementById('content');
+  if(view==='history'){ c.innerHTML = historyHTML(); return; }
+
   if(view==='palate'){ c.innerHTML = palateHTML(); return; }
 
   if(view==='wishlist'){ c.innerHTML = wishlistHTML(); return; }
@@ -1925,7 +1958,11 @@ async function placeBottle(id, col, row){
     updates['cellar/bottles/'+occupant.id+'/rackRow'] = (mover.rackRow!=null ? mover.rackRow : null);
   }
   inspect = null;
-  try{ await dbUpdate('/', updates); showToast(occupant ? ('Swapped with ' + occupant.name) : ('Placed at ' + slotCode(col,row))); }
+  try{
+    await dbUpdate('/', updates);
+    logEvent(occupant?'swapped':'placed', { bottleId:id, name:mover.name, slot:slotCode(col,row), withName:occupant?occupant.name:null });
+    showToast(occupant ? ('Swapped with ' + occupant.name) : ('Placed at ' + slotCode(col,row)));
+  }
   catch(e){ showToast('Could not place bottle'); }
 }
 
@@ -2035,7 +2072,7 @@ window.rackTapSlot = async function(col, row){
 };
 window.rackMove = function(id){ placing = id; inspect = null; showToast('Tap the new slot'); render(); };
 window.rackUnplace = async function(id){
-  try{ await dbUpdate('cellar/bottles/' + id, { rackCol:null, rackRow:null }); inspect = null; showToast('Moved to the tray'); }
+  try{ await dbUpdate('cellar/bottles/' + id, { rackCol:null, rackRow:null }); logEvent('unplaced',{bottleId:id,name:(bottles[id]||{}).name||''}); inspect = null; showToast('Moved to the tray'); }
   catch(e){ showToast('Could not unplace'); }
 };
 window.rackMarkOpened = function(id){ placing = null; inspect = null; openMarkOpened(id); };
@@ -2068,6 +2105,77 @@ window.rackEditCell = async function(col, row){
   try{ await dbSet('cellar/rack_layout/cells/'+col+'_'+row, v ? { label:v } : null); showToast('Slot ' + slotCode(col,row) + ' labelled'); }
   catch(e){ showToast('Could not save label'); }
 };
+
+// ── HISTORY & SPEND ──────────────────────────────────────────────────────────
+// Money/count stats derive from bottle records (archived included, so drunk &
+// archived bottles keep counting); the timeline shows cellar/history events.
+function historyHTML(){
+  const all = asArr(bottles);
+  const boughtQty = (w)=> w.status==='cellared' ? Math.max(1, Number(w.qty)||1) : 1;
+  const priceOf = (w)=>{ const n=Number(w.price); return isFinite(n)&&w.price!==''&&w.price!=null ? n : null; };
+
+  let totBought=0, totSpent=0, spentKnown=0, opened=0;
+  const monthly={}, wines={};
+  all.forEach(w=>{
+    const q=boughtQty(w), p=priceOf(w);
+    totBought+=q;
+    if(p!=null){ totSpent+=p*q; spentKnown+=q; }
+    if(w.status==='opened') opened++;
+    const mk = w.addedAt ? new Date(w.addedAt).toISOString().slice(0,7) : '—';
+    const m = monthly[mk] || (monthly[mk]={bought:0,spent:0,opened:0});
+    m.bought+=q; if(p!=null) m.spent+=p*q;
+    if(w.status==='opened' && w.openedAt){ const ok=new Date(w.openedAt).toISOString().slice(0,7); (monthly[ok]||(monthly[ok]={bought:0,spent:0,opened:0})).opened++; }
+    const wk=((w.name||'?')+'|'+(w.vintage||'')).toLowerCase();
+    const rec = wines[wk] || (wines[wk]={name:w.name||'?',vintage:w.vintage||'',bought:0,had:0,spent:0});
+    rec.bought+=q; if(p!=null) rec.spent+=p*q;
+    if(w.status==='opened') rec.had++;
+  });
+  const onhand = all.filter(w=>!w.archived && w.status==='cellared');
+  const ohCount = onhand.reduce((s,w)=>s+(Number(w.qty)||1),0);
+  const ohValue = onhand.reduce((s,w)=>{ const p=priceOf(w); return s+(p!=null?p*(Number(w.qty)||1):0); },0);
+  const nowMk = new Date().toISOString().slice(0,7);
+  const thisMonth = monthly[nowMk] || {bought:0,spent:0,opened:0};
+  const evs = asArr(histLog);
+  const rackMoves = evs.filter(e=>e.t==='placed'||e.t==='swapped').length;
+  const money = (n)=> '$' + (Math.round(n*100)/100).toLocaleString(undefined,{maximumFractionDigits:2});
+  const monthName = (mk)=>{ if(mk==='—') return 'Undated'; const [y,m]=mk.split('-'); return new Date(Number(y), Number(m)-1, 1).toLocaleString(undefined,{month:'short',year:'numeric'}); };
+
+  let html = `<div class="hist-tiles">
+    <div class="htile"><b>${money(ohValue)}</b><span>On hand · ${ohCount} bottle${ohCount===1?'':'s'}</span></div>
+    <div class="htile"><b>${money(totSpent)}</b><span>Spent all-time · ${totBought} bought${spentKnown<totBought?' · '+(totBought-spentKnown)+' unpriced':''}</span></div>
+    <div class="htile"><b>${money(thisMonth.spent)}</b><span>${monthName(nowMk)} · ${thisMonth.bought} bought</span></div>
+    <div class="htile"><b>${opened}</b><span>Bottles enjoyed</span></div>
+    <div class="htile"><b>${rackMoves}</b><span>Rack placements</span></div>
+  </div>`;
+
+  const months = Object.keys(monthly).filter(k=>k!=='—').sort().reverse().slice(0,12);
+  if(months.length){
+    html += `<h3 class="hist-h">By month</h3><div class="hist-tablewrap"><table class="hist-table"><thead><tr><th>Month</th><th class="lt-num">Bought</th><th class="lt-num">Spent</th><th class="lt-num">Opened</th></tr></thead><tbody>`;
+    months.forEach(mk=>{ const m=monthly[mk]; html+=`<tr><td>${esc(monthName(mk))}</td><td class="lt-num">${m.bought}</td><td class="lt-num">${m.spent?money(m.spent):'—'}</td><td class="lt-num">${m.opened||'—'}</td></tr>`; });
+    html += '</tbody></table></div>';
+  }
+
+  const repeat = Object.values(wines).filter(r=>r.bought>1 || r.had>1).sort((a,b)=>(b.bought+b.had)-(a.bought+a.had)).slice(0,15);
+  if(repeat.length){
+    html += `<h3 class="hist-h">Repeat bottles</h3><div class="hist-tablewrap"><table class="hist-table"><thead><tr><th>Wine</th><th class="lt-num">Bought</th><th class="lt-num">Had</th><th class="lt-num">Spent</th></tr></thead><tbody>`;
+    repeat.forEach(r=>{ html+=`<tr><td>${esc(r.name)}${r.vintage?` <span class="hist-dim">${esc(r.vintage)}</span>`:''}</td><td class="lt-num">${r.bought}</td><td class="lt-num">${r.had}</td><td class="lt-num">${r.spent?money(r.spent):'—'}</td></tr>`; });
+    html += '</tbody></table></div>';
+  }
+
+  const EV_LABEL = { logged:'🍷 Logged a pour', added:'🛒 Added to cellar', opened:'🍾 Opened', placed:'📍 Placed', swapped:'🔄 Swapped', unplaced:'🧺 To the tray', archived:'🗄 Archived', restored:'↩️ Restored' };
+  const recent = evs.sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,50);
+  html += `<h3 class="hist-h">Activity</h3>`;
+  if(!recent.length){
+    html += '<div class="empty" style="padding:18px 0"><p>Activity starts recording from now — add, open, or move a bottle and it lands here.</p></div>';
+  }else{
+    html += '<div class="hist-feed">' + recent.map(e=>{
+      const when = e.at ? new Date(e.at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
+      const bits = [e.name, e.vintage, e.qty>1?('×'+e.qty):'', e.slot?('→ '+e.slot):'', e.withName?('↔ '+e.withName):'', (e.price!=null&&e.price!=='')?fmtPrice(e.price):''].filter(Boolean).join(' · ');
+      return `<div class="hist-ev"><span class="hist-ev-t">${EV_LABEL[e.t]||e.t}</span><span class="hist-ev-b">${esc(bits)}</span><span class="hist-dim">${esc(when)}</span></div>`;
+    }).join('') + '</div>';
+  }
+  return `<div class="narrow" style="max-width:820px">${html}</div>`;
+}
 
 function palateHTML(){
   return `<div class="narrow"><div class="shead"><p>What the ratings keep confirming. This sharpens with every pour you log.</p></div>
