@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.58</title>
+<title>The Cellar Ledger — Rev 2.59</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.58</div>
+    <div class="auth-rev">Rev 2.59</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.58</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.59</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2246,7 +2246,7 @@ window.goHome = function(){
   setView('all');
   window.scrollTo({ top:0, behavior:'smooth' });
 };
-window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; render(); };
+window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; document.getElementById('kindRow').style.display = (v==='cellar') ? 'none' : ''; render(); };
 // Strip accents/diacritics so "chateauneuf" matches "Châteauneuf", "rose" matches "rosé", etc.
 function deburr(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 window.onSearch = function(v){ search=deburr((v||'').trim().toLowerCase()); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
