@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.54</title>
+<title>The Cellar Ledger — Rev 2.55</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.54</div>
+    <div class="auth-rev">Rev 2.55</div>
   </div>
 </div>
 
@@ -609,7 +609,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.54</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.55</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -1188,7 +1188,7 @@ function renderWsResults(d){
     const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
     const fit = ['love','like','maybe','pass'].includes(w.fit) ? w.fit : 'maybe';
     const meta = [w.vintage, w.price].filter(Boolean).join(' · ');
-    return `<div class="lb-row ${i===0?'top':''}" style="cursor:default"><div class="rank">${i+1}</div><div class="lscore" style="font-size:24px">${esc(band)}</div><div><div class="lname">${esc(w.name)}</div>${meta?`<div class="lmeta">${esc(meta)}</div>`:''}<div class="lmeta" style="margin-top:4px"><span class="scout-fit fit-${fit}" style="font-size:9.5px;padding:2px 8px">${FIT_LABEL[fit]||'Toss-up'}</span> ${esc(w.verdict||'')}</div></div><button class="scout-btn" style="align-self:center;white-space:nowrap" onclick="wsToWishlist(${i})">＋ Wishlist</button></div>`;
+    return `<div class="lb-row ${i===0?'top':''}" style="cursor:default"><div class="rank">${i+1}</div><div class="lscore" style="font-size:24px">${esc(band)}</div><div><div class="lname">${w.kind&&w.kind!=='wine'?kindEmoji(w.kind)+' ':''}${esc(w.name)}</div>${meta?`<div class="lmeta">${esc(meta)}</div>`:''}<div class="lmeta" style="margin-top:4px"><span class="scout-fit fit-${fit}" style="font-size:9.5px;padding:2px 8px">${FIT_LABEL[fit]||'Toss-up'}</span> ${esc(w.verdict||'')}</div></div><button class="scout-btn" style="align-self:center;white-space:nowrap" onclick="wsToWishlist(${i})">＋ Wishlist</button></div>`;
   }).join('');
   el.innerHTML = html;
 }
@@ -1196,7 +1196,7 @@ window.wsToWishlist = async function(i){
   const w = lastWsWines[i]; if(!w || !w.name) return;
   try{
     const r = push(ref(db, 'cellar/buylist'));
-    await set(r, { name:[w.name, w.vintage].filter(Boolean).join(' '), region:'', note:w.verdict||'', addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now() });
+    await set(r, { name:[w.name, w.vintage].filter(Boolean).join(' '), region:'', note:w.verdict||'', kind:(w.kind&&KINDS.some(k=>k[0]===w.kind))?w.kind:'wine', addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now() });
     showToast('Added to wishlist — ' + w.name);
   }catch(e){ showToast('Could not add to wishlist'); }
 };

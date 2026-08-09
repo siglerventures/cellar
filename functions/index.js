@@ -108,15 +108,18 @@ exports.cellarScanMenu = onCall(
     if (summaryJson.length > 40000) summaryJson = summaryJson.slice(0, 40000);
 
     const prompt = [
-      "These photo(s) show either a RESTAURANT WINE LIST/MENU or a WINE-SHOP SHELF.",
-      "Identify every wine you can read (name, vintage and price if shown), then rank",
-      "them for THIS specific taster — best first — using the palate below plus their",
-      "real rating history (collection JSON: 'opened' wines have their actual 1-10",
-      "ratings). Prefer wines similar to their proven wins; downrank their known misses.",
+      "These photo(s) show a RESTAURANT MENU/DRINKS LIST or a STORE SHELF — usually",
+      "wine, but possibly bourbon/whiskey, tequila, vodka, or cocktails/mixers.",
+      "Identify every bottle/pour you can read (name, vintage and price if shown),",
+      "then rank them for THIS taster — best first. For WINE use the palate below",
+      "plus their real rating history (collection JSON: 'opened' items have actual",
+      "1-10 ratings) — prefer wines like their proven wins, downrank known misses.",
+      "For SPIRITS judge on quality, typicity, proof/age statements and reputation",
+      "(they enjoy full-flavored, well-made spirits; no strong biases known yet).",
       "Respond with ONLY a JSON object (no markdown, no backticks):",
       '{"context":"menu" or "shelf",',
       ' "summary": one sentence naming the single top pick and why it fits,',
-      ' "wines":[{"name":"","vintage":"","price":"","predLow":n,"predHigh":n,',
+      ' "wines":[{"name":"","kind":"wine"|"bourbon"|"tequila"|"vodka"|"mixer","vintage":"","price":"","predLow":n,"predHigh":n,',
       '  "fit":"love"|"like"|"maybe"|"pass","verdict":"max ~18 words why"}]}',
       "Include at most 12 wines (the most relevant), best first. predLow/predHigh are",
       "predicted scores 1-10 (.5 steps ok). Use empty strings for unreadable fields.",
@@ -143,6 +146,7 @@ exports.cellarScanMenu = onCall(
       const parsed = parseModelJson(message);
       const wines = (Array.isArray(parsed.wines) ? parsed.wines : []).slice(0, 12).map((w) => ({
         name: String(w.name || '').trim(),
+        kind: ['wine','bourbon','tequila','vodka','mixer','cigar'].includes(w.kind) ? w.kind : 'wine',
         vintage: String(w.vintage || '').trim(),
         price: String(w.price || '').trim(),
         predLow: coerceScore(w.predLow),
