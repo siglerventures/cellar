@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.41</title>
+<title>The Cellar Ledger — Rev 2.42</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -290,6 +290,8 @@
   .rack-slot:hover{border-color:var(--gold-dim)}
   .rack-slot.filled{background:linear-gradient(180deg,var(--garnet),#360f16);border-color:var(--gold-dim)}
   .rack-slot.filled:hover{border-color:var(--gold)}
+  /* Varietal highlight: non-matching bottles fade so the picked grape pops */
+  .rack-slot.filled.vdim{opacity:.22;filter:grayscale(.6)}
   .rack-slot.filled.sel{outline:2px solid var(--gold);outline-offset:1px}
   .rack-slot.target{border-color:var(--gold-dim);border-style:dashed}
   .rack-slot.target:hover{background:rgba(201,163,92,0.14)}
@@ -467,7 +469,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.41</div>
+    <div class="auth-rev">Rev 2.42</div>
   </div>
 </div>
 
@@ -580,7 +582,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.41</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.42</span>
   </footer>
 </div>
 
@@ -2439,6 +2441,7 @@ function rackHTML(){
     <div class="rt-group"><span class="rt-lbl">Zoom</span><button class="rt-btn ${rackZoom===1?'on':''}" onclick="rackZoomSet(1)">S</button><button class="rt-btn ${rackZoom===2?'on':''}" onclick="rackZoomSet(2)">M</button><button class="rt-btn ${rackZoom===3?'on':''}" onclick="rackZoomSet(3)">L</button></div>
     <div class="rt-group"><span class="rt-lbl">Column</span><select class="rt-jump" onchange="rackFocusColumn(this.value)"><option value="">View a column…</option>${jumpOpts}</select></div>
     ${admin?`<button class="rt-btn ${rackEdit?'on':''}" onclick="rackToggleEdit()">${rackEdit?'✓ Done editing':'Edit labels'}</button>`:''}
+    <div class="rt-group"><span class="rt-lbl">🍇</span>${varietalSelectHTML()}${varietalFilter?`<button class="rt-btn on" title="Clear varietal highlight" onclick="setVarietal('')">✕</button>`:''}</div>
   </div>`;
 
   // Action / status bar
@@ -2514,7 +2517,8 @@ function rackHTML(){
         const short = esc(w.name || w.producer || '');
         const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ') + ' · ' + slotCode(c,r);
         const thumb = w.photoUrl ? `<img class="slot-thumb" src="${esc(w.photoUrl)}" alt="">` : '';
-        grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}${flash}" data-cell="${c}_${r}" draggable="${rackEdit?'false':'true'}" ondragstart="rackDragStart(event,'${w.id}')" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(title)}" onclick="rackTapSlot(${c},${r})">${thumb}<span class="slot-name">${short}${vv}</span></div>`;
+        const vdim = (varietalFilter && pctOf(w, varietalFilter) < 0) ? ' vdim' : '';
+        grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}${flash}${vdim}" data-cell="${c}_${r}" draggable="${rackEdit?'false':'true'}" ondragstart="rackDragStart(event,'${w.id}')" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(title)}" onclick="rackTapSlot(${c},${r})">${thumb}<span class="slot-name">${short}${vv}</span></div>`;
       }else{
         // Empty slot: faint outline + its coordinate only (category lives solely in the header).
         grid += `<div class="rack-slot${placing?' target':''}${flash}" data-cell="${c}_${r}" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="Slot ${slotCode(c,r)} — ${esc(cellLabel(c,r))}" onclick="rackTapSlot(${c},${r})"><span class="slot-coord">${slotCode(c,r)}</span></div>`;
