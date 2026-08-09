@@ -260,7 +260,10 @@
   .moregrid.show{display:grid}
   .moregrid input{font-family:'Inter';font-size:13px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:8px 10px}
   .moregrid input:focus{outline:none;border-color:var(--gold)}
-  .tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
+  .tabctrls{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-left:22px}
+  .tabctrls .chiprow{margin:0}
+  .tabctrls .modebar{margin:0}
   .vtab{font-family:'Inter';font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--parch-dim);background:none;border:none;border-bottom:2px solid transparent;padding:10px 4px;margin-bottom:-1px;cursor:pointer;transition:.15s}
   .vtab.on{color:var(--gold);border-bottom-color:var(--gold)}
   .vtab:hover{color:var(--parch)}
@@ -473,6 +476,7 @@
     <button class="vtab" data-view="cellar" onclick="setView('cellar')">Cellar</button>
     <button class="vtab" data-view="palate" onclick="setView('palate')">The Palate</button>
     <button class="vtab" data-view="wishlist" onclick="setView('wishlist')">Wishlist</button>
+    <div class="tabctrls" id="tabctrls"></div>
   </div>
   <div id="content"></div>
 
@@ -1558,6 +1562,14 @@ function render(){
   document.getElementById('st-buy').textContent = opened.filter(w=>w.buyAgain).length;
   document.getElementById('st-avg').textContent = opened.length ? (opened.reduce((s,w)=>s+Number(w.score||0),0)/opened.length).toFixed(1) : '—';
 
+  // Sort chips + display-mode toggle live on the tabs row (not per-view), shown only where relevant.
+  const tc = document.getElementById('tabctrls');
+  if(tc){
+    if(view==='all' || view==='logged') tc.innerHTML = chipRowHTML() + modeToggleHTML();
+    else if(view==='buy') tc.innerHTML = chipRowHTML();
+    else tc.innerHTML = '';
+  }
+
   const c = document.getElementById('content');
   if(view==='palate'){ c.innerHTML = palateHTML(); return; }
 
@@ -1565,7 +1577,7 @@ function render(){
 
   if(view==='buy'){
     const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch));
-    let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers.</p></div>' + chipRowHTML();
+    let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers.</p></div>';
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No buy-again bottles yet. Flag the keepers as you log them.</p></div>'; return; }
     c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`; }).join('') + '</div>';
     return;
@@ -1576,7 +1588,7 @@ function render(){
   if(view==='logged'){
     const list = applySort(opened.filter(matchSearch));
     const avg = opened.length ? (opened.reduce((s,w)=>s+Number(w.score||0),0)/opened.length).toFixed(1) : '—';
-    let html = `<div class="shead"><p>Every wine you've logged &amp; scored — ${opened.length} total, avg ${avg}.</p></div>` + modeToggleHTML() + chipRowHTML();
+    let html = `<div class="shead"><p>Every wine you've logged &amp; scored — ${opened.length} total, avg ${avg}.</p></div>`;
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No scored wines yet. Tap “Log a pour” above.</p></div>'; return; }
     c.innerHTML = html + renderCollection(list);
     return;
@@ -1584,7 +1596,7 @@ function render(){
 
   // all
   const list = applySort(all.filter(matchSearch));
-  let html = '<div class="shead"><p>Everything — opened &amp; cellared. Tap a bottle to view or edit it.</p></div>' + modeToggleHTML() + chipRowHTML();
+  let html = '';
   if(!list.length){ c.innerHTML = html + '<div class="empty"><p>Nothing logged yet. Tap “Log a pour” above.</p></div>'; return; }
   c.innerHTML = html + renderCollection(list);
 }
