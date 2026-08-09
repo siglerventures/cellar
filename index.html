@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.31</title>
+<title>The Cellar Ledger — Rev 2.32</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -419,7 +419,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.31</div>
+    <div class="auth-rev">Rev 2.32</div>
   </div>
 </div>
 
@@ -532,7 +532,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.31</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.32</span>
   </footer>
 </div>
 
@@ -624,6 +624,7 @@
       <button class="buyflag" id="dtBuyflag" onclick="dtToggleBuy()"><span class="dot"></span> Buy again</button>
       <input id="dt-vintage" class="dt-year" placeholder="Year">
       <button class="mbtn ghost dt-open" id="dtOpenBtn" style="display:none" onclick="dtMarkOpened()">Opened</button>
+      <button class="mbtn ghost" id="dtMergeBtn" style="display:none" onclick="mergeDetail()">🔗 Merge duplicate</button>
     </div>
     <div class="dt-grid">
       <input id="dt-price" placeholder="Price $" type="number" step="0.01" min="0">
@@ -1192,6 +1193,12 @@ window.openDetail = function(id){
   const state = w.status==='cellared' ? ('Cellared'+((w.rackCol&&w.rackRow)?' · '+slotCode(w.rackCol,w.rackRow):'')+(Number(w.qty)>1?' · ×'+w.qty:'')) : 'Opened';
   document.getElementById('dt-meta').textContent = [state, meta].filter(Boolean).join(' — ');
   document.getElementById('dtOpenBtn').style.display = w.status==='cellared' ? '' : 'none';
+  dtMergeWith = null;
+  if(w.status==='cellared'){
+    const dup = activeArr().find(o=>o.id!==id && o.status==='cellared' && normWine(o.name,o.vintage)===normWine(w.name,w.vintage));
+    if(dup) dtMergeWith = dup.id;
+  }
+  document.getElementById('dtMergeBtn').style.display = dtMergeWith ? '' : 'none';
   dtRemoved = [];
   piStore.dt = (Array.isArray(w.photos) && w.photos.length)
     ? w.photos.filter(p=>p && p.url).map(p=>({ path:p.path||null, url:p.url }))
@@ -1215,6 +1222,46 @@ window.openDetail = function(id){
 window.closeDetail = ()=>document.getElementById('detailModal').classList.remove('open');
 // Detail modal → the mark-opened (score it) flow for a cellared bottle.
 window.dtMarkOpened = function(){ const id = dtDraft.id; closeDetail(); if(id) openMarkOpened(id); };
+
+// ── MERGE DUPLICATES ─────────────────────────────────────────────────────────
+// Combine two cellared records of the same wine into one, losing nothing:
+// the OLDER record survives (keeps its id, rack slot, and history links) and
+// absorbs the newer one — qty summed, photos concatenated, empty fields filled,
+// notes joined, earliest purchase date kept. The emptied duplicate is removed.
+let dtMergeWith = null;
+window.mergeDetail = async function(){
+  const a = bottles[dtDraft.id], b = bottles[dtMergeWith];
+  if(!a || !b){ document.getElementById('dtStatus').textContent='❌ Duplicate vanished — refresh and retry.'; return; }
+  const [keep, absorb] = ((a.addedAt||0) <= (b.addedAt||0)) ? [a,b] : [b,a];
+  const keepId = keep===a ? dtDraft.id : dtMergeWith;
+  const dropId = keep===a ? dtMergeWith : dtDraft.id;
+  if(!confirm('Merge these two "'+(keep.name||'?')+'" cards into one? Quantities add up and nothing is lost.')) return;
+  const pick = (x,y)=>(x!=null && x!=='') ? x : ((y!=null && y!=='') ? y : (typeof x==='string'||typeof y==='string' ? '' : null));
+  const photos = (Array.isArray(keep.photos)?keep.photos:[]).concat(Array.isArray(absorb.photos)?absorb.photos:[])
+    .filter((p,i,arr)=>p && p.url && arr.findIndex(q=>q&&q.url===p.url)===i);
+  const notes = [keep.notes, absorb.notes].filter(Boolean).filter((n,i,arr)=>arr.indexOf(n)===i).join(' · ');
+  const upd = {
+    qty: (Number(keep.qty)||1) + (Number(absorb.qty)||1),
+    producer: pick(keep.producer, absorb.producer), region: pick(keep.region, absorb.region),
+    grape: pick(keep.grape, absorb.grape), abv: pick(keep.abv, absorb.abv),
+    price: pick(keep.price, absorb.price), vendor: pick(keep.vendor, absorb.vendor),
+    predLow: pick(keep.predLow, absorb.predLow), predHigh: pick(keep.predHigh, absorb.predHigh),
+    notes, buyAgain: !!(keep.buyAgain || absorb.buyAgain),
+    photos: photos.length ? photos : null,
+    photoUrl: pick(keep.photoUrl, absorb.photoUrl), photoPath: pick(keep.photoPath, absorb.photoPath),
+    rackCol: (keep.rackCol!=null ? keep.rackCol : (absorb.rackCol!=null ? absorb.rackCol : null)),
+    rackRow: (keep.rackRow!=null ? keep.rackRow : (absorb.rackRow!=null ? absorb.rackRow : null)),
+    addedAt: Math.min(keep.addedAt||Date.now(), absorb.addedAt||Date.now())
+  };
+  try{
+    await dbUpdate('cellar/bottles/' + keepId, upd);
+    await dbRemove('cellar/bottles/' + dropId);   // photos were absorbed — no Storage deletes
+    logEvent('merged', { bottleId:keepId, name:keep.name, vintage:keep.vintage||'', withName:absorb.name, qty:upd.qty });
+    closeDetail();
+    showToast('Merged — ' + (keep.name||'bottle') + ' (now ×' + upd.qty + ')');
+    setTimeout(()=>openDetail(keepId), 60);
+  }catch(e){ document.getElementById('dtStatus').textContent='❌ Merge failed: ' + (e.message||e); }
+};
 window.dtToggleHalf = ()=>{ dtDraft.half=!dtDraft.half; document.getElementById('dtHalfbtn').classList.toggle('on',dtDraft.half); echo('dtScoreEcho',dtDraft); };
 window.dtToggleBuy = ()=>{ dtDraft.buy=!dtDraft.buy; document.getElementById('dtBuyflag').classList.toggle('on',dtDraft.buy); };
 window.saveDetail = async function(){
@@ -2331,7 +2378,7 @@ function historyHTML(){
     html += '</tbody></table></div>';
   }
 
-  const EV_LABEL = { logged:'🍷 Logged a pour', added:'🛒 Added to cellar', opened:'🍾 Opened', placed:'📍 Placed', swapped:'🔄 Swapped', unplaced:'🧺 To the tray', archived:'🗄 Archived', restored:'↩️ Restored' };
+  const EV_LABEL = { logged:'🍷 Logged a pour', added:'🛒 Added to cellar', opened:'🍾 Opened', placed:'📍 Placed', swapped:'🔄 Swapped', unplaced:'🧺 To the tray', archived:'🗄 Archived', restored:'↩️ Restored', merged:'🔗 Merged' };
   const recent = evs.sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,50);
   html += `<h3 class="hist-h">Activity</h3>`;
   if(!recent.length){
