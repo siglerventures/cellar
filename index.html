@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.60</title>
+<title>The Cellar Ledger — Rev 2.61</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.60</div>
+    <div class="auth-rev">Rev 2.61</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.60</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.61</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -675,6 +675,7 @@
       <input id="ca-abv" placeholder="ABV %">
       <input id="ca-price" placeholder="Price $" type="number" step="0.01" min="0">
       <input id="ca-vendor" placeholder="Vendor / where bought" list="vendorList">
+      <input id="ca-url" placeholder="Product URL (optional)">
       <input id="ca-qty" placeholder="Qty" type="number" min="1" value="1">
       <input id="ca-predlow" placeholder="Predicted low" type="number" step="0.5">
       <input id="ca-predhigh" placeholder="Predicted high" type="number" step="0.5">
@@ -699,6 +700,7 @@
   <div class="modal-card">
     <h3 id="dt-name">—</h3>
     <div class="msub" id="dt-meta">—</div>
+    <a id="dtUrlA" href="#" target="_blank" rel="noopener" style="display:none;font-size:12px;color:var(--gold);text-decoration:underline;margin:-10px 0 12px">🔗 Product page</a>
     <div class="dt-sibs" id="dtSibs" style="display:none"></div>
     <div class="qlabel">Photos — first is the card image</div>
     <div class="pintake" id="dt-intake" ondragover="piDragOver(event,'dt')" ondragleave="piDragLeave(event,'dt')" ondrop="piDrop(event,'dt')"></div>
@@ -719,6 +721,7 @@
       <input id="dt-grape" placeholder="Grape(s) — e.g. 65% Grenache, 15% Syrah">
       <select id="dt-kind" class="rt-jump" style="width:100%" onchange="applyKindFields('dt')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
       <input id="dt-rep" placeholder="Representative" list="repList">
+      <input id="dt-url" placeholder="Product URL (https://…)" style="grid-column:1/-1">
     </div>
     <div class="qlabel" style="margin-top:14px">Notes / comments</div>
     <textarea id="dt-notes" placeholder="Tasting notes, where you had it, who you shared it with…"></textarea>
@@ -1033,11 +1036,14 @@ const TAGSETS = {
     {k:'proofy',t:'Hot / High-proof',c:'#9a5a55'}
   ],
   tequila: [
+    {k:'tqcaramel',t:'Caramel',c:'#c9853c'},
+    {k:'tqvanilla',t:'Vanilla',c:'#c9a35c'},
+    {k:'tqsmoky',t:'Smoky',c:'#b5793f'},
+    {k:'tqcomplex',t:'Complex',c:'#8a5a8f'},
+    {k:'tqsmooth',t:'Smooth',c:'#6f8a9c'},
     {k:'agave',t:'Agave / Vegetal',c:'#7a9a6a'},
-    {k:'citrus',t:'Citrus / Bright',c:'#6f8a9c'},
     {k:'pepper',t:'Pepper / Spice',c:'#a8556a'},
-    {k:'oakv',t:'Oak / Vanilla',c:'#9c7b46'},
-    {k:'smoothsw',t:'Smooth / Sweet',c:'#c9853c'},
+    {k:'citrus',t:'Citrus / Bright',c:'#9c7b46'},
     {k:'harsh',t:'Harsh / Alcohol',c:'#9a5a55'}
   ],
   vodka: [
@@ -1600,6 +1606,8 @@ window.openDetail = function(id){
   document.getElementById('dt-grape').value = w.grape||'';
   { const ke = document.getElementById('dt-kind'); if(ke) ke.value = kindOf(w); } applyKindFields('dt');
   document.getElementById('dt-rep').value = w.rep||'';
+  document.getElementById('dt-url').value = w.url||'';
+  { const a=document.getElementById('dtUrlA'); if(w.url && /^https?:\/\//i.test(w.url)){ a.href=w.url; a.style.display='inline-block'; } else { a.style.display='none'; } }
   document.getElementById('dtStatus').textContent='';
   document.getElementById('detailModal').classList.add('open');
 };
@@ -1657,6 +1665,7 @@ window.saveDetail = async function(){
   const vintage = document.getElementById('dt-vintage').value.trim();
   const abv = document.getElementById('dt-abv').value.replace('%','').trim();
   const rep = document.getElementById('dt-rep').value.trim();
+  const url = document.getElementById('dt-url').value.trim();
   const notes = document.getElementById('dt-notes').value.trim();
   try{
     document.getElementById('dtStatus').textContent='⏳ Saving…';
@@ -1668,7 +1677,7 @@ window.saveDetail = async function(){
     const after  = [nn(score),nn(price),nn(notes),nn(vendor),nn(grape),nn(vintage),nn(abv),nn(rep),(dtDraft.buy?'1':''),dtDraft.tags.join(','),ups.length].join('¦');
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
       score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
-      vintage, abv, rep, notes, kind:(document.getElementById('dt-kind')||{value:kindOf(w)}).value,
+      vintage, abv, rep, url, notes, kind:(document.getElementById('dt-kind')||{value:kindOf(w)}).value,
       photos: ups.length?ups:null,
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
     });
@@ -1909,6 +1918,8 @@ async function scanAndFill(dataUrl, which){
 }
 function fillScanFields(which, d){
   const p = which==='q' ? 'q-' : 'ca-';
+  // "NV" is scanner-speak for "no year found" — never write it into a field.
+  if(d && String(d.vintage).trim().toUpperCase()==='NV') d.vintage = '';
   const set=(id,v)=>{ const el=document.getElementById(id); if(el && v) el.value=v; };
   if(which==='q'){
     document.getElementById('q-name').value = d.name || d.producer || '';
@@ -2222,7 +2233,7 @@ window.confirmOpen = async function(){
 
 // ── ADD TO CELLAR ──
 window.openCellarAdd = ()=>{
-  ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
+  ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-url','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ca-qty').value = '1';
   // Rack / shelf destination: auto (scan suggestion) · a specific rack's first open slot · the tray
   document.getElementById('ca-rack').innerHTML =
@@ -2298,7 +2309,7 @@ window.addCellarBottle = async function(){
       grape:document.getElementById('ca-grape').value.trim(),
       vintage:document.getElementById('ca-vintage').value.trim(),
       abv:document.getElementById('ca-abv').value.replace('%','').trim(),
-      status:'cellared', qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1),
+      status:'cellared', qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1), url:document.getElementById('ca-url').value.trim(),
       predLow: pl===''?null:Number(pl), predHigh: ph===''?null:Number(ph), price:parsePriceInput('ca-price'), vendor:document.getElementById('ca-vendor').value.trim(), kind:(document.getElementById('ca-kind')||{value:'wine'}).value,
       score:null, tag:null, buyAgain:false, notes:'',
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
