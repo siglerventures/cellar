@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.61</title>
+<title>The Cellar Ledger — Rev 2.62</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.61</div>
+    <div class="auth-rev">Rev 2.62</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.61</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.62</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -698,7 +698,9 @@
 <!-- ── BOTTLE DETAIL / EDIT MODAL ── -->
 <div class="modal" id="detailModal">
   <div class="modal-card">
-    <h3 id="dt-name">—</h3>
+    <h3 id="dt-name" title="Double-click (or long-press) to rename">—</h3>
+    <input id="dt-name-input" style="display:none;width:100%;font-size:17px;font-weight:700;margin:0 0 6px" placeholder="Bottle name">
+    <div class="msub" id="dt-name-hint" style="display:none;margin:-4px 0 8px">✏️ Renaming — press Save below to keep it</div>
     <div class="msub" id="dt-meta">—</div>
     <a id="dtUrlA" href="#" target="_blank" rel="noopener" style="display:none;font-size:12px;color:var(--gold);text-decoration:underline;margin:-10px 0 12px">🔗 Product page</a>
     <div class="dt-sibs" id="dtSibs" style="display:none"></div>
@@ -1561,6 +1563,7 @@ window.openDetail = function(id){
   const half = w.score!=null && (Number(w.score)-whole)>=0.5;
   dtDraft = { id, score:whole, half, tags:bottleTags(w).slice(), buy:!!w.buyAgain };
   document.getElementById('dt-name').textContent = w.name || '—';
+  dtNameEditReset();
   const meta=[w.producer,w.vintage,w.grape,w.region,w.abv?w.abv+'%':'',fmtPrice(w.price),w.vendor?('from '+w.vendor):''].filter(Boolean).join(' · ');
   const state = w.status==='cellared' ? ('Cellared'+((w.rackCol&&w.rackRow)?' · '+slotOf(w):'')+(Number(w.qty)>1?' · ×'+w.qty:'')) : 'Opened';
   document.getElementById('dt-meta').textContent = [state, meta].filter(Boolean).join(' — ');
@@ -1654,6 +1657,37 @@ window.mergeDetail = async function(){
     setTimeout(()=>openDetail(keepId), 60);
   }catch(e){ document.getElementById('dtStatus').textContent='❌ Merge failed: ' + (e.message||e); }
 };
+// ── Rename a bottle: double-click the title (desktop) or long-press it (mobile) ──
+function dtNameEditReset(){
+  const h=document.getElementById('dt-name'), i=document.getElementById('dt-name-input'), hint=document.getElementById('dt-name-hint');
+  if(h) h.style.display='';
+  if(i){ i.style.display='none'; i.value=''; }
+  if(hint) hint.style.display='none';
+}
+function dtStartRename(){
+  const w = bottles[dtDraft.id]; if(!w) return;
+  const h=document.getElementById('dt-name'), i=document.getElementById('dt-name-input'), hint=document.getElementById('dt-name-hint');
+  if(!h||!i) return;
+  h.style.display='none';
+  i.value = w.name || '';
+  i.style.display='';
+  if(hint) hint.style.display='';
+  i.focus(); i.select();
+}
+(function(){
+  const h=document.getElementById('dt-name'), i=document.getElementById('dt-name-input');
+  if(!h||!i) return;
+  h.addEventListener('dblclick', dtStartRename);
+  // Long-press (~600 ms) for touch — cancelled by movement or early release.
+  let t=null;
+  h.addEventListener('touchstart', ()=>{ t=setTimeout(dtStartRename, 600); }, {passive:true});
+  ['touchend','touchmove','touchcancel'].forEach(ev=>h.addEventListener(ev, ()=>{ if(t){clearTimeout(t); t=null;} }, {passive:true}));
+  // Enter commits the edit visually (Save still writes it); Escape backs out.
+  i.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); i.blur(); }
+    else if(e.key==='Escape'){ dtNameEditReset(); }
+  });
+})();
 window.dtToggleHalf = ()=>{ dtDraft.half=!dtDraft.half; document.getElementById('dtHalfbtn').classList.toggle('on',dtDraft.half); echo('dtScoreEcho',dtDraft); };
 window.dtToggleBuy = ()=>{ dtDraft.buy=!dtDraft.buy; document.getElementById('dtBuyflag').classList.toggle('on',dtDraft.buy); };
 window.saveDetail = async function(){
@@ -1667,21 +1701,24 @@ window.saveDetail = async function(){
   const rep = document.getElementById('dt-rep').value.trim();
   const url = document.getElementById('dt-url').value.trim();
   const notes = document.getElementById('dt-notes').value.trim();
+  // A non-empty rename (via double-click / long-press on the title) wins; blank keeps the old name.
+  const nameIn = document.getElementById('dt-name-input');
+  const name = (nameIn && nameIn.style.display!=='none' && nameIn.value.trim()) ? nameIn.value.trim() : (w.name||'');
   try{
     document.getElementById('dtStatus').textContent='⏳ Saving…';
     const ups = await uploadPhotos(dtDraft.id, piStore.dt);
     // Snapshot before/after so a real edit gets recorded in Activity.
     const nn = v => (v==null?'':String(v)).trim();
     const photoCount = (a)=> Array.isArray(a) ? a.length : 0;
-    const before = [nn(w.score),nn(w.price),nn(w.notes),nn(w.vendor),nn(w.grape),nn(w.vintage),nn(w.abv),nn(w.rep),(w.buyAgain?'1':''),bottleTags(w).join(','),photoCount(w.photos)||(w.photoUrl?1:0)].join('¦');
-    const after  = [nn(score),nn(price),nn(notes),nn(vendor),nn(grape),nn(vintage),nn(abv),nn(rep),(dtDraft.buy?'1':''),dtDraft.tags.join(','),ups.length].join('¦');
+    const before = [nn(w.name),nn(w.score),nn(w.price),nn(w.notes),nn(w.vendor),nn(w.grape),nn(w.vintage),nn(w.abv),nn(w.rep),(w.buyAgain?'1':''),bottleTags(w).join(','),photoCount(w.photos)||(w.photoUrl?1:0)].join('¦');
+    const after  = [nn(name),nn(score),nn(price),nn(notes),nn(vendor),nn(grape),nn(vintage),nn(abv),nn(rep),(dtDraft.buy?'1':''),dtDraft.tags.join(','),ups.length].join('¦');
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
-      score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
+      name, score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
       vintage, abv, rep, url, notes, kind:(document.getElementById('dt-kind')||{value:kindOf(w)}).value,
       photos: ups.length?ups:null,
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
     });
-    if(before!==after) logEvent('edited', { bottleId:dtDraft.id, name:w.name||'', vintage:w.vintage||'' });
+    if(before!==after) logEvent('edited', { bottleId:dtDraft.id, name:name||'', vintage:w.vintage||'' });
     dtRemoved.forEach(p=>deleteObject(storageRef(storage, p)).catch(()=>{}));
     dtRemoved = [];
     if(lastUploadFailed){
@@ -1691,7 +1728,7 @@ window.saveDetail = async function(){
       return;
     }
     closeDetail();
-    showToast('Saved — ' + (w.name||'bottle'));
+    showToast('Saved — ' + (name||'bottle'));
   }catch(e){ document.getElementById('dtStatus').textContent='❌ ' + (e.message||e); }
 };
 // From the History view: open the bottle behind an activity row / repeat-bottle row.
@@ -3351,7 +3388,7 @@ onAuthStateChanged(auth, async (user)=>{
 // parallel PR while code still referenced it. This flags that loudly at load.
 (function integrityCheck(){
   const critical = ['quickPanel','wsPanel','askwrap','askInput','askAnswer','kindRow','searchrow','searchbar',
-    'detailModal','dtScorepad','dtTags','dtHalfbtn','dtBuyflag','dt-name','dt-meta','dt-notes','dt-price',
+    'detailModal','dtScorepad','dtTags','dtHalfbtn','dtBuyflag','dt-name','dt-name-input','dt-meta','dt-notes','dt-price',
     'dt-vendor','dt-grape','dt-kind','dt-vintage','dt-abv','dtOpenBtn','dtMergeBtn','dtStatus',
     'q-name','q-kind','q-intake','ca-name','ca-kind','ca-intake','ws-intake','ai-intake-wrap',
     'openModal','cellarAddModal','accessModal','archiveModal','dataModal','rackModal','content','toast','auth-gate','authError'];
