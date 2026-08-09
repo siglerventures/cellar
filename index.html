@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.11</title>
+<title>The Cellar Ledger — Rev 2.12</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -362,7 +362,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.11</div>
+    <div class="auth-rev">Rev 2.12</div>
   </div>
 </div>
 
@@ -468,7 +468,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.11</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.12</span>
   </footer>
 </div>
 
@@ -1060,7 +1060,7 @@ window.saveDetail = async function(){
     if(lastUploadFailed){
       // Keep the modal open so the failure is impossible to miss.
       document.getElementById('dtStatus').textContent =
-        '❌ ' + lastUploadFailed + ' photo(s) did NOT upload — likely the Storage rules (wine_cellar block) were never published in the Firebase console. Scores/notes were saved.';
+        '❌ ' + lastUploadFailed + ' photo(s) did NOT upload — check the Storage rules (/cellar block) in the Firebase console. Scores/notes were saved.';
       return;
     }
     closeDetail();
@@ -1307,7 +1307,9 @@ function piReset(ctx){
 }
 // Upload compressed label to Storage under the bottle id; return {path,url}.
 async function uploadLabel(bottleId, dataUrl){
-  const path='wine_cellar/bottles/'+bottleId+'/label_'+Date.now()+'.jpg';
+  // Storage path MUST stay under cellar/ — that's the folder the published
+  // Storage rules allow (matches the RTDB /cellar root). wine_cellar/ is denied.
+  const path='cellar/bottles/'+bottleId+'/label_'+Date.now()+'.jpg';
   const sref=storageRef(storage, path);
   await uploadString(sref, dataUrl, 'data_url');
   const url=await getDownloadURL(sref);
