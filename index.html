@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.28</title>
+<title>The Cellar Ledger — Rev 2.30</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -74,7 +74,10 @@
   .modal-card textarea{font-family:'Inter';font-size:14px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:10px 12px;width:100%;margin-bottom:12px;min-height:72px;resize:vertical}
   .modal-card textarea:focus{outline:none;border-color:var(--gold)}
   .dt-save{margin-left:auto}
-  .dt-price{max-width:150px;margin-bottom:0!important}
+  .dt-open{padding:9px 15px!important;white-space:nowrap;flex-shrink:0}
+  .dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .dt-grid input{margin-bottom:0!important;width:100%}
+  @media(max-width:420px){.dt-grid{grid-template-columns:1fr}}
   /* ── History & spend ── */
   .hist-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px}
   .htile{border:1px solid var(--line);border-radius:5px;background:var(--glass);padding:14px 12px;text-align:center}
@@ -415,7 +418,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.28</div>
+    <div class="auth-rev">Rev 2.30</div>
   </div>
 </div>
 
@@ -528,7 +531,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.28</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.30</span>
   </footer>
 </div>
 
@@ -618,9 +621,13 @@
     <div class="tags" id="dtTags"></div>
     <div class="mrow" style="margin-top:4px">
       <button class="buyflag" id="dtBuyflag" onclick="dtToggleBuy()"><span class="dot"></span> Buy again</button>
-      <input id="dt-price" class="dt-price" placeholder="Price $" type="number" step="0.01" min="0">
-      <input id="dt-vendor" class="dt-price" style="max-width:220px" placeholder="Vendor / where bought">
-      <button class="mbtn ghost" id="dtOpenBtn" style="display:none" onclick="dtMarkOpened()">🍷 Mark opened</button>
+      <button class="mbtn ghost dt-open" id="dtOpenBtn" style="display:none" onclick="dtMarkOpened()">Opened</button>
+    </div>
+    <div class="dt-grid">
+      <input id="dt-price" placeholder="Price $" type="number" step="0.01" min="0">
+      <input id="dt-abv" placeholder="ABV %">
+      <input id="dt-vendor" placeholder="Vendor / store">
+      <input id="dt-rep" placeholder="Representative">
     </div>
     <div class="qlabel" style="margin-top:14px">Notes / comments</div>
     <textarea id="dt-notes" placeholder="Tasting notes, where you had it, who you shared it with…"></textarea>
@@ -1181,7 +1188,9 @@ window.openDetail = function(id){
   echo('dtScoreEcho', dtDraft);
   document.getElementById('dt-notes').value = w.notes || '';
   document.getElementById('dt-price').value = (w.price==null?'':w.price);
+  document.getElementById('dt-abv').value = w.abv||'';
   document.getElementById('dt-vendor').value = w.vendor||'';
+  document.getElementById('dt-rep').value = w.rep||'';
   document.getElementById('dtStatus').textContent='';
   document.getElementById('detailModal').classList.add('open');
 };
@@ -1198,6 +1207,7 @@ window.saveDetail = async function(){
     const ups = await uploadPhotos(dtDraft.id, piStore.dt);
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
       score, tag:dtDraft.tag, buyAgain:dtDraft.buy, price:parsePriceInput('dt-price'), vendor:document.getElementById('dt-vendor').value.trim(),
+      abv:document.getElementById('dt-abv').value.replace('%','').trim(), rep:document.getElementById('dt-rep').value.trim(),
       notes:document.getElementById('dt-notes').value.trim(),
       photos: ups.length?ups:null,
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
@@ -1699,7 +1709,7 @@ function matchSearch(w){
     (w.score!=null) ? ('rating score ' + fmt(w.score) + ' ' + w.score) : '',
     (w.predLow!=null || w.predHigh!=null) ? ('predicted ' + (w.predLow!=null?fmt(w.predLow):'') + ' ' + (w.predHigh!=null?fmt(w.predHigh):'')) : '',
     (w.price!=null && w.price!=='') ? ('price ' + w.price + ' ' + fmtPrice(w.price)) : '',
-    w.vendor||'',
+    w.vendor||'', w.rep||'',
     (w.rackCol && w.rackRow) ? ('slot ' + slotCode(w.rackCol,w.rackRow)) : ''
   ];
   return deburr(parts.filter(Boolean).join(' ').toLowerCase()).includes(search);
@@ -1898,6 +1908,7 @@ const LIST_COLS = [
   { key:'tag',     label:'Flavor',  dir:1  },
   { key:'score',   label:'Rating',  dir:-1, num:true },
   { key:'price',   label:'Price',   dir:-1, num:true },
+  { key:'abv',     label:'ABV',     dir:-1, num:true },
   { key:'vintage', label:'Vintage', dir:-1 },
   { key:'region',  label:'Region',  dir:1  },
   { key:'slot',    label:'Slot',    dir:1  }
@@ -1915,6 +1926,7 @@ function listSortVal(w, key){
     case 'tag':     return w.tag ? tagInfo(w.tag).t.toLowerCase() : '~';
     case 'score':   return scored ? Number(w.score) : (w.predLow!=null ? (Number(w.predLow)+Number(w.predHigh!=null?w.predHigh:w.predLow))/2 : -1);
     case 'price':   return (w.price==null||w.price==='') ? -1 : Number(w.price);
+    case 'abv':     { const a=parseFloat(String(w.abv||'').replace(/[^0-9.]/g,'')); return isFinite(a)?a:-1; }
     case 'vintage': return parseInt(String(w.vintage||'').replace(/[^0-9]/g,''),10) || 0;
     case 'region':  return (w.region||'~').toLowerCase();
     case 'slot':    return (w.rackCol&&w.rackRow) ? Number(w.rackCol)*100 + Number(w.rackRow) : 1e9;
@@ -1944,6 +1956,7 @@ function listTrHTML(w){
     + `<td>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:dim}</td>`
     + `<td class="lt-num"><span class="lt-score ${cls}">${esc(score)}</span></td>`
     + `<td class="lt-num">${price?esc(price):dim}</td>`
+    + `<td class="lt-num">${w.abv?esc(String(w.abv).replace('%','')+'%'):dim}</td>`
     + `<td>${w.vintage?esc(w.vintage):dim}</td>`
     + `<td class="lt-region">${w.region?esc(w.region):dim}</td>`
     + `<td>${slot?`<span class="slot-badge">${slot}</span>`:dim}</td>`
