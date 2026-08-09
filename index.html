@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.30</title>
+<title>The Cellar Ledger — Rev 2.31</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -418,7 +418,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.30</div>
+    <div class="auth-rev">Rev 2.31</div>
   </div>
 </div>
 
@@ -531,7 +531,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.30</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.31</span>
   </footer>
 </div>
 
@@ -1073,6 +1073,8 @@ async function handleAIAnswer(answer){
   const cleaned = String(answer).replace(/```(?:json)?/gi,'').replace(/```/g,'');
   const { blocks, rest } = extractAddBlocks(cleaned);
   const adds = blocks.filter(a=>a && a.action==='add' && a.bottle && a.bottle.name);
+  // Same wine already cellared? Restock its qty instead of duplicating.
+  // (Accent/punctuation-insensitive match on name+vintage.)
   if(!adds.length) return cleaned.trim();
   const now = Date.now();
   const uid = (auth.currentUser && auth.currentUser.uid) || '';
@@ -1088,6 +1090,19 @@ async function handleAIAnswer(answer){
     const price = (b.price!=null && b.price!=='' && isFinite(priceN)) ? priceN : null;
     const qty = status==='cellared' ? Math.max(1, Number(b.qty)||1) : 0;
     try{
+      if(status==='cellared'){
+        const existing = findCellaredMatch(b.name, b.vintage);
+        if(existing){
+          const newQty = (Number(existing.qty)||1) + qty;
+          const upd = { qty:newQty };
+          if(price!=null && (existing.price==null || existing.price==='')) upd.price = price;
+          if(b.vendor && !existing.vendor) upd.vendor = String(b.vendor);
+          await dbUpdate('cellar/bottles/' + existing.id, upd);
+          logEvent('added', { bottleId:existing.id, name:existing.name, vintage:existing.vintage||'', qty, price, vendor:String(b.vendor||''), restock:true });
+          done.push(b.name + ' (restocked — now ×' + newQty + ')');
+          continue;
+        }
+      }
       const r = push(ref(db, 'cellar/bottles'));
       // Attached pics go onto the first added bottle only.
       const ups = first ? await uploadPhotos(r.key, piStore.ai) : [];
@@ -1653,6 +1668,32 @@ window.addCellarBottle = async function(){
     if(row){ placeCol=caSuggest.col; placeRow=row; }
   }
   try{
+    // Already cellared? Restock the existing record instead of duplicating.
+    const addQty = Math.max(1, Number(document.getElementById('ca-qty').value)||1);
+    const existing = findCellaredMatch(name, document.getElementById('ca-vintage').value.trim());
+    if(existing){
+      const newQty = (Number(existing.qty)||1) + addQty;
+      const upd = { qty:newQty };
+      const p = parsePriceInput('ca-price');
+      if(p!=null && (existing.price==null || existing.price==='')) upd.price = p;
+      const v = document.getElementById('ca-vendor').value.trim();
+      if(v && !existing.vendor) upd.vendor = v;
+      if(piStore.ca.length){
+        const ups2 = await uploadPhotos(existing.id, piStore.ca);
+        if(ups2.length){
+          const merged = (Array.isArray(existing.photos)?existing.photos:[]).concat(ups2);
+          upd.photos = merged;
+          if(!existing.photoUrl){ upd.photoUrl = ups2[0].url; upd.photoPath = ups2[0].path; }
+        }
+      }
+      await dbUpdate('cellar/bottles/' + existing.id, upd);
+      logEvent('added', { bottleId:existing.id, name:existing.name, vintage:existing.vintage||'', qty:addQty, price:p, vendor:v, restock:true });
+      caSuggest = null;
+      closeCellarAddModal();
+      showToast('Restocked — ' + existing.name + ' (now ×' + newQty + ')');
+      setView('cellar');
+      return;
+    }
     const r = push(ref(db, 'cellar/bottles'));
     const ups = await uploadPhotos(r.key, piStore.ca);
     await set(r, {
@@ -1723,6 +1764,15 @@ function thumbHTML(w){ return w.photoUrl ? `<img class="thumb" src="${esc(w.phot
 function asArr(map){ return Object.keys(map||{}).map(id=>Object.assign({id}, map[id])); }
 // Active (non-archived) bottles — everything user-facing filters through this.
 function activeArr(){ return asArr(bottles).filter(w=>!w.archived); }
+// Accent/punctuation-insensitive wine identity, for restock-instead-of-duplicate.
+function normWine(name, vintage){
+  const n = String(name||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  return n + '|' + String(vintage||'').trim().toLowerCase();
+}
+function findCellaredMatch(name, vintage){
+  const key = normWine(name, vintage);
+  return activeArr().find(w=>w.status==='cellared' && normWine(w.name, w.vintage)===key) || null;
+}
 
 function render(){
   const all = activeArr();
