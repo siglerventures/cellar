@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.16</title>
+<title>The Cellar Ledger — Rev 2.17</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -278,15 +278,17 @@
   .lname{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch);line-height:1.12}
   .lmeta{font-size:11px;color:var(--parch-dim);margin-top:2px}
   .ltag{display:inline-block;font-size:10px;letter-spacing:.04em;padding:2px 8px;border-radius:20px;margin-top:5px;font-weight:600}
-  .wine{display:grid;grid-template-columns:90px 1fr auto;gap:clamp(10px,3vw,18px);align-items:start;padding:16px 0;border-bottom:1px solid var(--line)}
+  .wine{display:grid;grid-template-columns:104px 1fr auto;gap:clamp(10px,3vw,18px);align-items:start;padding:16px 0;border-bottom:1px solid var(--line)}
   /* Left rail: score stacked above a bottle-shaped label thumbnail */
   .wine-left{display:flex;flex-direction:column;align-items:center;gap:8px}
   .wine-left .score{width:100%}
   .wine-left .score b{font-size:23px}
   .wine-left .s-pred b{font-size:15.5px}
-  .cardphoto{width:86px;height:110px;border-radius:4px;overflow:hidden;background:linear-gradient(160deg,#2c1016 0%,#160a0c 70%);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  /* contain (not cover) so the whole bottle is visible, letterboxed on the dark ground */
+  /* Photo: frameless, full bottle — near-white backgrounds are scraped to
+     transparent client-side (see scrapeWhite) so the bottle sits cut-out. */
+  .cardphoto{width:100px;height:150px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .cardphoto img{width:100%;height:100%;object-fit:contain;cursor:zoom-in;display:block}
+  .cardphoto.ph{width:86px;height:110px;border-radius:4px;background:linear-gradient(160deg,#2c1016 0%,#160a0c 70%);border:1px solid var(--line)}
   .cardphoto.ph .ph-glass{font-size:26px;opacity:.5}
   .score b{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:600;line-height:.9;display:block;text-align:center}
   .score s{text-decoration:none;font-size:9px;letter-spacing:.1em;color:var(--parch-dim);text-transform:uppercase;display:block;text-align:center}
@@ -295,7 +297,7 @@
   .meta .name{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:var(--parch);line-height:1.1}
   .meta .producer{font-size:12.5px;color:var(--gold-dim);font-weight:500}
   .meta .row2{font-size:11px;color:var(--parch-dim);margin-top:5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .meta .notes{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--parch-dim);margin-top:6px}
+  .meta .notes{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--parch-dim);margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .buy-yes{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--green)}
   .qtybadge{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--gold);border:1px solid var(--line);border-radius:20px;padding:2px 8px}
   .openbtn{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--parch);background:transparent;border:1px solid var(--line);border-radius:3px;padding:7px 12px;cursor:pointer;font-family:'Inter';transition:.15s;white-space:nowrap}
@@ -377,7 +379,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.16</div>
+    <div class="auth-rev">Rev 2.17</div>
   </div>
 </div>
 
@@ -485,7 +487,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.16</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.17</span>
   </footer>
 </div>
 
@@ -1625,8 +1627,54 @@ function collectionCardHTML(w){
 }
 // Photo band at the top of every browse card: label photo, or a placeholder inviting one.
 function cardPhotoHTML(w){
-  if(w.photoUrl) return `<div class="cardphoto"><img src="${esc(w.photoUrl)}" alt="label" loading="lazy" onclick="event.stopPropagation();viewImage('${esc(w.photoUrl)}')"></div>`;
+  if(w.photoUrl){ schedScrape(); return `<div class="cardphoto"><img src="${esc(w.photoUrl)}" data-scrape="${esc(w.photoUrl)}" alt="label" loading="lazy" onclick="event.stopPropagation();viewImage('${esc(w.photoUrl)}')"></div>`; }
   return `<div class="cardphoto ph" title="Tap the card to add a photo"><span class="ph-glass">🍷</span></div>`;
+}
+// ── WHITE-SCRAPE: cut the bottle out of a white-background photo ─────────────
+// Card thumbnails load the original, then swap in a version where near-white
+// pixels are made transparent (canvas, cached per URL). Zoom keeps the original.
+const scrapeCache = new Map();
+function scrapeWhite(url){
+  if(scrapeCache.has(url)) return scrapeCache.get(url);
+  const job = new Promise((resolve)=>{
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = ()=>{
+      try{
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const x = c.getContext('2d');
+        x.drawImage(img, 0, 0);
+        const d = x.getImageData(0, 0, c.width, c.height), a = d.data;
+        for(let i=0;i<a.length;i+=4){
+          const r=a[i], g=a[i+1], b=a[i+2];
+          const mn = Math.min(r,g,b), mx = Math.max(r,g,b);
+          // near-white & low-saturation → transparent, with a soft edge fade
+          if(mn > 210 && mx - mn < 26){
+            a[i+3] = mn >= 238 ? 0 : Math.round((238 - mn) * 9);
+          }
+        }
+        x.putImageData(d, 0, 0);
+        resolve(c.toDataURL('image/png'));
+      }catch(e){ resolve(null); }   // CORS-tainted or decode issue → keep original
+    };
+    img.onerror = ()=>resolve(null);
+    img.src = url;
+  });
+  scrapeCache.set(url, job);
+  return job;
+}
+let scrapeTimer = null;
+function schedScrape(){
+  clearTimeout(scrapeTimer);
+  scrapeTimer = setTimeout(()=>{
+    document.querySelectorAll('img[data-scrape]').forEach(async (el)=>{
+      const url = el.dataset.scrape;
+      el.removeAttribute('data-scrape');
+      const out = await scrapeWhite(url);
+      if(out && el.isConnected) el.src = out;
+    });
+  }, 40);
 }
 // List — one dense line per wine.
 function listRowHTML(w){
@@ -1663,7 +1711,7 @@ function kanbanCardHTML(w){
 function openedCardHTML(w){
   const ti=tagInfo(w.tag);
   const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
-  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="event.stopPropagation();toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
+  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
 }
 
 // ── RACK MAP: labels, matching, placement ──
