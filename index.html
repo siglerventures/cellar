@@ -581,6 +581,7 @@
     <div class="mrow">
       <button class="mbtn ghost" onclick="closeDetail()">Close</button>
       <button class="mbtn ghost dt-archive" onclick="archiveDetail()">Archive</button>
+      <button class="mbtn ghost" id="dtOpenBtn" style="display:none" onclick="dtMarkOpened()">🍷 Mark opened</button>
       <button class="mbtn dt-save" onclick="saveDetail()">Save</button>
     </div>
     <div class="mstatus" id="dtStatus"></div>
@@ -1054,6 +1055,7 @@ window.openDetail = function(id){
   const meta=[w.producer,w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
   const state = w.status==='cellared' ? ('Cellared'+((w.rackCol&&w.rackRow)?' · '+slotCode(w.rackCol,w.rackRow):'')+(Number(w.qty)>1?' · ×'+w.qty:'')) : 'Opened';
   document.getElementById('dt-meta').textContent = [state, meta].filter(Boolean).join(' — ');
+  document.getElementById('dtOpenBtn').style.display = w.status==='cellared' ? '' : 'none';
   dtRemoved = [];
   piStore.dt = (Array.isArray(w.photos) && w.photos.length)
     ? w.photos.filter(p=>p && p.url).map(p=>({ path:p.path||null, url:p.url }))
@@ -1070,6 +1072,8 @@ window.openDetail = function(id){
   document.getElementById('detailModal').classList.add('open');
 };
 window.closeDetail = ()=>document.getElementById('detailModal').classList.remove('open');
+// Detail modal → the mark-opened (score it) flow for a cellared bottle.
+window.dtMarkOpened = function(){ const id = dtDraft.id; closeDetail(); if(id) openMarkOpened(id); };
 window.dtToggleHalf = ()=>{ dtDraft.half=!dtDraft.half; document.getElementById('dtHalfbtn').classList.toggle('on',dtDraft.half); echo('dtScoreEcho',dtDraft); };
 window.dtToggleBuy = ()=>{ dtDraft.buy=!dtDraft.buy; document.getElementById('dtBuyflag').classList.toggle('on',dtDraft.buy); };
 window.saveDetail = async function(){
@@ -1626,7 +1630,7 @@ function collectionCardHTML(w){
     const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
     const qty = Number(w.qty)||1;
     const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>` : '';
-    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="event.stopPropagation();openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}</div></div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
   }
   return openedCardHTML(w);
 }
