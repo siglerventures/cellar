@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.4</title>
+<title>The Cellar Ledger — Rev 2.5</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -321,7 +321,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.4</div>
+    <div class="auth-rev">Rev 2.5</div>
   </div>
 </div>
 
@@ -348,10 +348,6 @@
     <button class="act ghosty" onclick="actionWineScan()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       Wine Scan
-    </button>
-    <button class="act ghosty" onclick="actionShopScan()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-      At a wine shop
     </button>
   </div>
 
@@ -422,7 +418,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.4</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.5</span>
   </footer>
 </div>
 
@@ -825,10 +821,17 @@ window.toggleLogPanel = function(){
   p.classList.toggle('show');
   if(p.classList.contains('show')) p.scrollIntoView({behavior:'smooth', block:'start'});
 };
-// Wine Scan — open the camera intake; the scan fills the log form.
-window.actionWineScan = function(){ openLogPanel(); const el=document.getElementById('q-pi-cam'); if(el) el.click(); };
-// At a wine shop — same server-side scan; the scout verdict panel answers "buy it?".
-window.actionShopScan = function(){ openLogPanel(); const el=document.getElementById('q-pi-cam'); if(el) el.click(); };
+// Wine Scan — open the log panel focused on the photo intake, with every way in
+// (take a pic, choose from library, drag & drop, Ctrl+V paste). The first photo
+// runs the server-side scan; at a shop, the scout verdict panel answers "buy it?".
+window.actionWineScan = function(){
+  openLogPanel();
+  const intake = document.getElementById('q-intake');
+  if(!intake) return;
+  intake.scrollIntoView({ behavior:'smooth', block:'center' });
+  intake.classList.add('drag');                     // brief gold highlight → "your photo goes here"
+  setTimeout(()=>intake.classList.remove('drag'), 1600);
+};
 
 // ── ASK AI (server-side only — question + compact collection summary → askAI Cloud Function) ──
 function collectionSummary(){
