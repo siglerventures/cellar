@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.53</title>
+<title>The Cellar Ledger — Rev 2.54</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,6 +73,14 @@
   .sortchip{font-family:'Inter';font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--parch-dim);background:rgba(236,227,210,0.04);border:1px solid var(--line);border-radius:20px;padding:6px 14px;cursor:pointer;transition:.14s}
   .sortchip:hover{color:var(--parch)}
   .sortchip.on{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+  /* Custom dark dropdown (varietal picker) */
+  .dd{position:relative;display:inline-block}
+  .dd-panel{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:80;background:#1c0d10;border:1px solid var(--line);border-radius:8px;min-width:220px;max-height:55vh;overflow-y:auto;box-shadow:0 12px 34px rgba(0,0,0,.55);padding:5px}
+  .dd-panel.open{display:block}
+  .dd-opt{display:block;width:100%;text-align:left;font-family:'Inter';font-size:13.5px;color:var(--parch);background:none;border:none;border-radius:5px;padding:11px 13px;cursor:pointer}
+  .dd-opt:hover{background:rgba(201,163,92,.12)}
+  .dd-opt.on{color:var(--gold);font-weight:600}
+  .dd-opt em{font-style:normal;color:var(--parch-dim);font-size:11.5px}
   /* ── Bottle detail modal ── */
   .modal-card textarea{font-family:'Inter';font-size:14px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:10px 12px;width:100%;margin-bottom:12px;min-height:72px;resize:vertical}
   .modal-card textarea:focus{outline:none;border-color:var(--gold)}
@@ -488,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.53</div>
+    <div class="auth-rev">Rev 2.54</div>
   </div>
 </div>
 
@@ -601,7 +609,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.53</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.54</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -1372,15 +1380,27 @@ function parseVarietals(text){
 function pctOf(w, fam){ const v = parseVarietals(w.grape).find(x=>x.fam===fam); return v ? (v.pct!=null ? v.pct : 50) : -1; }
 function vMatch(w){ return !varietalFilter || pctOf(w, varietalFilter) >= 0; }
 window.setVarietal = function(v){ varietalFilter = v; render(); };
+// Custom dark dropdown — Android renders native <select> as a bright system
+// sheet that ignores page CSS, so we draw our own panel.
 function varietalSelectHTML(){
   const counts = {};
   activeArr().forEach(w=>parseVarietals(w.grape).forEach(v=>{ counts[v.fam]=(counts[v.fam]||0)+1; }));
   const fams = Object.keys(counts).sort((a,b)=>a.localeCompare(b));
   if(!fams.length) return '';
   const cap = (t)=>t.replace(/\b\w/g,c=>c.toUpperCase());
-  return `<select class="rt-jump" style="border-radius:20px;padding:6px 12px" onchange="setVarietal(this.value)"><option value="">🍇 Varietal…</option>` +
-    fams.map(f=>`<option value="${esc(f)}" ${varietalFilter===f?'selected':''}>${esc(cap(f))} (${counts[f]})</option>`).join('') + `</select>`;
+  const label = varietalFilter ? ('🍇 ' + cap(varietalFilter)) : '🍇 Varietal…';
+  return `<span class="dd"><button class="sortchip ${varietalFilter?'on':''}" onclick="ddToggle(event,this)">${esc(label)} ▾</button><span class="dd-panel">` +
+    `<button class="dd-opt ${!varietalFilter?'on':''}" onclick="setVarietal('')">All varietals</button>` +
+    fams.map(f=>`<button class="dd-opt ${varietalFilter===f?'on':''}" onclick="setVarietal('${esc(f)}')">${esc(cap(f))} <em>(${counts[f]})</em></button>`).join('') + `</span></span>`;
 }
+window.ddToggle = function(e, btn){
+  e.stopPropagation();
+  const panel = btn.nextElementSibling;
+  const wasOpen = panel.classList.contains('open');
+  document.querySelectorAll('.dd-panel.open').forEach(p=>p.classList.remove('open'));
+  if(!wasOpen) panel.classList.add('open');
+};
+document.addEventListener('click', ()=>document.querySelectorAll('.dd-panel.open').forEach(p=>p.classList.remove('open')));
 function chipRowHTML(){
   const chips = [['rating','Rating'],['newest','Newest'],['az','A–Z']];
   return '<div class="chiprow">' + chips.map(c=>`<button class="sortchip ${sortMode===c[0]?'on':''}" onclick="setSort('${c[0]}')">${c[1]}</button>`).join('') + varietalSelectHTML() +
