@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.25</title>
+<title>The Cellar Ledger — Rev 2.26</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -405,13 +405,13 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.25</div>
+    <div class="auth-rev">Rev 2.26</div>
   </div>
 </div>
 
 <div class="wrap">
   <div class="topbar">
-    <a class="brand" href="#" onclick="goHome();return false;" title="Philinity Wines — home">Philinity Wines <span class="brand-emoji">🍷</span></a>
+    <a class="brand" href="#" onclick="hardHome();return false;" title="Philinity Wines — fresh start">Philinity Wines <span class="brand-emoji" title="Back to All Bottles" onclick="event.stopPropagation();event.preventDefault();goHome()">🍷</span></a>
     <h1 class="toptitle">The Cellar <span class="amp">&</span> Ledger</h1>
     <div class="stats">
       <button class="stat" onclick="setView('logged')" title="See every wine you've logged &amp; scored"><b id="st-count">0</b><span>Logged</span></button>
@@ -516,7 +516,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.25</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.26</span>
   </footer>
 </div>
 
@@ -1623,6 +1623,12 @@ window.addCellarBottle = async function(){
 
 // ── VIEWS + RENDER ──
 // Brand click → back to the home view (All Bottles): close any modal/panel, top of page.
+// Brand text → HARD reset: clear saved view prefs and fully reload the app.
+window.hardHome = function(){
+  try{ localStorage.removeItem('cellar_listmode'); }catch(_){}
+  location.reload();
+};
+// 🍷 → soft home: back to All Bottles, keep current state otherwise.
 window.goHome = function(){
   document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open'));
   const qp=document.getElementById('quickPanel'); if(qp) qp.classList.remove('show');
