@@ -236,6 +236,19 @@
   .rt-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--parch-dim);font-weight:600}
   .rt-jump{font-family:'Inter';font-size:12px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:6px 8px}
   .rt-jump option{background:#1c0d10}
+  .rs-wrap{position:relative}
+  .rt-find{font-family:'Inter';font-size:12px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:6px 9px;width:190px;max-width:44vw}
+  .rt-find:focus{outline:none;border-color:var(--gold-dim)}
+  .rt-find::placeholder{color:var(--parch-dim)}
+  .rs-res{display:none;position:absolute;z-index:60;top:calc(100% + 4px);left:0;min-width:240px;max-width:80vw;max-height:300px;overflow-y:auto;background:#1c0d10;border:1px solid var(--line);border-radius:5px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  .rs-row{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;background:transparent;border:none;border-bottom:1px solid rgba(236,227,210,0.06);padding:9px 12px;cursor:pointer;color:var(--parch);font-family:'Inter';transition:.12s}
+  .rs-row:last-child{border-bottom:none}
+  .rs-row:hover{background:rgba(201,161,84,0.10)}
+  .rs-nm{font-size:12.5px}
+  .rs-loc{flex-shrink:0;font-size:11px;color:var(--gold);white-space:nowrap}
+  .rs-empty{padding:10px 12px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--parch-dim)}
+  .rack-tray-zone{border-radius:8px;transition:.14s}
+  .rack-tray-zone.tray-hi{background:rgba(201,161,84,0.08);outline:1px dashed var(--gold-dim);outline-offset:3px}
   /* Cellar/rack view breaks out of the app's centered column to full viewport width. */
   .rack-view{padding:0 clamp(10px,2vw,24px)}
   /* Horizontal scroll stays contained (narrow screens pan columns); vertically the
@@ -2336,6 +2349,7 @@ function rackHTML(){
   // Toolbar — zoom · column jump · edit labels
   const jumpOpts = Array.from({length:d.cols},(_,i)=>{ const c=i+1; return `<option value="${c}">Col ${c} · ${esc(colHeaderLabel(c))}</option>`; }).join('');
   const tools = `<div class="rack-tools">
+    <div class="rt-group"><span class="rt-lbl">Find</span><div class="rs-wrap"><input id="rackSearch" class="rt-find" type="search" placeholder="Search a bottle…" autocomplete="off" oninput="rackSearchInput(this.value)" onkeydown="rackSearchKey(event)" onblur="rackSearchBlur()"><div class="rs-res" id="rackSearchRes"></div></div></div>
     <div class="rt-group"><span class="rt-lbl">Zoom</span><button class="rt-btn ${rackZoom===1?'on':''}" onclick="rackZoomSet(1)">S</button><button class="rt-btn ${rackZoom===2?'on':''}" onclick="rackZoomSet(2)">M</button><button class="rt-btn ${rackZoom===3?'on':''}" onclick="rackZoomSet(3)">L</button></div>
     <div class="rt-group"><span class="rt-lbl">Jump</span><select class="rt-jump" onchange="rackJump(this.value)"><option value="">Column…</option>${jumpOpts}</select></div>
     ${admin?`<button class="rt-btn ${rackEdit?'on':''}" onclick="rackToggleEdit()">${rackEdit?'✓ Done editing':'Edit labels'}</button>`:''}
@@ -2352,12 +2366,13 @@ function rackHTML(){
     const loc = (w.rackCol && w.rackRow) ? slotCode(w.rackCol,w.rackRow) + ' · ' + esc(cellLabel(w.rackCol,w.rackRow)) : 'unplaced';
     bar = `<div class="rack-bar"><span class="rb-msg"><b>${esc(w.name)}</b> — ${loc}</span><span class="rb-actions"><button class="scout-btn" onclick="rackMove('${inspect}')">Move</button><button class="scout-btn" onclick="rackUnplace('${inspect}')">Unplace</button><button class="scout-btn" onclick="rackMarkOpened('${inspect}')">Mark opened</button><button class="scout-btn ghost" onclick="rackCancel()">Close</button></span></div>`;
   }else{
-    bar = `<div class="rack-bar rb-hint"><span class="rb-msg">Tap a bottle below then a slot to place it — or drag it. Tap a filled slot to move or open it.</span></div>`;
+    bar = '';
   }
 
   // Tray of unplaced bottles (draggable). Identical bottles (same wine) collapse into
   // one chip with a ×N count; placing/dragging acts on one bottle, so N ticks down.
-  let tray = `<div class="rack-tray-head"><span>Unplaced — ${unplaced.length}</span><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>`;
+  // The whole zone is a drop target — drag a PLACED bottle here to pull it off the rack.
+  let tray = `<div class="rack-tray-zone" ondragover="rackTrayOver(event)" ondragleave="rackTrayLeave(event)" ondrop="rackDropTray(event)"><div class="rack-tray-head"><span>Unplaced — ${unplaced.length}</span><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>`;
   if(unplaced.length){
     tray += '<div class="rack-tray">' + groupBrowse(unplaced).map(g=>{
       const rep = g[0];
@@ -2368,8 +2383,9 @@ function rackHTML(){
       return `<button class="tray-chip ${on}" draggable="true" ondragstart="rackDragStart(event,'${rep.id}')" onclick="rackTapBottle('${rep.id}')" title="${ttl}">${esc(rep.name)}${vin}${cnt}</button>`;
     }).join('') + '</div>';
   }else{
-    tray += '<div class="rack-tray-empty">Every bottle is on the rack.</div>';
+    tray += '<div class="rack-tray-empty">Drag a bottle here to pull it off the rack.</div>';
   }
+  tray += '</div>';
 
   // Grid: header row (corner + 20 numbered col headers), then 29 rows of (row# + 20 slots).
   // Column header shows the NUMBER (1–20) as the primary id, category beneath.
@@ -2442,6 +2458,40 @@ window.rackDragStart = function(e, id){ dragId = id; try{ e.dataTransfer.effectA
 window.rackDragOver = function(e){ if(rackEdit) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(_){} e.currentTarget.classList.add('drop-hi'); };
 window.rackDragLeave = function(e){ e.currentTarget.classList.remove('drop-hi'); };
 window.rackDrop = function(e, col, row){ e.preventDefault(); e.currentTarget.classList.remove('drop-hi'); const id = dragId || (e.dataTransfer && e.dataTransfer.getData('text/plain')); dragId = null; if(id) placeBottle(id, col, row); };
+// Drop a PLACED bottle onto the Unplaced tray → pull it off the rack.
+window.rackTrayOver = function(e){ if(rackEdit) return; const w = dragId && bottles[dragId]; if(!(w && w.rackCol && w.rackRow)) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(_){} e.currentTarget.classList.add('tray-hi'); };
+window.rackTrayLeave = function(e){ e.currentTarget.classList.remove('tray-hi'); };
+window.rackDropTray = function(e){ e.currentTarget.classList.remove('tray-hi'); const id = dragId || (e.dataTransfer && e.dataTransfer.getData('text/plain')); dragId = null; const w = id && bottles[id]; if(w && (w.rackCol || w.rackRow)){ e.preventDefault(); rackUnplace(id); } };
+// Rack search — find a cellared bottle by name/producer/vintage/region and show where it sits.
+window.rackSearchInput = function(term){
+  const box = document.getElementById('rackSearchRes'); if(!box) return;
+  const q = deburr(String(term||'').toLowerCase()).trim();
+  if(!q){ box.style.display='none'; box.innerHTML=''; return; }
+  const hits = activeArr().filter(w=>w.status==='cellared').filter(w=>
+    deburr([w.name,w.producer,w.vintage,w.region,w.grape].filter(Boolean).join(' ').toLowerCase()).indexOf(q) >= 0
+  ).slice(0,8);
+  box.style.display = 'block';
+  if(!hits.length){ box.innerHTML = '<div class="rs-empty">No match in the cellar</div>'; return; }
+  box.innerHTML = hits.map(w=>{
+    const vin = w.vintage ? (' ’'+esc(String(w.vintage).replace(/[^0-9]/g,'').slice(-2))) : '';
+    const loc = (w.rackCol && w.rackRow) ? ('slot '+esc(slotCode(w.rackCol,w.rackRow))+' · '+esc(cellLabel(w.rackCol,w.rackRow))) : 'Unplaced';
+    return `<button class="rs-row" onmousedown="event.preventDefault()" onclick="rackLocate('${w.id}')"><span class="rs-nm">${esc(w.name)}${vin}</span><span class="rs-loc">${loc}</span></button>`;
+  }).join('');
+};
+window.rackSearchKey = function(e){ if(e.key==='Escape'){ e.target.value=''; rackSearchInput(''); e.target.blur(); } };
+window.rackSearchBlur = function(){ setTimeout(()=>{ const box=document.getElementById('rackSearchRes'); if(box){ box.style.display='none'; } }, 150); };
+window.rackLocate = function(id){
+  const w = bottles[id]; if(!w) return;
+  const box = document.getElementById('rackSearchRes'); if(box) box.style.display='none';
+  if(w.rackCol && w.rackRow){
+    flashSlot = Number(w.rackCol)+'_'+Number(w.rackRow);
+    inspect = id;                    // also highlight it and open its action bar
+    render();                        // flashSlot post-render scrolls the slot into view + flashes it
+    showToast(w.name + ' — ' + slotCode(w.rackCol,w.rackRow));
+  } else {
+    showToast(w.name + ' is in the Unplaced tray');
+  }
+};
 // Zoom · jump · label editing
 window.rackZoomSet = function(z){ rackZoom = z; render(); };
 window.rackJump = function(v){ if(!v) return; const el=document.querySelector('.rack-wrap [data-cell="'+Number(v)+'_1"]'); if(el){ const wrap=el.closest('.rack-wrap'); wrap.scrollLeft=Math.max(0, el.offsetLeft - 40); } };
