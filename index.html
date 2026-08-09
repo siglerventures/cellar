@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.57</title>
+<title>The Cellar Ledger — Rev 2.58</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.57</div>
+    <div class="auth-rev">Rev 2.58</div>
   </div>
 </div>
 
@@ -513,7 +513,7 @@
 
   <!-- ── TOP ACTION ROW ── -->
   <div class="actionrow">
-    <button class="act primary" onclick="toggleLogPanel()">
+    <button class="act ghosty" onclick="toggleLogPanel()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
       Log a pour
     </button>
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.57</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.58</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -665,6 +665,7 @@
     <h3>Add a bottle</h3>
     <div class="msub">A bottle you own — into the cellar, bar, or humidor. Score it later when you open it.</div>
     <input id="ca-name" placeholder="Name">
+    <select id="ca-rack" class="rt-jump" style="width:100%;margin-bottom:12px"></select>
     <select id="ca-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('ca')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
     <div class="mgrid">
       <input id="ca-prod" placeholder="Producer">
@@ -2139,6 +2140,11 @@ window.confirmOpen = async function(){
 window.openCellarAdd = ()=>{
   ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ca-qty').value = '1';
+  // Rack / shelf destination: auto (scan suggestion) · a specific rack's first open slot · the tray
+  document.getElementById('ca-rack').innerHTML =
+    '<option value="">📍 Place: automatic (scan suggestion)</option>' +
+    rackIds().map(id=>`<option value="${esc(id)}">📍 ${esc(rackDef(id).name)} — first open slot</option>`).join('') +
+    '<option value="none">🧺 Leave unplaced (tray)</option>';
   { const ke=document.getElementById('ca-kind'); if(ke) ke.value = (kindFilter==='all') ? 'wine' : kindFilter; } applyKindFields('ca');
   piReset('ca');
   caSuggest = null;
@@ -2156,7 +2162,17 @@ window.addCellarBottle = async function(){
   const uid = (auth.currentUser && auth.currentUser.uid) || '';
   // Apply the scan-to-place suggestion (revalidate the row in case it filled up).
   let placeCol=null, placeRow=null, placeRack='main';
-  if(caSuggest){
+  const rackChoice = (document.getElementById('ca-rack')||{value:''}).value;
+  if(rackChoice === 'none'){
+    // explicitly unplaced — straight to the tray
+  }else if(rackChoice){
+    // explicit rack/shelf: first open slot, scanning columns left to right
+    const prev = curRack; curRack = rackChoice;
+    const d = curDef();
+    for(let c=1; c<=d.cols; c++){ const r = firstOpenRow(c); if(r){ placeCol=c; placeRow=r; placeRack=rackChoice; break; } }
+    curRack = prev;
+    if(!placeCol) showToast(rackDef(rackChoice).name + ' is full — adding unplaced');
+  }else if(caSuggest){
     const prev = curRack; curRack = caSuggest.rackId || 'main';
     const row = placedAt(caSuggest.col, caSuggest.row) ? firstOpenRow(caSuggest.col) : caSuggest.row;
     curRack = prev;
