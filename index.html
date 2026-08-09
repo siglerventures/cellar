@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.33</title>
+<title>The Cellar Ledger — Rev 2.34</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -340,6 +340,17 @@
   .meta .notes{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--parch-dim);margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .buy-yes{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--green)}
   .qtybadge{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--gold);border:1px solid var(--line);border-radius:20px;padding:2px 8px}
+  /* Grouped-wine card badges */
+  .gbadge{display:inline-flex;align-items:center;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;border-radius:20px;padding:2px 9px;border:1px solid var(--line)}
+  .gb-rated{color:var(--gold);border-color:var(--gold-dim)}
+  .gb-cellar{color:var(--parch-dim)}
+  /* Wine-group chooser rows */
+  .wg-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:transparent;border:1px solid var(--line);border-radius:5px;padding:11px 14px;margin-bottom:8px;cursor:pointer;color:var(--parch);font-family:'Inter';transition:.14s}
+  .wg-row:hover{border-color:var(--gold-dim);background:rgba(236,227,210,0.03)}
+  .wg-badge{flex-shrink:0;min-width:44px;text-align:center}
+  .wg-badge .score b{font-family:'Cormorant Garamond',serif;font-weight:600}
+  .wg-tag{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--parch-dim);border:1px solid var(--line);border-radius:20px;padding:3px 9px}
+  .wg-meta{font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--parch)}
   .openbtn{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--parch);background:transparent;border:1px solid var(--line);border-radius:3px;padding:7px 12px;cursor:pointer;font-family:'Inter';transition:.15s;white-space:nowrap}
   .openbtn:hover{border-color:var(--gold);color:var(--gold)}
   .del{background:none;border:none;color:var(--parch-dim);opacity:.35;cursor:pointer;font-size:15px;padding:4px;transition:.15s}
@@ -419,7 +430,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.33</div>
+    <div class="auth-rev">Rev 2.34</div>
   </div>
 </div>
 
@@ -532,7 +543,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.33</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.34</span>
   </footer>
 </div>
 
@@ -650,6 +661,17 @@
     <div class="msub">Bottles you've archived. Restore any of them, or delete for good.</div>
     <div id="archiveList"></div>
     <div class="mrow" style="margin-top:16px"><button class="mbtn ghost" onclick="closeArchiveModal()">Close</button></div>
+  </div>
+</div>
+
+<!-- ── WINE GROUP CHOOSER ── -->
+<div class="modal" id="wineGroupModal">
+  <div class="modal-card">
+    <h3 id="wg-name">—</h3>
+    <div class="msub" id="wg-sub"></div>
+    <div class="qlabel" style="margin-bottom:10px">This wine — your tastings &amp; on-hand bottles</div>
+    <div id="wg-list"></div>
+    <div class="mrow" style="margin-top:16px"><button class="mbtn ghost" onclick="closeWineGroup()">Close</button></div>
   </div>
 </div>
 
@@ -1892,8 +1914,66 @@ window.setListMode = function(m){ listMode=m; try{ localStorage.setItem('cellar_
 function renderCollection(list){
   if(listMode==='list')   return listTableHTML(list);
   if(listMode==='kanban') return kanbanHTML(list);
-  return '<div class="card-grid">' + list.map(collectionCardHTML).join('') + '</div>';
+  // Browse: collapse same-wine records (a tasting + its cellared bottle) into one card.
+  return '<div class="card-grid">' + groupBrowse(list).map(groupedCardHTML).join('') + '</div>';
 }
+// Wine identity for grouping: name + vintage, accent/punctuation-insensitive.
+function wineKey(w){
+  const n = deburr(String(w.name||'').toLowerCase()).replace(/[^a-z0-9]+/g,' ').trim();
+  const v = String(w.vintage||'').toLowerCase().replace(/[^a-z0-9]+/g,'').trim();
+  return n + '|' + v;
+}
+// Group the (already sorted) list by wine, preserving sort order via first appearance.
+function groupBrowse(list){
+  const groups = new Map();
+  list.forEach(w=>{ const k=wineKey(w); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(w); });
+  return [...groups.values()];
+}
+// One card per wine. A lone record renders exactly as before; a multi-record wine
+// (e.g. a tasting + a cellared bottle) shows a combined summary that opens a chooser.
+function groupedCardHTML(recs){
+  if(recs.length===1) return collectionCardHTML(recs[0]);
+  const opened   = recs.filter(r=>r.status==='opened');
+  const cellared = recs.filter(r=>r.status==='cellared');
+  const pick = f => { for(const r of recs){ const v=f(r); if(v!=null && v!=='') return v; } return ''; };
+  const id0 = recs[0].id;
+  const nm=pick(r=>r.name), producer=pick(r=>r.producer), vintage=pick(r=>r.vintage);
+  const grape=pick(r=>r.grape), region=pick(r=>r.region), abv=pick(r=>r.abv), price=pick(r=>r.price);
+  const photoRec = recs.find(r=>r.photoUrl) || recs[0];
+  const latest = opened.slice().sort((a,b)=>(b.openedAt||b.addedAt||0)-(a.openedAt||a.addedAt||0))[0];
+  const qty = cellared.reduce((s,r)=>s+(Number(r.qty)||1),0);
+  const slots = cellared.filter(r=>r.rackCol&&r.rackRow).map(r=>slotCode(r.rackCol,r.rackRow));
+  const tagset=[]; recs.forEach(r=>bottleTags(r).forEach(k=>{ if(tagset.indexOf(k)<0) tagset.push(k); }));
+  const buyAgain = recs.some(r=>r.buyAgain);
+  const scoreBlock = latest
+    ? `<div class="score ${scoreClass(latest.score)}"><b>${fmt(latest.score)}</b></div>`
+    : (()=>{ const c=cellared[0]; const band=(c&&c.predLow!=null&&c.predHigh!=null)?fmt(c.predLow)+'–'+fmt(c.predHigh):'—'; return `<div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>`; })();
+  const row2=[vintage,grape,region,abv?abv+'%':'',fmtPrice(price)].filter(Boolean).join(' · ');
+  const badges=[];
+  if(opened.length) badges.push(`<span class="gbadge gb-rated">★ ${fmt(latest.score)}${opened.length>1?` · had ${opened.length}×`:''}</span>`);
+  if(qty) badges.push(`<span class="gbadge gb-cellar">×${qty} cellared${slots.length?(' · '+esc(slots.join(', '))):''}</span>`);
+  const chips = tagset.map(k=>{ const ti=tagInfo(k); return `<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`; }).join('');
+  return `<div class="wine wine-group" onclick="openWineGroup('${id0}')"><div class="wine-left">${scoreBlock}${cardPhotoHTML(photoRec)}</div><div class="meta"><div class="name">${esc(nm)}</div>${producer?`<div class="producer">${esc(producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${badges.join('')}${chips}${buyAgain?'<span class="buy-yes" style="opacity:1">✓ buy again</span>':''}</div></div></div>`;
+}
+// Tap a grouped card → chooser of its records (each opens the normal detail modal).
+window.openWineGroup = function(id){
+  const w0 = bottles[id]; if(!w0) return;
+  const k = wineKey(Object.assign({id}, w0));
+  const recs = activeArr().filter(r=>wineKey(r)===k);
+  if(recs.length<=1){ openDetail(id); return; }
+  recs.sort((a,b)=>{ const so=(a.status==='opened'?0:1)-(b.status==='opened'?0:1); return so || ((b.openedAt||b.addedAt||0)-(a.openedAt||a.addedAt||0)); });
+  document.getElementById('wg-name').textContent = w0.name || 'Wine';
+  document.getElementById('wg-sub').textContent = [w0.producer, w0.vintage].filter(Boolean).join(' · ');
+  document.getElementById('wg-list').innerHTML = recs.map(r=>{
+    const meta = r.status==='opened'
+      ? ('Tasting · ' + fmt(r.score) + '/10' + (bottleTags(r).length?(' · '+tagInfo(bottleTags(r)[0]).t):''))
+      : ('Cellared · ×' + (Number(r.qty)||1) + (r.price?(' · '+fmtPrice(r.price)):'') + ((r.rackCol&&r.rackRow)?(' · '+slotCode(r.rackCol,r.rackRow)):''));
+    const badge = r.status==='opened' ? `<span class="score ${scoreClass(r.score)}" style="font-size:20px"><b>${fmt(r.score)}</b></span>` : `<span class="wg-tag">cellared</span>`;
+    return `<button class="wg-row" onclick="closeWineGroup();openDetail('${r.id}')"><span class="wg-badge">${badge}</span><span class="wg-meta">${esc(meta)}</span></button>`;
+  }).join('');
+  document.getElementById('wineGroupModal').classList.add('open');
+};
+window.closeWineGroup = ()=>document.getElementById('wineGroupModal').classList.remove('open');
 // Browse card — cellared bottles show a predicted band, scored bottles the openedCard.
 function collectionCardHTML(w){
   if(w.status==='cellared'){
