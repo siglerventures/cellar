@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.32</title>
+<title>The Cellar Ledger — Rev 2.33</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -419,7 +419,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.32</div>
+    <div class="auth-rev">Rev 2.33</div>
   </div>
 </div>
 
@@ -532,7 +532,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.32</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.33</span>
   </footer>
 </div>
 
@@ -624,7 +624,6 @@
       <button class="buyflag" id="dtBuyflag" onclick="dtToggleBuy()"><span class="dot"></span> Buy again</button>
       <input id="dt-vintage" class="dt-year" placeholder="Year">
       <button class="mbtn ghost dt-open" id="dtOpenBtn" style="display:none" onclick="dtMarkOpened()">Opened</button>
-      <button class="mbtn ghost" id="dtMergeBtn" style="display:none" onclick="mergeDetail()">🔗 Merge duplicate</button>
     </div>
     <div class="dt-grid">
       <input id="dt-price" placeholder="Price $" type="number" step="0.01" min="0">
@@ -636,6 +635,7 @@
     <textarea id="dt-notes" placeholder="Tasting notes, where you had it, who you shared it with…"></textarea>
     <div class="mrow">
       <button class="mbtn ghost dt-archive" onclick="archiveDetail()">Archive</button>
+      <button class="mbtn ghost" id="dtMergeBtn" style="display:none" onclick="mergeDetail()">🔗 Merge</button>
       <button class="mbtn ghost dt-close" onclick="closeDetail()">Close</button>
       <button class="mbtn dt-save" onclick="saveDetail()">Save</button>
     </div>
@@ -1203,7 +1203,9 @@ window.openDetail = function(id){
   document.getElementById('dtOpenBtn').style.display = w.status==='cellared' ? '' : 'none';
   dtMergeWith = null;
   if(w.status==='cellared'){
-    const dup = activeArr().find(o=>o.id!==id && o.status==='cellared' && normWine(o.name,o.vintage)===normWine(w.name,w.vintage));
+    const nameOf=(x)=>normWine(x.name,'').split('|')[0];
+    const vinOf=(x)=>String(x.vintage||'').trim().toLowerCase();
+    const dup = activeArr().find(o=>o.id!==id && o.status==='cellared' && nameOf(o)===nameOf(w) && (vinOf(o)===vinOf(w) || !vinOf(o) || !vinOf(w)));
     if(dup) dtMergeWith = dup.id;
   }
   document.getElementById('dtMergeBtn').style.display = dtMergeWith ? '' : 'none';
