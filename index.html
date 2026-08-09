@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.45</title>
+<title>The Cellar Ledger — Rev 2.46</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -272,6 +272,8 @@
   .rack-rowhead{font-family:'Cormorant Garamond',serif;font-size:12px;font-weight:600;color:var(--parch);display:flex;align-items:center;justify-content:center;position:sticky;left:0;background:#160a0c;z-index:3}
   .colfocus{max-width:760px;margin:2px auto 0}
   .cf-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .cf-back{font-size:13px;color:#fff;padding:8px 14px}
+  .cf-back:hover{color:#fff;border-color:var(--gold)}
   .cf-title{font-family:'Cormorant Garamond',serif;font-size:21px;color:var(--parch)}
   .cf-title b{color:var(--gold);font-weight:600}
   .cf-count{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--parch-dim);font-weight:600;margin-left:auto}
@@ -475,7 +477,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.45</div>
+    <div class="auth-rev">Rev 2.46</div>
   </div>
 </div>
 
@@ -584,7 +586,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.45</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.46</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2589,7 +2591,7 @@ function rackHTML(){
         rowsHtml += `<button class="cf-row cf-empty" onclick="rackTapSlot(${col},${r})"><span class="cf-slot">${slot}</span><span class="cf-empty-lbl">empty · ${esc(cellLabel(col,r))}</span></button>`;
       }
     }
-    const focus = `<div class="colfocus"><div class="cf-head"><button class="rt-btn" onclick="rackFocusColumn('')">← Full rack</button><div class="cf-title"><b>Column ${col}</b> · ${esc(label)}</div><span class="cf-count">${filled}/${d.rows} filled</span></div><div class="cf-list">${rowsHtml}</div></div>`;
+    const focus = `<div class="colfocus"><div class="cf-head"><button class="rt-btn cf-back" onclick="rackFocusColumn('')">← Full rack</button><div class="cf-title"><b>Column ${col}</b> · ${esc(label)}</div><span class="cf-count">${filled}/${d.rows} filled</span></div><div class="cf-list">${rowsHtml}</div></div>`;
     return `<div class="rack-view" id="rackView"><div class="shead"><p>${esc(d.name)} — ${d.cols} columns × ${d.rows} rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</p></div>${switcher}${tools}${bar}${tray}${focus}</div>`;
   }
 
