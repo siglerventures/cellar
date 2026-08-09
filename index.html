@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.37</title>
+<title>The Cellar Ledger — Rev 2.38</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -431,7 +431,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.37</div>
+    <div class="auth-rev">Rev 2.38</div>
   </div>
 </div>
 
@@ -544,7 +544,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.37</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.38</span>
   </footer>
 </div>
 
@@ -749,7 +749,9 @@ let piScanned = { q:false, ca:false };  // first photo per form triggers a scanL
 let dtRemoved = [];                     // Storage paths to delete when the detail modal saves
 let search = '';      // current search filter
 let lastScout = null; // last scanned wine details (for scout quick-actions)
-let rackLayout = {};  // cellar/rack_layout — per-cell category labels
+let rackLayout = {};  // legacy cellar/rack_layout (pre-migration fallback)
+let racks = {};       // cellar/racks — {id:{name,cols,rows,cells,order}}
+let curRack = 'main'; // rack currently shown in the Cellar view
 let placing = null;   // bottle id currently being placed / moved (tap flow)
 let inspect = null;   // placed bottle id currently inspected
 let dragId = null;    // bottle id currently being dragged (HTML5 DnD)
@@ -921,6 +923,20 @@ async function ensureRackLayout(){
     if(cur.colCount == null) updates['cellar/rack_layout/colCount'] = RACK_COLS;
     if(cur.rowCount == null) updates['cellar/rack_layout/rowCount'] = RACK_ROWS;
     if(Object.keys(updates).length){ await dbUpdate('/', updates); console.log('[Cellar] Rack labels filled:', Object.keys(updates).length); }
+    // One-time migration: promote the legacy single wall to cellar/racks/main.
+    const rsnap = await dbGet('cellar/racks');
+    if(!rsnap.exists()){
+      const cells = Object.assign({}, existing);
+      for(let c=1;c<=RACK_COLS;c++) for(let r=1;r<=RACK_ROWS;r++){
+        const k=c+'_'+r;
+        if(!(cells[k]&&cells[k].label)){ const l=seededCellLabel(c,r); if(l) cells[k]={label:l}; }
+      }
+      await dbSet('cellar/racks/main', {
+        name:'Wine Wall', cols:Number(cur.colCount)||RACK_COLS, rows:Number(cur.rowCount)||RACK_ROWS,
+        cells, order:0, createdAt:Date.now()
+      });
+      console.log('[Cellar] Migrated wall to cellar/racks/main');
+    }
   }catch(e){ console.warn('[Cellar] rack layout fill failed:', e); }
 }
 
@@ -933,6 +949,7 @@ function subscribe(){
   onValue(ref(db, 'cellar/history'), snap => { histLog = snap.val() || {}; if(view==='history') render(); });
   onValue(ref(db, 'cellar/ask_history'), snap => { askLog = snap.val() || {}; const el=document.getElementById('askHist'); if(el && el.style.display!=='none') renderAskHistory(); });
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
+  onValue(ref(db, 'cellar/racks'), snap => { racks = snap.val() || {}; if(!racks[curRack] && Object.keys(racks).length) curRack = rackIds()[0]; if(view==='cellar') render(); });
 }
 
 // ── BUILD SCORE PADS + TAGS ──
@@ -1211,7 +1228,7 @@ window.openDetail = function(id){
   dtDraft = { id, score:whole, half, tags:bottleTags(w).slice(), buy:!!w.buyAgain };
   document.getElementById('dt-name').textContent = w.name || '—';
   const meta=[w.producer,w.vintage,w.grape,w.region,w.abv?w.abv+'%':'',fmtPrice(w.price),w.vendor?('from '+w.vendor):''].filter(Boolean).join(' · ');
-  const state = w.status==='cellared' ? ('Cellared'+((w.rackCol&&w.rackRow)?' · '+slotCode(w.rackCol,w.rackRow):'')+(Number(w.qty)>1?' · ×'+w.qty:'')) : 'Opened';
+  const state = w.status==='cellared' ? ('Cellared'+((w.rackCol&&w.rackRow)?' · '+slotOf(w):'')+(Number(w.qty)>1?' · ×'+w.qty:'')) : 'Opened';
   document.getElementById('dt-meta').textContent = [state, meta].filter(Boolean).join(' — ');
   // Same-wine siblings (a tasting ↔ its cellared bottle) — jump between them, nothing merged.
   (function(){
@@ -1223,7 +1240,7 @@ window.openDetail = function(id){
     box.innerHTML = '<span class="dt-sib-lbl">Same wine</span>' + sibs.map(r=>{
       const label = r.status==='opened'
         ? ('★ ' + fmt(r.score) + ' tasting')
-        : ('cellared ×' + (Number(r.qty)||1) + (r.price?(' · '+fmtPrice(r.price)):'') + ((r.rackCol&&r.rackRow)?(' · '+slotCode(r.rackCol,r.rackRow)):''));
+        : ('cellared ×' + (Number(r.qty)||1) + (r.price?(' · '+fmtPrice(r.price)):'') + ((r.rackCol&&r.rackRow)?(' · '+slotOf(r)):''));
       return `<button class="dt-sib" onclick="openDetail('${r.id}')"><b>→</b> ${esc(label)}</button>`;
     }).join('');
     box.style.display='';
@@ -1516,14 +1533,15 @@ function showCaSuggest(d){
   const acceptBtn = document.getElementById('cs-accept');
   const s = suggestPlacement(d);
   caSuggest = null;
+  const rn = (rackIds().length>1 && s.rackName) ? (esc(s.rackName)+' ') : '';
   if(s.kind==='ok'){
-    caSuggest = { col:s.col, row:s.row };
-    let msg = `Place in <b>${esc(slotCode(s.col,s.row))}</b> — ${esc(s.label)} (col ${s.col}, row ${s.row}).`;
+    caSuggest = { rackId:s.rackId||'main', col:s.col, row:s.row };
+    let msg = `Place in <b>${rn}${esc(slotCode(s.col,s.row))}</b> — ${esc(s.label)} (col ${s.col}, row ${s.row}).`;
     if(s.ambiguous && s.alt) msg += ` Could also be ${esc(s.alt.label)} (col ${s.alt.col}) — change if wrong.`;
     msgEl.innerHTML = msg; acceptBtn.style.display = '';
   }else if(s.kind==='overflow'){
-    caSuggest = { col:s.col, row:s.row };
-    msgEl.innerHTML = `${esc(s.fullLabel)} (col ${s.fullCol}) is full — suggesting <b>${esc(slotCode(s.col,s.row))}</b> nearby (${esc(s.label)}).`;
+    caSuggest = { rackId:s.rackId||'main', col:s.col, row:s.row };
+    msgEl.innerHTML = `${esc(s.fullLabel)} (col ${s.fullCol}) is full — suggesting <b>${rn}${esc(slotCode(s.col,s.row))}</b> nearby (${esc(s.label)}).`;
     acceptBtn.style.display = '';
   }else if(s.kind==='full'){
     msgEl.innerHTML = `Every ${esc(s.fullLabel)} slot is full — add it unplaced and find room on the rack.`;
@@ -1750,10 +1768,12 @@ window.addCellarBottle = async function(){
   const now = Date.now();
   const uid = (auth.currentUser && auth.currentUser.uid) || '';
   // Apply the scan-to-place suggestion (revalidate the row in case it filled up).
-  let placeCol=null, placeRow=null;
+  let placeCol=null, placeRow=null, placeRack='main';
   if(caSuggest){
+    const prev = curRack; curRack = caSuggest.rackId || 'main';
     const row = placedAt(caSuggest.col, caSuggest.row) ? firstOpenRow(caSuggest.col) : caSuggest.row;
-    if(row){ placeCol=caSuggest.col; placeRow=row; }
+    curRack = prev;
+    if(row){ placeCol=caSuggest.col; placeRow=row; placeRack=caSuggest.rackId||'main'; }
   }
   try{
     // Already cellared? Restock the existing record instead of duplicating.
@@ -1796,13 +1816,13 @@ window.addCellarBottle = async function(){
       score:null, tag:null, buyAgain:false, notes:'',
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
       photos: ups.length?ups:null,
-      rackCol:placeCol, rackRow:placeRow,
+      rackCol:placeCol, rackRow:placeRow, rackId:placeCol?placeRack:null,
       addedBy:uid, addedAt:now, openedAt:null
     });
     caSuggest = null;
     closeCellarAddModal();
     logEvent('added', { bottleId:r.key, name, vintage:document.getElementById('ca-vintage').value.trim(), qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1), price:parsePriceInput('ca-price'), vendor:document.getElementById('ca-vendor').value.trim(), slot:placeCol?slotCode(placeCol,placeRow):null });
-    if(placeCol){ flashSlot = placeCol+'_'+placeRow; showToast('Added — ' + name + ' → ' + slotCode(placeCol,placeRow)); }
+    if(placeCol){ curRack = placeRack; flashSlot = placeCol+'_'+placeRow; showToast('Added — ' + name + ' → ' + slotCode(placeCol,placeRow)); }
     else { showToast('Added to cellar — ' + name); }
     setView('cellar');
   }catch(e){ document.getElementById('cellarAddStatus').textContent='❌ ' + (e.message||e); }
@@ -1839,7 +1859,7 @@ function matchSearch(w){
     (w.predLow!=null || w.predHigh!=null) ? ('predicted ' + (w.predLow!=null?fmt(w.predLow):'') + ' ' + (w.predHigh!=null?fmt(w.predHigh):'')) : '',
     (w.price!=null && w.price!=='') ? ('price ' + w.price + ' ' + fmtPrice(w.price)) : '',
     w.vendor||'', w.rep||'',
-    (w.rackCol && w.rackRow) ? ('slot ' + slotCode(w.rackCol,w.rackRow)) : ''
+    (w.rackCol && w.rackRow) ? ('slot ' + slotOf(w)) : ''
   ];
   return deburr(parts.filter(Boolean).join(' ').toLowerCase()).includes(search);
 }
@@ -1948,7 +1968,7 @@ function groupedCardHTML(recs){
   const photoRec = recs.find(r=>r.photoUrl) || recs[0];
   const latest = opened.slice().sort((a,b)=>(b.openedAt||b.addedAt||0)-(a.openedAt||a.addedAt||0))[0];
   const qty = cellared.reduce((s,r)=>s+(Number(r.qty)||1),0);
-  const slots = cellared.filter(r=>r.rackCol&&r.rackRow).map(r=>slotCode(r.rackCol,r.rackRow));
+  const slots = cellared.filter(r=>r.rackCol&&r.rackRow).map(r=>slotOf(r));
   const tagset=[]; recs.forEach(r=>bottleTags(r).forEach(k=>{ if(tagset.indexOf(k)<0) tagset.push(k); }));
   const buyAgain = recs.some(r=>r.buyAgain);
   const scoreBlock = latest
@@ -1978,7 +1998,7 @@ function collectionCardHTML(w){
     const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
     const row2=[w.vintage,w.grape,w.region,fmtPrice(w.price)].filter(Boolean).join(' · ');
     const qty = Number(w.qty)||1;
-    const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>` : '';
+    const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${esc(slotOf(w))}</span>` : '';
     return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
   }
   return openedCardHTML(w);
@@ -2137,7 +2157,7 @@ function listTrHTML(w){
   const cls = scored ? scoreClass(w.score) : 's-pred';
   const ti = tagInfo(w.tag);
   const price = fmtPrice(w.price);
-  const slot = (w.rackCol&&w.rackRow) ? slotCode(w.rackCol,w.rackRow) : '';
+  const slot = (w.rackCol&&w.rackRow) ? slotOf(w) : '';
   const dim = '<span class="lt-dim">—</span>';
   return `<tr onclick="openDetail('${w.id}')">`
     + `<td class="lt-name"><span class="lt-wine">${esc(w.name||'')}</span>${w.producer?`<span class="lt-prod">${esc(w.producer)}</span>`:''}</td>`
@@ -2167,7 +2187,7 @@ function kanbanCardHTML(w){
   const scored=w.status!=='cellared';
   const s=scored?fmt(w.score):((w.predLow!=null && w.predHigh!=null)?fmt(w.predLow)+'–'+fmt(w.predHigh):'—');
   const cls=scored?scoreClass(w.score):'s-pred';
-  const slot=(w.rackCol&&w.rackRow)?`<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>`:'';
+  const slot=(w.rackCol&&w.rackRow)?`<span class="slot-badge">${esc(slotOf(w))}</span>`:'';
   return `<div class="kcard" onclick="openDetail('${w.id}')"><div class="kcard-top"><span class="kcard-score ${cls}">${esc(s)}</span>${slot}</div><div class="kcard-name">${esc(w.name)}</div><div class="kcard-meta">${esc([w.producer,w.vintage].filter(Boolean).join(' · '))}</div></div>`;
 }
 // Card for an opened/scored bottle — shared by All Bottles and the Logged list.
@@ -2178,28 +2198,42 @@ function openedCardHTML(w){
 }
 
 // ── RACK MAP: labels, matching, placement ──
-// Coordinate: column-row, e.g. 12-7 (column 1–20, row 1–29)
+// Racks live at cellar/racks/{id}: {name, cols, rows, cells} — 'main' is the
+// migrated original wall. curRack scopes every lookup below to the shown rack.
+function rackIds(){ const ids=Object.keys(racks); if(!ids.length) return ['main']; return ids.sort((a,b)=>((racks[a].order||0)-(racks[b].order||0)) || a.localeCompare(b)); }
+function rackDef(id){
+  const r = racks[id];
+  if(r) return { name:r.name||'Rack', cols:Math.max(1,Number(r.cols)||RACK_COLS), rows:Math.max(1,Number(r.rows)||RACK_ROWS), cells:r.cells||{} };
+  return { name:'Wine Wall', cols:RACK_COLS, rows:RACK_ROWS, cells:(rackLayout&&rackLayout.cells)||{} };  // pre-migration fallback
+}
+function curDef(){ return rackDef(curRack); }
+function bRack(w){ return w.rackId || 'main'; }
+// Slot badge text — prefixed with the rack name once there's more than one rack.
+function slotOf(w){ if(!(w.rackCol&&w.rackRow)) return ''; return (rackIds().length>1?(rackDef(bRack(w)).name+' '):'')+slotCode(w.rackCol,w.rackRow); }
+// Coordinate: column-row, e.g. 12-7
 function slotCode(col,row){ return col + '-' + row; }
 function cellLabel(col,row){
-  const cs = rackLayout && rackLayout.cells;
-  const v = cs && cs[col+'_'+row];
-  return (v && v.label) || seededCellLabel(col,row) || DEFAULT_COL_LABELS[col] || ('Col ' + col);
+  const v = curDef().cells[col+'_'+row];
+  if(v && v.label) return v.label;
+  if(curRack==='main') return seededCellLabel(col,row) || DEFAULT_COL_LABELS[col] || ('Col ' + col);
+  return 'Col ' + col;
 }
 function colLabels(col){                                                 // distinct labels down a column, in row order
-  const seen = new Set(); const out = []; const cs = (rackLayout && rackLayout.cells) || {};
-  for(let r=1;r<=RACK_ROWS;r++){ const v = cs[col+'_'+r]; const l = v && v.label; if(l && !seen.has(l)){ seen.add(l); out.push(l); } }
-  if(!out.length){ (COL_CATEGORIES[col] || (DEFAULT_COL_LABELS[col]?[DEFAULT_COL_LABELS[col]]:[])).forEach(l=>{ if(!seen.has(l)){ seen.add(l); out.push(l); } }); }
+  const seen = new Set(); const out = []; const d = curDef(), cs = d.cells;
+  for(let r=1;r<=d.rows;r++){ const v = cs[col+'_'+r]; const l = v && v.label; if(l && !seen.has(l)){ seen.add(l); out.push(l); } }
+  if(!out.length && curRack==='main'){ (COL_CATEGORIES[col] || (DEFAULT_COL_LABELS[col]?[DEFAULT_COL_LABELS[col]]:[])).forEach(l=>{ if(!seen.has(l)){ seen.add(l); out.push(l); } }); }
   return out;
 }
 // Header label = the whole column's range (reflects live edits), e.g. "Sauv Blanc → Chardonnay → Pinot Gris"
 function colHeaderLabel(col){ const ls = colLabels(col); return ls.length ? ls.join(' → ') : ('Col ' + col); }
 function repLabel(col){ return cellLabel(col, 1); }
-function placedAt(col,row){ return activeArr().find(w=>w.status==='cellared' && Number(w.rackCol)===col && Number(w.rackRow)===row) || null; }
-function firstOpenRow(col){ for(let r=1;r<=RACK_ROWS;r++){ if(!placedAt(col,r)) return r; } return null; }
+function placedAt(col,row){ return activeArr().find(w=>w.status==='cellared' && bRack(w)===curRack && Number(w.rackCol)===col && Number(w.rackRow)===row) || null; }
+function firstOpenRow(col){ const R=curDef().rows; for(let r=1;r<=R;r++){ if(!placedAt(col,r)) return r; } return null; }
 function nearestOpenColumn(pref){
-  for(let d=1; d<RACK_COLS; d++){
+  const C=curDef().cols;
+  for(let d=1; d<C; d++){
     for(const c of [pref-d, pref+d]){
-      if(c>=1 && c<=RACK_COLS){ const r = firstOpenRow(c); if(r) return {col:c, row:r}; }
+      if(c>=1 && c<=C){ const r = firstOpenRow(c); if(r) return {col:c, row:r}; }
     }
   }
   return null;
@@ -2216,23 +2250,38 @@ function bottleKeys(b){
 function matchColumns(b){
   const keys = bottleKeys(b);
   const out = [];
-  for(let c=1;c<=RACK_COLS;c++){
+  const C=curDef().cols;
+  for(let c=1;c<=C;c++){
     const cset = new Set(); colLabels(c).forEach(l=>toTokens(l).forEach(t=>cset.add(t)));
     let score = 0; keys.forEach(k=>{ if(cset.has(k)) score++; });
     if(score>0) out.push({ col:c, score, label:repLabel(c) });
   }
   return out.sort((a,b)=>b.score-a.score || a.col-b.col);
 }
-function suggestPlacement(b){
+function suggestInRack(b){
   const ranked = matchColumns(b);
   if(!ranked.length) return { kind:'none' };
   const top = ranked[0].score;
   const tied = ranked.filter(r=>r.score===top).sort((a,b)=>a.col-b.col);
   const distinctLabels = [...new Set(tied.map(r=>r.label))];
-  for(const r of tied){ const row = firstOpenRow(r.col); if(row) return { kind:'ok', col:r.col, row, label:r.label, ambiguous:distinctLabels.length>1, alt:ranked.find(x=>x.label!==r.label)||null }; }
+  for(const r of tied){ const row = firstOpenRow(r.col); if(row) return { kind:'ok', col:r.col, row, score:top, label:r.label, ambiguous:distinctLabels.length>1, alt:ranked.find(x=>x.label!==r.label)||null }; }
   const ov = nearestOpenColumn(tied[0].col);
-  if(ov) return { kind:'overflow', col:ov.col, row:ov.row, label:cellLabel(ov.col,ov.row), fullCol:tied[0].col, fullLabel:tied[0].label };
-  return { kind:'full', fullLabel:tied[0].label };
+  if(ov) return { kind:'overflow', col:ov.col, row:ov.row, score:top, label:cellLabel(ov.col,ov.row), fullCol:tied[0].col, fullLabel:tied[0].label };
+  return { kind:'full', score:top, fullLabel:tied[0].label };
+}
+// Search EVERY rack for the best home; prefer a clean match, then overflow.
+function suggestPlacement(b){
+  const prev = curRack; let best = null;
+  const rankOf = (x)=> x.kind==='ok' ? 2 : (x.kind==='overflow' ? 1 : 0);
+  for(const rid of rackIds()){
+    curRack = rid;
+    const sug = suggestInRack(b);
+    if(sug.kind==='none') continue;
+    sug.rackId = rid; sug.rackName = rackDef(rid).name;
+    if(!best || rankOf(sug)>rankOf(best) || (rankOf(sug)===rankOf(best) && (sug.score||0)>(best.score||0))) best = sug;
+  }
+  curRack = prev;
+  return best || { kind:'none' };
 }
 async function placeBottle(id, col, row){
   const mover = bottles[id]; if(!mover) return;
@@ -2242,14 +2291,17 @@ async function placeBottle(id, col, row){
   const updates = {};
   updates['cellar/bottles/'+id+'/rackCol'] = col;
   updates['cellar/bottles/'+id+'/rackRow'] = row;
+  updates['cellar/bottles/'+id+'/rackId'] = curRack;
   if(occupant){                                            // swap — occupant takes the mover's old slot (or the tray)
-    updates['cellar/bottles/'+occupant.id+'/rackCol'] = (mover.rackCol!=null ? mover.rackCol : null);
-    updates['cellar/bottles/'+occupant.id+'/rackRow'] = (mover.rackRow!=null ? mover.rackRow : null);
+    const hadSlot = (mover.rackCol!=null && mover.rackRow!=null);
+    updates['cellar/bottles/'+occupant.id+'/rackCol'] = hadSlot ? mover.rackCol : null;
+    updates['cellar/bottles/'+occupant.id+'/rackRow'] = hadSlot ? mover.rackRow : null;
+    updates['cellar/bottles/'+occupant.id+'/rackId'] = hadSlot ? bRack(mover) : null;
   }
   inspect = null;
   try{
     await dbUpdate('/', updates);
-    logEvent(occupant?'swapped':'placed', { bottleId:id, name:mover.name, slot:slotCode(col,row), withName:occupant?occupant.name:null });
+    logEvent(occupant?'swapped':'placed', { bottleId:id, name:mover.name, slot:(rackIds().length>1?(curDef().name+' '):'')+slotCode(col,row), withName:occupant?occupant.name:null });
     showToast(occupant ? ('Swapped with ' + occupant.name) : ('Placed at ' + slotCode(col,row)));
   }
   catch(e){ showToast('Could not place bottle'); }
@@ -2257,18 +2309,32 @@ async function placeBottle(id, col, row){
 
 // ── RACK MAP RENDER ──
 function rackHTML(){
+  const d = curDef();
   const cellared = activeArr().filter(w=>w.status==='cellared');
   const placed = {}, unplaced = [];
   cellared.forEach(w=>{
+    const rid = bRack(w), rd = rackDef(rid);
     const col = Number(w.rackCol), row = Number(w.rackRow);
-    if(col>=1 && col<=RACK_COLS && row>=1 && row<=RACK_ROWS) placed[col+'_'+row] = w;
-    else unplaced.push(w);
+    const valid = col>=1 && col<=rd.cols && row>=1 && row<=rd.rows;
+    if(valid && rid===curRack) placed[col+'_'+row] = w;
+    else if(!valid) unplaced.push(w);      // placed on a shrunk/removed area, or never placed
+    // valid on ANOTHER rack → shown there, not here
   });
   unplaced.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
   const admin = isAdmin();
 
+  // Rack switcher + admin rack management
+  const ids = rackIds();
+  let switcher = '';
+  if(ids.length>1 || admin){
+    switcher = `<div class="rack-tools">` +
+      ids.map(id=>`<button class="rt-btn ${id===curRack?'on':''}" onclick="rackSwitch('${id}')">${esc(rackDef(id).name)}</button>`).join('') +
+      (admin?`<span class="rt-lbl" style="margin-left:6px"></span><button class="rt-btn" onclick="rackSettings()" title="Rename / resize this rack">⚙ Rack settings</button><button class="rt-btn" onclick="rackAdd()" title="Add another rack">＋ New rack</button>${curRack!=='main'?`<button class="rt-btn" onclick="rackDelete()" title="Delete this rack (must be empty)">🗑</button>`:''}`:'') +
+      `</div>`;
+  }
+
   // Toolbar — zoom · column jump · edit labels
-  const jumpOpts = Array.from({length:RACK_COLS},(_,i)=>{ const c=i+1; return `<option value="${c}">Col ${c} · ${esc(colHeaderLabel(c))}</option>`; }).join('');
+  const jumpOpts = Array.from({length:d.cols},(_,i)=>{ const c=i+1; return `<option value="${c}">Col ${c} · ${esc(colHeaderLabel(c))}</option>`; }).join('');
   const tools = `<div class="rack-tools">
     <div class="rt-group"><span class="rt-lbl">Zoom</span><button class="rt-btn ${rackZoom===1?'on':''}" onclick="rackZoomSet(1)">S</button><button class="rt-btn ${rackZoom===2?'on':''}" onclick="rackZoomSet(2)">M</button><button class="rt-btn ${rackZoom===3?'on':''}" onclick="rackZoomSet(3)">L</button></div>
     <div class="rt-group"><span class="rt-lbl">Jump</span><select class="rt-jump" onchange="rackJump(this.value)"><option value="">Column…</option>${jumpOpts}</select></div>
@@ -2307,14 +2373,14 @@ function rackHTML(){
 
   // Grid: header row (corner + 20 numbered col headers), then 29 rows of (row# + 20 slots).
   // Column header shows the NUMBER (1–20) as the primary id, category beneath.
-  let grid = `<div class="rack-grid z${rackZoom}"><div class="rack-corner" title="column → / row ↓">#</div>`;
-  for(let c=1;c<=RACK_COLS;c++){
+  let grid = `<div class="rack-grid z${rackZoom}" style="grid-template-columns:var(--rh) repeat(${d.cols},minmax(var(--cw),1fr))"><div class="rack-corner" title="column → / row ↓">#</div>`;
+  for(let c=1;c<=d.cols;c++){
     const label = colHeaderLabel(c);
     grid += `<div class="rack-colhead${admin?' editable':''}" title="Column ${c} — ${esc(label)}"${admin?` onclick="rackEditColLabel(${c})"`:''}><span class="ch-num">${c}</span><span class="ch-cat">${esc(label)}</span></div>`;
   }
-  for(let r=1;r<=RACK_ROWS;r++){
+  for(let r=1;r<=d.rows;r++){
     grid += `<div class="rack-rowhead">${r}</div>`;
-    for(let c=1;c<=RACK_COLS;c++){
+    for(let c=1;c<=d.cols;c++){
       const w = placed[c+'_'+r];
       const flash = flashSlot===(c+'_'+r) ? ' flash' : '';
       if(w){
@@ -2341,7 +2407,7 @@ function rackHTML(){
     setTimeout(()=>{ if(flashSlot===key){ flashSlot=null; } }, 4300);
   }
 
-  return `<div class="rack-view" id="rackView"><div class="shead"><p>Your physical rack — 20 columns × 29 rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</p></div>${tools}${bar}${tray}<div class="rack-wrap">${grid}</div></div>`;
+  return `<div class="rack-view" id="rackView"><div class="shead"><p>${esc(d.name)} — ${d.cols} columns × ${d.rows} rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</p></div>${switcher}${tools}${bar}${tray}<div class="rack-wrap">${grid}</div></div>`;
 }
 // Full-bleed: pull the rack view out of the app's centered column to span the viewport
 // exactly (documentElement.clientWidth excludes the scrollbar, so no page h-scroll).
@@ -2366,7 +2432,7 @@ window.rackTapSlot = async function(col, row){
 };
 window.rackMove = function(id){ placing = id; inspect = null; showToast('Tap the new slot'); render(); };
 window.rackUnplace = async function(id){
-  try{ await dbUpdate('cellar/bottles/' + id, { rackCol:null, rackRow:null }); logEvent('unplaced',{bottleId:id,name:(bottles[id]||{}).name||''}); inspect = null; showToast('Moved to the tray'); }
+  try{ await dbUpdate('cellar/bottles/' + id, { rackCol:null, rackRow:null, rackId:null }); logEvent('unplaced',{bottleId:id,name:(bottles[id]||{}).name||''}); inspect = null; showToast('Moved to the tray'); }
   catch(e){ showToast('Could not unplace'); }
 };
 window.rackMarkOpened = function(id){ placing = null; inspect = null; openMarkOpened(id); };
@@ -2385,8 +2451,8 @@ window.rackEditColLabel = async function(col){
   const cur = colHeaderLabel(col); const seed = cur===('Col '+col) ? '' : cur;
   const val = prompt('Label for ALL of column ' + col + ':', seed);
   if(val===null) return;
-  const v = val.trim(); const updates = {};
-  for(let r=1;r<=RACK_ROWS;r++) updates['cellar/rack_layout/cells/'+col+'_'+r] = v ? { label:v } : null;
+  const v = val.trim(); const updates = {}; const R=curDef().rows;
+  for(let r=1;r<=R;r++) updates['cellar/racks/'+curRack+'/cells/'+col+'_'+r] = v ? { label:v } : null;
   try{ await dbUpdate('/', updates); showToast('Column ' + col + ' labelled'); }
   catch(e){ showToast('Could not save label'); }
 };
@@ -2396,8 +2462,51 @@ window.rackEditCell = async function(col, row){
   const val = prompt('Label for slot ' + slotCode(col,row) + ' only:', seed);
   if(val===null) return;
   const v = val.trim();
-  try{ await dbSet('cellar/rack_layout/cells/'+col+'_'+row, v ? { label:v } : null); showToast('Slot ' + slotCode(col,row) + ' labelled'); }
+  try{ await dbSet('cellar/racks/'+curRack+'/cells/'+col+'_'+row, v ? { label:v } : null); showToast('Slot ' + slotCode(col,row) + ' labelled'); }
   catch(e){ showToast('Could not save label'); }
+};
+
+// ── RACK MANAGEMENT: switch · settings (rename/resize) · add · delete ────────
+window.rackSwitch = function(id){ curRack = id; placing=null; inspect=null; rackEdit=false; render(); };
+window.rackSettings = async function(){
+  if(!isAdmin()){ showToast('Admins only'); return; }
+  const d = curDef();
+  const name = prompt('Rack name:', d.name); if(name===null) return;
+  const colsIn = prompt('Columns (1–40):', d.cols); if(colsIn===null) return;
+  const rowsIn = prompt('Rows (1–60):', d.rows); if(rowsIn===null) return;
+  const C = Math.max(1, Math.min(40, Math.round(Number(colsIn)||d.cols)));
+  const R = Math.max(1, Math.min(60, Math.round(Number(rowsIn)||d.rows)));
+  const outside = activeArr().filter(w=>w.status==='cellared' && bRack(w)===curRack && w.rackCol && w.rackRow && (Number(w.rackCol)>C || Number(w.rackRow)>R));
+  if(outside.length && !confirm(outside.length + ' bottle(s) sit outside the new size — they will move to the unplaced tray (nothing is deleted). Continue?')) return;
+  const updates = {};
+  updates['cellar/racks/'+curRack+'/name'] = name.trim() || d.name;
+  updates['cellar/racks/'+curRack+'/cols'] = C;
+  updates['cellar/racks/'+curRack+'/rows'] = R;
+  outside.forEach(w=>{ updates['cellar/bottles/'+w.id+'/rackCol']=null; updates['cellar/bottles/'+w.id+'/rackRow']=null; updates['cellar/bottles/'+w.id+'/rackId']=null; });
+  try{ await dbUpdate('/', updates); showToast('Rack updated — ' + (name.trim()||d.name) + ' · ' + C + '×' + R); }
+  catch(e){ showToast('Could not update rack'); }
+};
+window.rackAdd = async function(){
+  if(!isAdmin()){ showToast('Admins only'); return; }
+  const name = prompt('New rack name (e.g. Bourbon Shelf, Humidor):',''); if(name===null || !name.trim()) return;
+  const cols = Math.max(1, Math.min(40, Math.round(Number(prompt('Columns:', 6))||6)));
+  const rows = Math.max(1, Math.min(60, Math.round(Number(prompt('Rows:', 4))||4)));
+  const id = 'r' + Date.now().toString(36);
+  try{
+    await dbSet('cellar/racks/'+id, { name:name.trim(), cols, rows, order:rackIds().length, createdAt:Date.now() });
+    curRack = id; render();
+    showToast('Rack added — ' + name.trim());
+  }catch(e){ showToast('Could not add rack'); }
+};
+window.rackDelete = async function(){
+  if(!isAdmin()) return;
+  if(curRack==='main'){ showToast('The main wall can’t be deleted'); return; }
+  const occupied = activeArr().some(w=>w.status==='cellared' && bRack(w)===curRack && w.rackCol && w.rackRow);
+  if(occupied){ showToast('Move its bottles off first'); return; }
+  const d = curDef();
+  if(!confirm('Delete rack "' + d.name + '"?')) return;
+  try{ await dbRemove('cellar/racks/'+curRack); curRack='main'; render(); showToast('Rack deleted'); }
+  catch(e){ showToast('Could not delete rack'); }
 };
 
 // ── HISTORY & SPEND ──────────────────────────────────────────────────────────
