@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.38</title>
+<title>The Cellar Ledger — Rev 2.39</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -410,6 +410,11 @@
   .mbtn.ghost{color:var(--parch-dim);background:transparent;border:1px solid var(--line)}
   .mbtn.ghost:hover{color:var(--parch);background:transparent}
   .mstatus{font-size:12px;color:var(--gold);margin-top:12px;min-height:16px}
+  /* Rack settings modal steppers */
+  .rm-step{display:flex;gap:7px;align-items:center}
+  .rm-step button{width:38px;height:38px;font-size:18px;color:var(--gold);background:transparent;border:1px solid var(--line);border-radius:3px;cursor:pointer;font-family:'Inter';line-height:1}
+  .rm-step button:hover{border-color:var(--gold)}
+  .rm-step input{text-align:center;margin-bottom:0!important;width:70px}
   .roster-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
   .roster-row .re{font-size:13px;color:var(--parch)}
   .roster-row .rr{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-dim);font-weight:600}
@@ -444,7 +449,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.38</div>
+    <div class="auth-rev">Rev 2.39</div>
   </div>
 </div>
 
@@ -557,7 +562,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.38</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.39</span>
   </footer>
 </div>
 
@@ -670,6 +675,27 @@
 </div>
 
 <!-- ── ARCHIVE HISTORY ── -->
+<!-- ── RACK SETTINGS / NEW RACK MODAL ── -->
+<div class="modal" id="rackModal">
+  <div class="modal-card">
+    <h3 id="rm-title">Rack settings</h3>
+    <div class="msub" id="rm-sub">Name and size — the map redraws instantly on save.</div>
+    <div class="qlabel">Name</div>
+    <input id="rm-name" placeholder="e.g. Wine Wall, Bourbon Shelf, Humidor">
+    <div class="mgrid">
+      <div><div class="qlabel">Columns</div><div class="rm-step"><button onclick="rmStep('cols',-1)">−</button><input id="rm-cols" type="number" min="1" max="40" oninput="rmNote()"><button onclick="rmStep('cols',1)">＋</button></div></div>
+      <div><div class="qlabel">Rows</div><div class="rm-step"><button onclick="rmStep('rows',-1)">−</button><input id="rm-rows" type="number" min="1" max="60" oninput="rmNote()"><button onclick="rmStep('rows',1)">＋</button></div></div>
+    </div>
+    <div class="mstatus" id="rm-note"></div>
+    <div class="mrow" style="margin-top:12px">
+      <button class="mbtn ghost dt-archive" id="rm-delete" style="display:none" onclick="rmDelete()">🗑 Delete rack</button>
+      <button class="mbtn ghost" onclick="closeRackModal()">Cancel</button>
+      <button class="mbtn" onclick="rmSave()">Save</button>
+    </div>
+    <div class="mstatus" id="rm-status"></div>
+  </div>
+</div>
+
 <div class="modal" id="archiveModal">
   <div class="modal-card">
     <h3>Archived</h3>
@@ -2342,7 +2368,7 @@ function rackHTML(){
   if(ids.length>1 || admin){
     switcher = `<div class="rack-tools">` +
       ids.map(id=>`<button class="rt-btn ${id===curRack?'on':''}" onclick="rackSwitch('${id}')">${esc(rackDef(id).name)}</button>`).join('') +
-      (admin?`<span class="rt-lbl" style="margin-left:6px"></span><button class="rt-btn" onclick="rackSettings()" title="Rename / resize this rack">⚙ Rack settings</button><button class="rt-btn" onclick="rackAdd()" title="Add another rack">＋ New rack</button>${curRack!=='main'?`<button class="rt-btn" onclick="rackDelete()" title="Delete this rack (must be empty)">🗑</button>`:''}`:'') +
+      (admin?`<span class="rt-lbl" style="margin-left:6px"></span><button class="rt-btn" onclick="openRackModal('edit')" title="Rename / resize this rack">⚙ Rack settings</button><button class="rt-btn" onclick="openRackModal('new')" title="Add another rack">＋ New rack</button>`:'') +
       `</div>`;
   }
 
@@ -2518,45 +2544,85 @@ window.rackEditCell = async function(col, row){
 
 // ── RACK MANAGEMENT: switch · settings (rename/resize) · add · delete ────────
 window.rackSwitch = function(id){ curRack = id; placing=null; inspect=null; rackEdit=false; render(); };
-window.rackSettings = async function(){
+// Rack settings / new-rack modal — one page for name + size (+ delete).
+let rmMode = 'edit';   // 'edit' the current rack | 'new' create one
+window.openRackModal = function(mode){
   if(!isAdmin()){ showToast('Admins only'); return; }
+  rmMode = mode==='new' ? 'new' : 'edit';
   const d = curDef();
-  const name = prompt('Rack name:', d.name); if(name===null) return;
-  const colsIn = prompt('Columns (1–40):', d.cols); if(colsIn===null) return;
-  const rowsIn = prompt('Rows (1–60):', d.rows); if(rowsIn===null) return;
-  const C = Math.max(1, Math.min(40, Math.round(Number(colsIn)||d.cols)));
-  const R = Math.max(1, Math.min(60, Math.round(Number(rowsIn)||d.rows)));
-  const outside = activeArr().filter(w=>w.status==='cellared' && bRack(w)===curRack && w.rackCol && w.rackRow && (Number(w.rackCol)>C || Number(w.rackRow)>R));
-  if(outside.length && !confirm(outside.length + ' bottle(s) sit outside the new size — they will move to the unplaced tray (nothing is deleted). Continue?')) return;
-  const updates = {};
-  updates['cellar/racks/'+curRack+'/name'] = name.trim() || d.name;
-  updates['cellar/racks/'+curRack+'/cols'] = C;
-  updates['cellar/racks/'+curRack+'/rows'] = R;
-  outside.forEach(w=>{ updates['cellar/bottles/'+w.id+'/rackCol']=null; updates['cellar/bottles/'+w.id+'/rackRow']=null; updates['cellar/bottles/'+w.id+'/rackId']=null; });
-  try{ await dbUpdate('/', updates); showToast('Rack updated — ' + (name.trim()||d.name) + ' · ' + C + '×' + R); }
-  catch(e){ showToast('Could not update rack'); }
+  document.getElementById('rm-title').textContent = rmMode==='new' ? 'New rack' : ('Rack settings — ' + d.name);
+  document.getElementById('rm-sub').textContent = rmMode==='new'
+    ? 'A second wall, a bourbon shelf, a humidor — name it and set its grid.'
+    : 'Name and size — the map redraws instantly on save.';
+  document.getElementById('rm-name').value = rmMode==='new' ? '' : d.name;
+  document.getElementById('rm-cols').value = rmMode==='new' ? 6 : d.cols;
+  document.getElementById('rm-rows').value = rmMode==='new' ? 4 : d.rows;
+  document.getElementById('rm-delete').style.display = (rmMode==='edit' && curRack!=='main') ? '' : 'none';
+  document.getElementById('rm-status').textContent = '';
+  rmNote();
+  document.getElementById('rackModal').classList.add('open');
+  document.getElementById('rm-name').focus();
 };
-window.rackAdd = async function(){
-  if(!isAdmin()){ showToast('Admins only'); return; }
-  const name = prompt('New rack name (e.g. Bourbon Shelf, Humidor):',''); if(name===null || !name.trim()) return;
-  const cols = Math.max(1, Math.min(40, Math.round(Number(prompt('Columns:', 6))||6)));
-  const rows = Math.max(1, Math.min(60, Math.round(Number(prompt('Rows:', 4))||4)));
-  const id = 'r' + Date.now().toString(36);
+window.closeRackModal = ()=>document.getElementById('rackModal').classList.remove('open');
+window.rmStep = function(which, delta){
+  const el = document.getElementById('rm-'+which);
+  const max = which==='cols' ? 40 : 60;
+  el.value = Math.max(1, Math.min(max, (Math.round(Number(el.value))||1) + delta));
+  rmNote();
+};
+function rmDims(){
+  return {
+    C: Math.max(1, Math.min(40, Math.round(Number(document.getElementById('rm-cols').value))||1)),
+    R: Math.max(1, Math.min(60, Math.round(Number(document.getElementById('rm-rows').value))||1))
+  };
+}
+function rmOutside(C,R){
+  return activeArr().filter(w=>w.status==='cellared' && bRack(w)===curRack && w.rackCol && w.rackRow && (Number(w.rackCol)>C || Number(w.rackRow)>R));
+}
+// Live warning while resizing: how many bottles would fall outside.
+window.rmNote = function(){
+  const el = document.getElementById('rm-note');
+  const {C,R} = rmDims();
+  el.textContent = C + ' × ' + R + ' = ' + (C*R) + ' slots';
+  if(rmMode==='edit'){
+    const n = rmOutside(C,R).length;
+    if(n) el.textContent += ' — ⚠ ' + n + ' placed bottle' + (n===1?'':'s') + ' would move to the tray (nothing deleted)';
+  }
+};
+window.rmSave = async function(){
+  const name = document.getElementById('rm-name').value.trim();
+  const {C,R} = rmDims();
+  const status = document.getElementById('rm-status');
+  if(!name){ status.textContent='⚠ Give the rack a name.'; return; }
   try{
-    await dbSet('cellar/racks/'+id, { name:name.trim(), cols, rows, order:rackIds().length, createdAt:Date.now() });
-    curRack = id; render();
-    showToast('Rack added — ' + name.trim());
-  }catch(e){ showToast('Could not add rack'); }
+    if(rmMode==='new'){
+      const id = 'r' + Date.now().toString(36);
+      await dbSet('cellar/racks/'+id, { name, cols:C, rows:R, order:rackIds().length, createdAt:Date.now() });
+      curRack = id;
+      closeRackModal(); render();
+      showToast('Rack added — ' + name);
+    }else{
+      const outside = rmOutside(C,R);
+      if(outside.length && !confirm(outside.length + ' bottle(s) sit outside the new size — they will move to the unplaced tray (nothing is deleted). Continue?')) return;
+      const updates = {};
+      updates['cellar/racks/'+curRack+'/name'] = name;
+      updates['cellar/racks/'+curRack+'/cols'] = C;
+      updates['cellar/racks/'+curRack+'/rows'] = R;
+      outside.forEach(w=>{ updates['cellar/bottles/'+w.id+'/rackCol']=null; updates['cellar/bottles/'+w.id+'/rackRow']=null; updates['cellar/bottles/'+w.id+'/rackId']=null; });
+      await dbUpdate('/', updates);
+      closeRackModal();
+      showToast('Rack updated — ' + name + ' · ' + C + '×' + R);
+    }
+  }catch(e){ status.textContent='❌ ' + (e.message||e); }
 };
-window.rackDelete = async function(){
-  if(!isAdmin()) return;
+window.rmDelete = async function(){
   if(curRack==='main'){ showToast('The main wall can’t be deleted'); return; }
   const occupied = activeArr().some(w=>w.status==='cellared' && bRack(w)===curRack && w.rackCol && w.rackRow);
-  if(occupied){ showToast('Move its bottles off first'); return; }
+  if(occupied){ document.getElementById('rm-status').textContent='⚠ Move its bottles off first.'; return; }
   const d = curDef();
   if(!confirm('Delete rack "' + d.name + '"?')) return;
-  try{ await dbRemove('cellar/racks/'+curRack); curRack='main'; render(); showToast('Rack deleted'); }
-  catch(e){ showToast('Could not delete rack'); }
+  try{ await dbRemove('cellar/racks/'+curRack); curRack='main'; closeRackModal(); render(); showToast('Rack deleted'); }
+  catch(e){ document.getElementById('rm-status').textContent='❌ Could not delete.'; }
 };
 
 // ── HISTORY & SPEND ──────────────────────────────────────────────────────────
