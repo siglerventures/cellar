@@ -331,9 +331,9 @@
     <a class="brand" href="#" onclick="goHome();return false;" title="Philinity Wines — home">Philinity Wines <span class="brand-emoji">🍷</span></a>
     <h1 class="toptitle">The Cellar <span class="amp">&</span> Ledger</h1>
     <div class="stats">
-      <button class="stat" onclick="setView('all')" title="See every bottle you've logged"><b id="st-count">0</b><span>Logged</span></button>
+      <button class="stat" onclick="setView('logged')" title="See every wine you've logged &amp; scored"><b id="st-count">0</b><span>Logged</span></button>
       <button class="stat" onclick="setView('buy')" title="See your Buy-Again list"><b id="st-buy">0</b><span>Buy Again</span></button>
-      <button class="stat" onclick="setView('all');setSort('rating')" title="See all bottles ranked by score"><b id="st-avg">—</b><span>Avg Score</span></button>
+      <button class="stat" onclick="setView('logged');setSort('rating')" title="See all scored wines ranked by score"><b id="st-avg">—</b><span>Avg Score</span></button>
     </div>
   </div>
 
@@ -1467,6 +1467,15 @@ function render(){
 
   if(view==='cellar'){ c.innerHTML = rackHTML(); return; }
 
+  if(view==='logged'){
+    const list = applySort(opened.filter(matchSearch));
+    const avg = opened.length ? (opened.reduce((s,w)=>s+Number(w.score||0),0)/opened.length).toFixed(1) : '—';
+    let html = `<div class="shead"><p>Every wine you've logged &amp; scored — ${opened.length} total, avg ${avg}. Sort by score, newest, or A–Z.</p></div>` + chipRowHTML();
+    if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No scored wines yet. Tap “Log a pour” above.</p></div>'; return; }
+    c.innerHTML = html + '<div class="card-grid">' + list.map(openedCardHTML).join('') + '</div>';
+    return;
+  }
+
   // all
   const list = applySort(all.filter(matchSearch));
   let html = '<div class="shead"><p>Everything — opened &amp; cellared. Tap a bottle to view or edit it.</p></div>' + chipRowHTML();
@@ -1480,9 +1489,14 @@ function render(){
       const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>` : '';
       return `<div class="wine" onclick="openDetail('${w.id}')"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="event.stopPropagation();openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
     }
-    const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
-    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="event.stopPropagation();toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
+    return openedCardHTML(w);
   }).join('') + '</div>';
+}
+// Card for an opened/scored bottle — shared by All Bottles and the Logged list.
+function openedCardHTML(w){
+  const ti=tagInfo(w.tag);
+  const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
+  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="event.stopPropagation();toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
 }
 
 // ── RACK MAP: labels, matching, placement ──
