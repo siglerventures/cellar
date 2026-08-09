@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.27</title>
+<title>The Cellar Ledger — Rev 2.28</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -415,7 +415,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.27</div>
+    <div class="auth-rev">Rev 2.28</div>
   </div>
 </div>
 
@@ -528,7 +528,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.27</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.28</span>
   </footer>
 </div>
 
@@ -1685,7 +1685,9 @@ window.goHome = function(){
   window.scrollTo({ top:0, behavior:'smooth' });
 };
 window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; render(); };
-window.onSearch = function(v){ search=(v||'').trim().toLowerCase(); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
+// Strip accents/diacritics so "chateauneuf" matches "Châteauneuf", "rose" matches "rosé", etc.
+function deburr(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+window.onSearch = function(v){ search=deburr((v||'').trim().toLowerCase()); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
 window.clearSearch = function(){ search=''; document.getElementById('searchbar').value=''; document.getElementById('searchclear').style.display='none'; render(); };
 function matchSearch(w){
   if(!search) return true;
@@ -1700,7 +1702,7 @@ function matchSearch(w){
     w.vendor||'',
     (w.rackCol && w.rackRow) ? ('slot ' + slotCode(w.rackCol,w.rackRow)) : ''
   ];
-  return parts.filter(Boolean).join(' ').toLowerCase().includes(search);
+  return deburr(parts.filter(Boolean).join(' ').toLowerCase()).includes(search);
 }
 function scoreClass(r){ return r>=7?'s-hi':r>=5?'s-mid':'s-lo'; }
 function fmt(n){ return Number(n).toFixed(1).replace(/\.0$/,''); }
@@ -2290,7 +2292,7 @@ function palateHTML(){
 
 // ── WISHLIST (buy list) ──
 function wishlistHTML(){
-  const list = asArr(buylist).filter(w=>{ if(!search) return true; return [w.name,w.region,w.note].filter(Boolean).join(' ').toLowerCase().includes(search); }).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  const list = asArr(buylist).filter(w=>{ if(!search) return true; return deburr([w.name,w.region,w.note].filter(Boolean).join(' ').toLowerCase()).includes(search); }).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
   let html = '<div class="shead"><p>Want-to-try list — scout a bottle in the store, or add one by hand.</p></div>';
   html += `<div class="wl-add"><input id="wl-name" placeholder="Wine name"><input id="wl-region" placeholder="Region (optional)"><button onclick="addBuylistItem()">Add</button></div>`;
   if(!list.length){ return html + '<div class="empty"><p>Nothing on the wishlist yet.</p></div>'; }
