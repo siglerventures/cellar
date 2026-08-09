@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.40</title>
+<title>The Cellar Ledger — Rev 2.41</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -260,14 +260,32 @@
   .rack-grid.z1{--cw:26px;--rh:26px;--ch:24px}
   .rack-grid.z2{--cw:40px;--rh:28px;--ch:40px}
   .rack-grid.z3{--cw:64px;--rh:30px;--ch:62px}
-  .rack-colhead{text-align:center;padding:2px 1px;min-height:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;overflow:hidden;position:sticky;top:0;background:#160a0c;z-index:2}
-  .rack-colhead .ch-num{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--gold);line-height:1}
-  .rack-colhead .ch-cat{font-size:7.5px;line-height:1.02;color:var(--gold-dim);font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .rack-colhead{text-align:center;padding:5px 2px;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;overflow:hidden;position:sticky;top:0;background:#160a0c;z-index:2}
+  .rack-colhead .ch-num{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--gold);line-height:1}
+  .rack-colhead .ch-cat{font-size:10px;line-height:1.12;color:var(--gold-dim);font-weight:600;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
   .rack-grid.z1 .ch-cat{display:none}
   .rack-colhead.editable{cursor:pointer}
   .rack-colhead.editable:hover .ch-num,.rack-colhead.editable:hover .ch-cat{color:var(--gold)}
   .rack-corner{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--parch-dim);opacity:.5;padding-bottom:3px;position:sticky;top:0;left:0;background:#160a0c;z-index:4}
   .rack-rowhead{font-family:'Cormorant Garamond',serif;font-size:12px;font-weight:600;color:var(--gold-dim);display:flex;align-items:center;justify-content:center;position:sticky;left:0;background:#160a0c;z-index:3}
+  .colfocus{max-width:760px;margin:2px auto 0}
+  .cf-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .cf-title{font-family:'Cormorant Garamond',serif;font-size:21px;color:var(--parch)}
+  .cf-title b{color:var(--gold);font-weight:600}
+  .cf-count{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--parch-dim);font-weight:600;margin-left:auto}
+  .cf-list{display:flex;flex-direction:column;gap:6px}
+  .cf-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:rgba(236,227,210,0.03);border:1px solid var(--line);border-radius:6px;padding:9px 12px;cursor:pointer;color:var(--parch);font-family:'Inter';transition:.12s}
+  .cf-row.filled:hover{border-color:var(--gold-dim);background:rgba(201,161,84,0.06)}
+  .cf-row.cf-empty{cursor:default;border-style:dashed;opacity:.55;padding:9px 12px}
+  .cf-slot{flex-shrink:0;width:42px;font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--gold-dim);text-align:center}
+  .cf-thumb{flex-shrink:0;width:32px;height:42px;border-radius:3px;object-fit:cover;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:15px}
+  .cf-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .cf-nm{font-size:14px;color:var(--parch);font-weight:500}
+  .cf-sub{font-size:12px;color:var(--parch-dim)}
+  .cf-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+  .cf-score{flex-shrink:0;font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:var(--gold);min-width:38px;text-align:right}
+  .cf-score.band{color:var(--parch-dim);font-size:14px}
+  .cf-empty-lbl{font-size:12px;color:var(--parch-dim)}
   .rack-slot{height:var(--ch);border:1px solid var(--line);border-radius:2px;background:rgba(236,227,210,0.03);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;transition:.1s;padding:1px;text-align:center}
   .rack-slot:hover{border-color:var(--gold-dim)}
   .rack-slot.filled{background:linear-gradient(180deg,var(--garnet),#360f16);border-color:var(--gold-dim)}
@@ -449,7 +467,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.40</div>
+    <div class="auth-rev">Rev 2.41</div>
   </div>
 </div>
 
@@ -562,7 +580,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.40</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.41</span>
   </footer>
 </div>
 
@@ -797,6 +815,7 @@ let inspect = null;   // placed bottle id currently inspected
 let dragId = null;    // bottle id currently being dragged (HTML5 DnD)
 let rackZoom = 2;     // 1 = small · 2 = medium · 3 = large
 let rackEdit = false; // edit-labels mode (admin)
+let rackFocusCol = null; // when set, the Cellar view shows just this column as a readable list
 let flashSlot = null; // "col_row" to flash after a scan-to-place suggestion
 let caSuggest = null; // {col,row,label} scan-to-place suggestion for Add-to-Cellar
 
@@ -1923,7 +1942,7 @@ window.goHome = function(){
   setView('all');
   window.scrollTo({ top:0, behavior:'smooth' });
 };
-window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; render(); };
+window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; render(); };
 // Strip accents/diacritics so "chateauneuf" matches "Châteauneuf", "rose" matches "rosé", etc.
 function deburr(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 window.onSearch = function(v){ search=deburr((v||'').trim().toLowerCase()); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
@@ -2418,7 +2437,7 @@ function rackHTML(){
   const tools = `<div class="rack-tools">
     <div class="rt-group"><span class="rt-lbl">Find</span><div class="rs-wrap"><input id="rackSearch" class="rt-find" type="search" placeholder="Search a bottle…" autocomplete="off" oninput="rackSearchInput(this.value)" onkeydown="rackSearchKey(event)" onblur="rackSearchBlur()"><div class="rs-res" id="rackSearchRes"></div></div></div>
     <div class="rt-group"><span class="rt-lbl">Zoom</span><button class="rt-btn ${rackZoom===1?'on':''}" onclick="rackZoomSet(1)">S</button><button class="rt-btn ${rackZoom===2?'on':''}" onclick="rackZoomSet(2)">M</button><button class="rt-btn ${rackZoom===3?'on':''}" onclick="rackZoomSet(3)">L</button></div>
-    <div class="rt-group"><span class="rt-lbl">Jump</span><select class="rt-jump" onchange="rackJump(this.value)"><option value="">Column…</option>${jumpOpts}</select></div>
+    <div class="rt-group"><span class="rt-lbl">Column</span><select class="rt-jump" onchange="rackFocusColumn(this.value)"><option value="">View a column…</option>${jumpOpts}</select></div>
     ${admin?`<button class="rt-btn ${rackEdit?'on':''}" onclick="rackToggleEdit()">${rackEdit?'✓ Done editing':'Edit labels'}</button>`:''}
   </div>`;
 
@@ -2453,6 +2472,29 @@ function rackHTML(){
     tray += '<div class="rack-tray-empty">Drag a bottle here to pull it off the rack.</div>';
   }
   tray += '</div>';
+
+  // ── COLUMN FOCUS ── a tall, readable single-column list (chosen from the Column selector).
+  if(rackFocusCol && rackFocusCol>=1 && rackFocusCol<=d.cols){
+    const col = rackFocusCol, label = colHeaderLabel(col);
+    let filled = 0, rowsHtml = '';
+    for(let r=1;r<=d.rows;r++){
+      const w = placed[col+'_'+r], slot = slotCode(col,r);
+      if(w){
+        filled++;
+        const vin = w.vintage ? ` ’${esc(String(w.vintage).replace(/[^0-9]/g,'').slice(-2))}` : '';
+        const sub = [w.producer,w.region,w.grape,fmtPrice(w.price)].filter(Boolean).join(' · ');
+        const isScore = w.score!=null;
+        const scoreTxt = isScore ? fmt(w.score) : ((w.predLow!=null&&w.predHigh!=null)?fmt(w.predLow)+'–'+fmt(w.predHigh):'');
+        const thumb = w.photoUrl ? `<img class="cf-thumb" src="${esc(w.photoUrl)}" alt="">` : `<span class="cf-thumb">🍷</span>`;
+        const tags = tagChipsHTML(w);
+        rowsHtml += `<button class="cf-row filled" onclick="openDetail('${w.id}')"><span class="cf-slot">${slot}</span>${thumb}<span class="cf-meta"><span class="cf-nm">${esc(w.name||'')}${vin}</span>${sub?`<span class="cf-sub">${esc(sub)}</span>`:''}${tags?`<span class="cf-tags">${tags}</span>`:''}</span>${scoreTxt?`<span class="cf-score${isScore?'':' band'}">${esc(scoreTxt)}</span>`:''}</button>`;
+      }else{
+        rowsHtml += `<button class="cf-row cf-empty" onclick="rackTapSlot(${col},${r})"><span class="cf-slot">${slot}</span><span class="cf-empty-lbl">empty · ${esc(cellLabel(col,r))}</span></button>`;
+      }
+    }
+    const focus = `<div class="colfocus"><div class="cf-head"><button class="rt-btn" onclick="rackFocusColumn('')">← Full rack</button><div class="cf-title"><b>Column ${col}</b> · ${esc(label)}</div><span class="cf-count">${filled}/${d.rows} filled</span></div><div class="cf-list">${rowsHtml}</div></div>`;
+    return `<div class="rack-view" id="rackView"><div class="shead"><p>${esc(d.name)} — ${d.cols} columns × ${d.rows} rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</p></div>${switcher}${tools}${bar}${tray}${focus}</div>`;
+  }
 
   // Grid: header row (corner + 20 numbered col headers), then 29 rows of (row# + 20 slots).
   // Column header shows the NUMBER (1–20) as the primary id, category beneath.
@@ -2562,6 +2604,8 @@ window.rackLocate = function(id){
 // Zoom · jump · label editing
 window.rackZoomSet = function(z){ rackZoom = z; render(); };
 window.rackJump = function(v){ if(!v) return; const el=document.querySelector('.rack-wrap [data-cell="'+Number(v)+'_1"]'); if(el){ const wrap=el.closest('.rack-wrap'); wrap.scrollLeft=Math.max(0, el.offsetLeft - 40); } };
+// Show only one column as a readable vertical list (empty string / null → back to the full rack).
+window.rackFocusColumn = function(v){ rackFocusCol = v ? Number(v) : null; inspect = null; render(); };
 window.rackToggleEdit = function(){ if(!isAdmin()){ showToast('Admins only'); return; } rackEdit = !rackEdit; placing=null; inspect=null; render(); };
 window.rackEditColLabel = async function(col){
   if(!isAdmin()) return;
@@ -2584,7 +2628,7 @@ window.rackEditCell = async function(col, row){
 };
 
 // ── RACK MANAGEMENT: switch · settings (rename/resize) · add · delete ────────
-window.rackSwitch = function(id){ curRack = id; placing=null; inspect=null; rackEdit=false; render(); };
+window.rackSwitch = function(id){ curRack = id; placing=null; inspect=null; rackEdit=false; rackFocusCol=null; render(); };
 // Rack settings / new-rack modal — one page for name + size (+ delete).
 let rmMode = 'edit';   // 'edit' the current rack | 'new' create one
 window.openRackModal = function(mode){
