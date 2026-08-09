@@ -56,8 +56,14 @@ const PROMPT = [
   '- "verdict": one short sentence (max ~22 words) on whether it fits the taster and why',
   "Use an empty string for any label field you cannot read. ALWAYS provide predLow,",
   "predHigh, fit, and verdict as your best judgment from the label + the palate below.",
+  "IMPORTANT — the palate below describes the taster's WINE preferences. Apply it",
+  "only when kind is wine. For bourbon/tequila/vodka/mixers judge on general",
+  "quality, typicity, age statements, proof, and reputation (they enjoy quality",
+  "spirits — full-flavored, well-made; no strong known biases yet). For cigars",
+  "judge on construction, origin, and reputation. Still ALWAYS give predLow,",
+  "predHigh, fit, and verdict.",
   "",
-  "The taster's palate: " + PALATE
+  "The taster's WINE palate: " + PALATE
 ].join('\n');
 
 function parseModelJson(message) {

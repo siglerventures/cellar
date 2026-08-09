@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.50</title>
+<title>The Cellar Ledger — Rev 2.52</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -485,7 +485,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.50</div>
+    <div class="auth-rev">Rev 2.52</div>
   </div>
 </div>
 
@@ -597,7 +597,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.50</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.52</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -699,6 +699,7 @@
       <input id="dt-abv" placeholder="ABV %">
       <input id="dt-vendor" placeholder="Vendor / store">
       <input id="dt-grape" placeholder="Grape(s) — e.g. 65% Grenache, 15% Syrah">
+      <select id="dt-kind" class="rt-jump" style="width:100%"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
       <input id="dt-rep" placeholder="Representative">
     </div>
     <div class="qlabel" style="margin-top:14px">Notes / comments</div>
@@ -849,6 +850,11 @@ const KINDS = [['wine','🍷 Wine'],['bourbon','🥃 Bourbon'],['tequila','🌵 
 let kindFilter = 'all';    // 'all' or one of the KINDS keys — filters browse views & header stats
 function kindOf(w){ return w.kind || 'wine'; }
 function kindEmoji(k){ const e={wine:'🍷',bourbon:'🥃',tequila:'🌵',vodka:'🍸',cigar:'🚬',mixer:'🧉'}; return e[k]||'🍷'; }
+function kindLabel(k){ const f=KINDS.find(x=>x[0]===k); return f?f[1]:'🍷 Wine'; }
+function emptyForKind(fallback){
+  if(kindFilter==='all') return fallback;
+  return 'Your ' + kindLabel(kindFilter) + ' collection starts here — tap “Log a pour” for one you\'re enjoying, or “＋ Add to cellar” (Cellar tab) for one you\'re keeping. The scanner recognizes ' + kindLabel(kindFilter).replace(/^\S+ /,'').toLowerCase() + ' labels too.';
+}
 function kindMatch(w){ return kindFilter==='all' || kindOf(w)===kindFilter; }
 window.setKind = function(k){ kindFilter = k; renderKindRow(); render(); };
 function renderKindRow(){
@@ -1436,7 +1442,7 @@ window.openDetail = function(id){
   document.getElementById('dt-abv').value = w.abv||'';
   document.getElementById('dt-vendor').value = w.vendor||'';
   document.getElementById('dt-grape').value = w.grape||'';
-  document.getElementById('dt-kind').value = kindOf(w);
+  { const ke = document.getElementById('dt-kind'); if(ke) ke.value = kindOf(w); }
   document.getElementById('dt-rep').value = w.rep||'';
   document.getElementById('dtStatus').textContent='';
   document.getElementById('detailModal').classList.add('open');
@@ -1506,7 +1512,7 @@ window.saveDetail = async function(){
     const after  = [nn(score),nn(price),nn(notes),nn(vendor),nn(grape),nn(vintage),nn(abv),nn(rep),(dtDraft.buy?'1':''),dtDraft.tags.join(','),ups.length].join('¦');
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
       score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
-      vintage, abv, rep, notes, kind:document.getElementById('dt-kind').value,
+      vintage, abv, rep, notes, kind:(document.getElementById('dt-kind')||{value:kindOf(w)}).value,
       photos: ups.length?ups:null,
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
     });
@@ -2152,7 +2158,7 @@ function render(){
   if(view==='buy'){
     const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch).filter(vMatch).filter(kindMatch));
     let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers.</p></div>';
-    if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No buy-again bottles yet. Flag the keepers as you log them.</p></div>'; return; }
+    if(!list.length){ c.innerHTML = html + '<div class="empty"><p>' + esc(emptyForKind('No buy-again bottles yet. Flag the keepers as you log them.')) + '</p></div>'; return; }
     c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${tagChipsHTML(w)}</div></div>`; }).join('') + '</div>';
     return;
   }
@@ -2163,7 +2169,7 @@ function render(){
     const list = applySort(opened.filter(matchSearch).filter(vMatch).filter(kindMatch));
     const avg = opened.length ? (opened.reduce((s,w)=>s+Number(w.score||0),0)/opened.length).toFixed(1) : '—';
     let html = `<div class="shead"><p>Every wine you've logged &amp; scored — ${opened.length} total, avg ${avg}.</p></div>`;
-    if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No scored wines yet. Tap “Log a pour” above.</p></div>'; return; }
+    if(!list.length){ c.innerHTML = html + '<div class="empty"><p>' + esc(emptyForKind('No scored wines yet. Tap “Log a pour” above.')) + '</p></div>'; return; }
     c.innerHTML = html + renderCollection(list);
     return;
   }
@@ -2171,7 +2177,7 @@ function render(){
   // all
   const list = applySort(all.filter(matchSearch).filter(vMatch).filter(kindMatch));
   let html = '';
-  if(!list.length){ c.innerHTML = html + '<div class="empty"><p>Nothing logged yet. Tap “Log a pour” above.</p></div>'; return; }
+  if(!list.length){ c.innerHTML = html + '<div class="empty"><p>' + esc(emptyForKind('Nothing logged yet. Tap “Log a pour” above.')) + '</p></div>'; return; }
   c.innerHTML = html + renderCollection(list);
 }
 
