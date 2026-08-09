@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.20</title>
+<title>The Cellar Ledger — Rev 2.21</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -64,6 +64,7 @@
   .modal-card textarea{font-family:'Inter';font-size:14px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:10px 12px;width:100%;margin-bottom:12px;min-height:72px;resize:vertical}
   .modal-card textarea:focus{outline:none;border-color:var(--gold)}
   .dt-save{margin-left:auto}
+  .dt-price{max-width:150px;margin-bottom:0!important}
   .dt-archive{color:var(--gold-dim)!important;border-color:rgba(140,112,56,.5)!important}
   .dt-archive:hover{color:var(--gold)!important;border-color:var(--gold)!important}
   /* Archive history modal */
@@ -388,7 +389,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.20</div>
+    <div class="auth-rev">Rev 2.21</div>
   </div>
 </div>
 
@@ -466,7 +467,7 @@
   <!-- ── SEARCH + ASK AI ── -->
   <div class="searchrow" id="searchrow">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-    <input id="searchbar" placeholder="Search name, producer, region, grape, tag, notes…" oninput="onSearch(this.value)">
+    <input id="searchbar" placeholder="Search anything — name, region, flavor, rating, price, slot…" oninput="onSearch(this.value)">
     <button id="searchclear" onclick="clearSearch()" style="display:none">✕</button>
     <button class="askbtn" onclick="toggleAskAI()">✦ Ask AI</button>
   </div>
@@ -497,7 +498,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.20</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.21</span>
   </footer>
 </div>
 
@@ -586,9 +587,8 @@
     <div class="tags" id="dtTags"></div>
     <div class="mrow" style="margin-top:4px">
       <button class="buyflag" id="dtBuyflag" onclick="dtToggleBuy()"><span class="dot"></span> Buy again</button>
+      <input id="dt-price" class="dt-price" placeholder="Price $" type="number" step="0.01" min="0">
     </div>
-    <div class="qlabel" style="margin-top:14px">Price</div>
-    <input id="dt-price" placeholder="Price $" type="number" step="0.01" min="0">
     <div class="qlabel" style="margin-top:14px">Notes / comments</div>
     <textarea id="dt-notes" placeholder="Tasting notes, where you had it, who you shared it with…"></textarea>
     <div class="mrow">
@@ -1571,7 +1571,20 @@ window.goHome = function(){
 window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; render(); };
 window.onSearch = function(v){ search=(v||'').trim().toLowerCase(); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
 window.clearSearch = function(){ search=''; document.getElementById('searchbar').value=''; document.getElementById('searchclear').style.display='none'; render(); };
-function matchSearch(w){ if(!search) return true; return [w.name,w.producer,w.region,w.grape,w.vintage,w.notes,w.tag,w.tag?tagInfo(w.tag).t:''].filter(Boolean).join(' ').toLowerCase().includes(search); }
+function matchSearch(w){
+  if(!search) return true;
+  const parts = [
+    w.name, w.producer, w.region, w.grape, w.vintage, w.abv, w.notes,
+    w.tag ? ('flavor ' + tagInfo(w.tag).t) : '',
+    w.status,                                                                   // opened / cellared
+    w.buyAgain ? 'buy again keeper' : '',
+    (w.score!=null) ? ('rating score ' + fmt(w.score) + ' ' + w.score) : '',
+    (w.predLow!=null || w.predHigh!=null) ? ('predicted ' + (w.predLow!=null?fmt(w.predLow):'') + ' ' + (w.predHigh!=null?fmt(w.predHigh):'')) : '',
+    (w.price!=null && w.price!=='') ? ('price ' + w.price + ' ' + fmtPrice(w.price)) : '',
+    (w.rackCol && w.rackRow) ? ('slot ' + slotCode(w.rackCol,w.rackRow)) : ''
+  ];
+  return parts.filter(Boolean).join(' ').toLowerCase().includes(search);
+}
 function scoreClass(r){ return r>=7?'s-hi':r>=5?'s-mid':'s-lo'; }
 function fmt(n){ return Number(n).toFixed(1).replace(/\.0$/,''); }
 function fmtPrice(p){ if(p==null||p==='') return ''; const n=Number(p); if(!isFinite(n)) return ''; return '$' + (n%1 ? n.toFixed(2) : n.toFixed(0)); }
