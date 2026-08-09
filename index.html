@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.12</title>
+<title>The Cellar Ledger — Rev 2.14</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -264,14 +264,13 @@
   .lname{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch);line-height:1.12}
   .lmeta{font-size:11px;color:var(--parch-dim);margin-top:2px}
   .ltag{display:inline-block;font-size:10px;letter-spacing:.04em;padding:2px 8px;border-radius:20px;margin-top:5px;font-weight:600}
-  .wine{padding:16px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
-  .wine-body{display:grid;grid-template-columns:54px 1fr auto;gap:clamp(10px,3vw,20px);align-items:center;flex:1;width:100%}
-  /* Card photo band — real label photo, or an elegant placeholder when none yet */
-  .cardphoto{height:150px;border-radius:4px;overflow:hidden;background:linear-gradient(160deg,#2c1016 0%,#160a0c 70%);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .wine{display:grid;grid-template-columns:90px 1fr auto;gap:clamp(10px,3vw,18px);align-items:start;padding:16px 0;border-bottom:1px solid var(--line)}
+  /* Left rail: score stacked above a bottle-shaped label thumbnail */
+  .wine-left{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .wine-left .score{width:100%}
+  .cardphoto{width:86px;height:110px;border-radius:4px;overflow:hidden;background:linear-gradient(160deg,#2c1016 0%,#160a0c 70%);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .cardphoto img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;display:block}
-  .cardphoto.ph{flex-direction:column;gap:6px}
-  .cardphoto.ph .ph-glass{font-size:34px;opacity:.5}
-  .cardphoto.ph .ph-hint{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;color:var(--parch-dim);opacity:.7}
+  .cardphoto.ph .ph-glass{font-size:26px;opacity:.5}
   .score b{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:600;line-height:.9;display:block;text-align:center}
   .score s{text-decoration:none;font-size:9px;letter-spacing:.1em;color:var(--parch-dim);text-transform:uppercase;display:block;text-align:center}
   .s-hi b{color:var(--gold)}.s-mid b{color:#c98a52}.s-lo b{color:#9a5a55}
@@ -342,7 +341,6 @@
     /* Tile lists into a fluid grid; same cards, just bordered tiles side by side. */
     .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:stretch}
     .card-grid>.wine,.card-grid>.lb-row,.card-grid>.wl-row{border-bottom:none;border:1px solid var(--line);border-radius:5px;padding:14px 16px;background:var(--glass)}
-    .card-grid>.wine{height:100%}
   }
   @media(min-width:1200px){
     .wrap{max-width:1440px}
@@ -362,7 +360,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.12</div>
+    <div class="auth-rev">Rev 2.14</div>
   </div>
 </div>
 
@@ -468,7 +466,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.12</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.14</span>
   </footer>
 </div>
 
@@ -1558,14 +1556,14 @@ function collectionCardHTML(w){
     const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
     const qty = Number(w.qty)||1;
     const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>` : '';
-    return `<div class="wine" onclick="openDetail('${w.id}')">${cardPhotoHTML(w)}<div class="wine-body"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div><div class="meta"><div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="event.stopPropagation();openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="event.stopPropagation();openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
   }
   return openedCardHTML(w);
 }
 // Photo band at the top of every browse card: label photo, or a placeholder inviting one.
 function cardPhotoHTML(w){
   if(w.photoUrl) return `<div class="cardphoto"><img src="${esc(w.photoUrl)}" alt="label" loading="lazy" onclick="event.stopPropagation();viewImage('${esc(w.photoUrl)}')"></div>`;
-  return `<div class="cardphoto ph"><span class="ph-glass">🍷</span><span class="ph-hint">tap to add a photo</span></div>`;
+  return `<div class="cardphoto ph" title="Tap the card to add a photo"><span class="ph-glass">🍷</span></div>`;
 }
 // List — one dense line per wine.
 function listRowHTML(w){
@@ -1602,7 +1600,7 @@ function kanbanCardHTML(w){
 function openedCardHTML(w){
   const ti=tagInfo(w.tag);
   const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
-  return `<div class="wine" onclick="openDetail('${w.id}')">${cardPhotoHTML(w)}<div class="wine-body"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="event.stopPropagation();toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div></div>`;
+  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b><s>/10</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}<span class="buy-yes" style="cursor:pointer;opacity:${w.buyAgain?1:.45}" onclick="event.stopPropagation();toggleBuyList('${w.id}')">${w.buyAgain?'✓ buy again':'+ buy again'}</span></div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
 }
 
 // ── RACK MAP: labels, matching, placement ──
