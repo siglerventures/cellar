@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.19</title>
+<title>The Cellar Ledger — Rev 2.20</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -388,7 +388,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.19</div>
+    <div class="auth-rev">Rev 2.20</div>
   </div>
 </div>
 
@@ -497,7 +497,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.19</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.20</span>
   </footer>
 </div>
 
@@ -594,6 +594,7 @@
     <div class="mrow">
       <button class="mbtn ghost" onclick="closeDetail()">Close</button>
       <button class="mbtn ghost dt-archive" onclick="archiveDetail()">Archive</button>
+      <button class="mbtn ghost" id="dtOpenBtn" style="display:none" onclick="dtMarkOpened()">🍷 Mark opened</button>
       <button class="mbtn dt-save" onclick="saveDetail()">Save</button>
     </div>
     <div class="mstatus" id="dtStatus"></div>
@@ -936,7 +937,7 @@ window.wsScan = async function(){
   setScanStatus('ws', 'Reading every wine on there — a long list can take ~20 seconds…', '');
   document.getElementById('wsResults').innerHTML = '';
   try{
-    const images = shots.map(p=>({ base64:p.dataUrl.split(',')[1], mediaType:'image/jpeg' }));
+    const images = shots.map(p=>({ base64:p.dataUrl.split(',')[1], mediaType:(p.dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg' }));
     const res = await scanMenuFn({ images, collectionSummary: collectionSummary() });
     const r = res && res.data;
     if(!r || !r.ok){ setScanStatus('ws', (r && r.error) || 'Couldn’t read that one — try a closer, straighter shot.', 'err'); return; }
@@ -1068,6 +1069,7 @@ window.openDetail = function(id){
   const meta=[w.producer,w.vintage,w.grape,w.region,w.abv?w.abv+'%':'',fmtPrice(w.price)].filter(Boolean).join(' · ');
   const state = w.status==='cellared' ? ('Cellared'+((w.rackCol&&w.rackRow)?' · '+slotCode(w.rackCol,w.rackRow):'')+(Number(w.qty)>1?' · ×'+w.qty:'')) : 'Opened';
   document.getElementById('dt-meta').textContent = [state, meta].filter(Boolean).join(' — ');
+  document.getElementById('dtOpenBtn').style.display = w.status==='cellared' ? '' : 'none';
   dtRemoved = [];
   piStore.dt = (Array.isArray(w.photos) && w.photos.length)
     ? w.photos.filter(p=>p && p.url).map(p=>({ path:p.path||null, url:p.url }))
@@ -1085,6 +1087,8 @@ window.openDetail = function(id){
   document.getElementById('detailModal').classList.add('open');
 };
 window.closeDetail = ()=>document.getElementById('detailModal').classList.remove('open');
+// Detail modal → the mark-opened (score it) flow for a cellared bottle.
+window.dtMarkOpened = function(){ const id = dtDraft.id; closeDetail(); if(id) openMarkOpened(id); };
 window.dtToggleHalf = ()=>{ dtDraft.half=!dtDraft.half; document.getElementById('dtHalfbtn').classList.toggle('on',dtDraft.half); echo('dtScoreEcho',dtDraft); };
 window.dtToggleBuy = ()=>{ dtDraft.buy=!dtDraft.buy; document.getElementById('dtBuyflag').classList.toggle('on',dtDraft.buy); };
 window.saveDetail = async function(){
@@ -1175,10 +1179,14 @@ async function piAddFiles(ctx, files){
     if(!f || !f.type || !f.type.startsWith('image/')) continue;
     if(piStore[ctx].length >= PI_MAX[ctx]){ showToast('Max '+PI_MAX[ctx]+' photos here — remove one first'); break; }
     try{
-      const dataUrl = await compressImage(f);
-      piStore[ctx].push({ dataUrl });
+      const raw = await compressImage(f);
+      // Cut the bottle out of white/gray backdrops NOW, while the image is
+      // local (no CORS) — the transparent PNG is what gets stored & shown.
+      const cut = await scrapeLocal(raw);
+      piStore[ctx].push({ dataUrl: cut || raw });
       piRender(ctx);
-      if((ctx==='q'||ctx==='ca') && !piScanned[ctx]){ piScanned[ctx]=true; scanAndFill(dataUrl, ctx); }
+      // Scan from the untouched original — the model reads it more reliably.
+      if((ctx==='q'||ctx==='ca') && !piScanned[ctx]){ piScanned[ctx]=true; scanAndFill(raw, ctx); }
     }catch(e){ showToast('Could not read that photo — try again.'); }
   }
 }
@@ -1247,7 +1255,7 @@ function setScanStatus(which, msg, kind){
 async function scanAndFill(dataUrl, which){
   setScanStatus(which, 'Reading the label…', '');
   try{
-    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:'image/jpeg' });
+    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:(dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg' });
     const r = res && res.data;
     if(!r || !r.ok){ setScanStatus(which, (r && r.error) || 'Couldn’t read that one — type it in.', 'err'); return; }
     fillScanFields(which, r.data);
@@ -1347,7 +1355,8 @@ function piReset(ctx){
 async function uploadLabel(bottleId, dataUrl){
   // Storage path MUST stay under cellar/ — that's the folder the published
   // Storage rules allow (matches the RTDB /cellar root). wine_cellar/ is denied.
-  const path='cellar/bottles/'+bottleId+'/label_'+Date.now()+'.jpg';
+  const ext = dataUrl.startsWith('data:image/png') ? '.png' : '.jpg';
+  const path='cellar/bottles/'+bottleId+'/label_'+Date.now()+ext;
   const sref=storageRef(storage, path);
   await uploadString(sref, dataUrl, 'data_url');
   const url=await getDownloadURL(sref);
@@ -1638,7 +1647,7 @@ function collectionCardHTML(w){
     const row2=[w.vintage,w.grape,w.region,fmtPrice(w.price)].filter(Boolean).join(' · ');
     const qty = Number(w.qty)||1;
     const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>` : '';
-    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="event.stopPropagation();openMarkOpened('${w.id}')">Mark opened</button></div></div></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}</div></div></div>`;
   }
   return openedCardHTML(w);
 }
@@ -1651,13 +1660,11 @@ function cardPhotoHTML(w){
 // Card thumbnails load the original, then swap in a version where near-white
 // pixels are made transparent (canvas, cached per URL). Zoom keeps the original.
 const scrapeCache = new Map();
-function scrapeWhite(url){
-  if(scrapeCache.has(url)) return scrapeCache.get(url);
-  const job = new Promise((resolve)=>{
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = ()=>{
-      try{
+// Core cut-out: given a decoded <img>, return a transparent-background PNG
+// dataURL, or null when the photo shouldn't be touched (dark/busy backdrop,
+// degenerate result, or canvas access denied).
+function cutoutBottle(img){
+  try{
         // Work at a bounded size for speed.
         const MAXE = 900;
         let W = img.naturalWidth, H = img.naturalHeight;
@@ -1678,7 +1685,7 @@ function scrapeWhite(url){
         const bg = top.reduce((s,p)=>[s[0]+p[0],s[1]+p[1],s[2]+p[2]],[0,0,0]).map(v=>v/top.length);
         const bgLum = (bg[0]+bg[1]+bg[2])/3;
         // Dark or busy backdrop (tabletop shot) → leave the photo alone.
-        if(bgLum < 150){ resolve(null); return; }
+        if(bgLum < 150) return null;
 
         // 2. Flood-fill from every border pixel that matches the backdrop; only
         // border-connected matches are removed, so whites INSIDE the label survive.
@@ -1702,20 +1709,37 @@ function scrapeWhite(url){
         }
         let removed = 0;
         for(let p=0; p<W*H; p++){ if(seen[p]===2){ a[p*4+3]=0; removed++; } }
-        // Scraped almost nothing (or everything) → not a backdrop shot; keep original.
-        if(removed < W*H*0.08 || removed > W*H*0.97){ resolve(null); return; }
-        // 3. Soft edge: kept pixels touching removed ones get half alpha.
-        for(let p=0; p<W*H; p++){
-          if(seen[p]===2) continue;
-          const ix = p%W, iy = (p/W)|0;
-          if((ix>0 && seen[p-1]===2) || (ix<W-1 && seen[p+1]===2) || (iy>0 && seen[p-W]===2) || (iy<H-1 && seen[p+W]===2)){
-            a[p*4+3] = Math.min(a[p*4+3], 140);
-          }
-        }
-        x.putImageData(d, 0, 0);
-        resolve(c.toDataURL('image/png'));
-      }catch(e){ resolve(null); }   // CORS-tainted or decode issue → keep original
-    };
+    // Scraped almost nothing (or everything) → not a backdrop shot; keep original.
+    if(removed < W*H*0.08 || removed > W*H*0.97) return null;
+    // 3. Soft edge: kept pixels touching removed ones get half alpha.
+    for(let p=0; p<W*H; p++){
+      if(seen[p]===2) continue;
+      const ix = p%W, iy = (p/W)|0;
+      if((ix>0 && seen[p-1]===2) || (ix<W-1 && seen[p+1]===2) || (iy>0 && seen[p-W]===2) || (iy<H-1 && seen[p+W]===2)){
+        a[p*4+3] = Math.min(a[p*4+3], 140);
+      }
+    }
+    x.putImageData(d, 0, 0);
+    return c.toDataURL('image/png');
+  }catch(e){ return null; }   // CORS-tainted or decode issue → keep original
+}
+// Local scrape (paste/camera/library BEFORE upload — no CORS involved).
+function scrapeLocal(dataUrl){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>resolve(cutoutBottle(img));
+    img.onerror = ()=>resolve(null);
+    img.src = dataUrl;
+  });
+}
+// Remote scrape for already-uploaded photos (works only if the host grants
+// canvas access; otherwise falls back to the original silently).
+function scrapeWhite(url){
+  if(scrapeCache.has(url)) return scrapeCache.get(url);
+  const job = new Promise((resolve)=>{
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = ()=>resolve(cutoutBottle(img));
     img.onerror = ()=>resolve(null);
     img.src = url;
   });
