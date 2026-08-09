@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.30</title>
+<title>The Cellar Ledger — Rev 2.31</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -75,6 +75,7 @@
   .modal-card textarea:focus{outline:none;border-color:var(--gold)}
   .dt-save{margin-left:auto}
   .dt-open{padding:9px 15px!important;white-space:nowrap;flex-shrink:0}
+  .dt-year{max-width:96px;margin-bottom:0!important}
   .dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
   .dt-grid input{margin-bottom:0!important;width:100%}
   @media(max-width:420px){.dt-grid{grid-template-columns:1fr}}
@@ -418,7 +419,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.30</div>
+    <div class="auth-rev">Rev 2.31</div>
   </div>
 </div>
 
@@ -531,7 +532,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.30</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.31</span>
   </footer>
 </div>
 
@@ -621,6 +622,7 @@
     <div class="tags" id="dtTags"></div>
     <div class="mrow" style="margin-top:4px">
       <button class="buyflag" id="dtBuyflag" onclick="dtToggleBuy()"><span class="dot"></span> Buy again</button>
+      <input id="dt-vintage" class="dt-year" placeholder="Year">
       <button class="mbtn ghost dt-open" id="dtOpenBtn" style="display:none" onclick="dtMarkOpened()">Opened</button>
     </div>
     <div class="dt-grid">
@@ -1187,6 +1189,7 @@ window.openDetail = function(id){
   document.getElementById('dtBuyflag').classList.toggle('on', !!w.buyAgain);
   echo('dtScoreEcho', dtDraft);
   document.getElementById('dt-notes').value = w.notes || '';
+  document.getElementById('dt-vintage').value = w.vintage||'';
   document.getElementById('dt-price').value = (w.price==null?'':w.price);
   document.getElementById('dt-abv').value = w.abv||'';
   document.getElementById('dt-vendor').value = w.vendor||'';
@@ -1207,6 +1210,7 @@ window.saveDetail = async function(){
     const ups = await uploadPhotos(dtDraft.id, piStore.dt);
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
       score, tag:dtDraft.tag, buyAgain:dtDraft.buy, price:parsePriceInput('dt-price'), vendor:document.getElementById('dt-vendor').value.trim(),
+      vintage:document.getElementById('dt-vintage').value.trim(),
       abv:document.getElementById('dt-abv').value.replace('%','').trim(), rep:document.getElementById('dt-rep').value.trim(),
       notes:document.getElementById('dt-notes').value.trim(),
       photos: ups.length?ups:null,
