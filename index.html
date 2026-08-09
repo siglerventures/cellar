@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.19</title>
+<title>The Cellar Ledger — Rev 2.20</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -145,17 +145,26 @@
   .modebtn.on{color:var(--ink);background:var(--gold)}
   .modebtn:hover:not(.on){color:var(--parch);background:rgba(201,163,92,0.08)}
   /* List */
-  .list-view{border:1px solid var(--line);border-radius:6px;overflow:hidden}
-  .lrow{display:grid;grid-template-columns:54px 1fr auto 28px;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer;transition:.12s}
-  .lrow:last-child{border-bottom:none}
-  .lrow:hover{background:rgba(236,227,210,0.03)}
-  .lrow-score{font-family:'Cormorant Garamond',serif;font-size:23px;font-weight:600;text-align:center;line-height:1}
-  .lrow-score.s-hi{color:var(--gold)}.lrow-score.s-mid{color:#c98a52}.lrow-score.s-lo{color:#9a5a55}
-  .lrow-score.s-pred{color:var(--parch-dim);font-size:14px}
-  .lrow-main{min-width:0}
-  .lrow-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--parch);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
-  .lrow-meta{font-size:11px;color:var(--parch-dim);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .lrow-tags{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  /* List = sortable table */
+  .ltable-wrap{border:1px solid var(--line);border-radius:6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .ltable{width:100%;border-collapse:collapse}
+  .ltable th{font-family:'Inter';font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--parch-dim);text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;user-select:none;background:rgba(236,227,210,0.03)}
+  .ltable th:hover{color:var(--parch)}
+  .ltable th.lsort-on{color:var(--gold)}
+  .ltable th.lt-num{text-align:right}
+  .ltable td{padding:10px 14px;border-bottom:1px solid var(--line);font-family:'Inter';font-size:13px;color:var(--parch);vertical-align:middle}
+  .ltable tbody tr{cursor:pointer;transition:.12s}
+  .ltable tbody tr:hover{background:rgba(236,227,210,0.03)}
+  .ltable tbody tr:last-child td{border-bottom:none}
+  .ltable .lt-num{text-align:right;white-space:nowrap}
+  .lt-name{min-width:190px}
+  .lt-wine{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--parch);display:block;line-height:1.15}
+  .lt-prod{font-size:11px;color:var(--gold-dim);display:block}
+  .lt-score{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600}
+  .lt-score.s-hi{color:var(--gold)}.lt-score.s-mid{color:#c98a52}.lt-score.s-lo{color:#9a5a55}
+  .lt-score.s-pred{color:var(--parch-dim);font-size:13px}
+  .lt-region{color:var(--parch-dim);font-size:12px;max-width:220px}
+  .lt-dim{color:var(--parch-dim);opacity:.45}
   /* Kanban */
   .kanban{display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;align-items:flex-start}
   .kcol{flex:0 0 230px;min-width:230px;background:var(--glass);border:1px solid var(--line);border-radius:6px;padding:10px}
@@ -271,14 +280,14 @@
   .shead p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch-dim)}
   .addcellar{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--gold);background:transparent;border:1px solid var(--line);border-radius:3px;padding:8px 14px;cursor:pointer;font-family:'Inter';transition:.15s;white-space:nowrap}
   .addcellar:hover{border-color:var(--gold)}
-  .lb-row{display:grid;grid-template-columns:34px 50px 1fr auto;gap:clamp(10px,2.5vw,18px);align-items:center;padding:15px 0;border-bottom:1px solid var(--line)}
+  .lb-row{display:grid;grid-template-columns:34px 50px 1fr;gap:clamp(10px,2.5vw,18px);align-items:center;padding:15px 0;border-bottom:1px solid var(--line)}
   .rank{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold-dim);text-align:center}
   .lb-row.top .rank{color:var(--gold)}
   .lscore{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;color:var(--gold);text-align:center;line-height:.9}
   .lname{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch);line-height:1.12}
   .lmeta{font-size:11px;color:var(--parch-dim);margin-top:2px}
   .ltag{display:inline-block;font-size:10px;letter-spacing:.04em;padding:2px 8px;border-radius:20px;margin-top:5px;font-weight:600}
-  .wine{display:grid;grid-template-columns:104px 1fr auto;gap:clamp(10px,3vw,18px);align-items:start;padding:16px 0;border-bottom:1px solid var(--line)}
+  .wine{display:grid;grid-template-columns:104px 1fr;gap:clamp(10px,3vw,18px);align-items:start;padding:16px 0;border-bottom:1px solid var(--line)}
   /* Left rail: score stacked above a bottle-shaped label thumbnail */
   .wine-left{display:flex;flex-direction:column;align-items:center;gap:8px}
   .wine-left .score{width:100%}
@@ -379,7 +388,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.19</div>
+    <div class="auth-rev">Rev 2.20</div>
   </div>
 </div>
 
@@ -437,6 +446,7 @@
       <input id="q-grape" placeholder="Grape">
       <input id="q-vintage" placeholder="Vintage">
       <input id="q-abv" placeholder="ABV %">
+      <input id="q-price" placeholder="Price $">
       <input id="q-notes" placeholder="Quick note">
     </div>
   </div>
@@ -487,7 +497,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.19</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.20</span>
   </footer>
 </div>
 
@@ -542,6 +552,7 @@
       <input id="ca-grape" placeholder="Grape">
       <input id="ca-vintage" placeholder="Vintage">
       <input id="ca-abv" placeholder="ABV %">
+      <input id="ca-price" placeholder="Price $" type="number" step="0.01" min="0">
       <input id="ca-qty" placeholder="Qty" type="number" min="1" value="1">
       <input id="ca-predlow" placeholder="Predicted low" type="number" step="0.5">
       <input id="ca-predhigh" placeholder="Predicted high" type="number" step="0.5">
@@ -576,6 +587,8 @@
     <div class="mrow" style="margin-top:4px">
       <button class="buyflag" id="dtBuyflag" onclick="dtToggleBuy()"><span class="dot"></span> Buy again</button>
     </div>
+    <div class="qlabel" style="margin-top:14px">Price</div>
+    <input id="dt-price" placeholder="Price $" type="number" step="0.01" min="0">
     <div class="qlabel" style="margin-top:14px">Notes / comments</div>
     <textarea id="dt-notes" placeholder="Tasting notes, where you had it, who you shared it with…"></textarea>
     <div class="mrow">
@@ -666,6 +679,7 @@ let buylist = {};   // id -> item
 let view = 'all';
 let sortMode = 'rating';   // 'rating' | 'newest' | 'az' — sort chips on All Bottles / Buy-Again
 let listMode = 'browse';   // 'browse' | 'list' | 'kanban' — collection display mode (All Bottles / Logged)
+let listSort = { key:'score', dir:-1 };  // List-mode column sort: key + direction (1 asc, -1 desc)
 try{ const _m=localStorage.getItem('cellar_listmode'); if(['browse','list','kanban'].includes(_m)) listMode=_m; }catch(_){}
 let dtDraft = { id:null, score:null, half:false, tag:null, buy:false };  // detail-modal edit state
 let subscribed = false;
@@ -1052,7 +1066,7 @@ window.openDetail = function(id){
   const half = w.score!=null && (Number(w.score)-whole)>=0.5;
   dtDraft = { id, score:whole, half, tag:w.tag||null, buy:!!w.buyAgain };
   document.getElementById('dt-name').textContent = w.name || '—';
-  const meta=[w.producer,w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
+  const meta=[w.producer,w.vintage,w.grape,w.region,w.abv?w.abv+'%':'',fmtPrice(w.price)].filter(Boolean).join(' · ');
   const state = w.status==='cellared' ? ('Cellared'+((w.rackCol&&w.rackRow)?' · '+slotCode(w.rackCol,w.rackRow):'')+(Number(w.qty)>1?' · ×'+w.qty:'')) : 'Opened';
   document.getElementById('dt-meta').textContent = [state, meta].filter(Boolean).join(' — ');
   document.getElementById('dtOpenBtn').style.display = w.status==='cellared' ? '' : 'none';
@@ -1068,6 +1082,7 @@ window.openDetail = function(id){
   document.getElementById('dtBuyflag').classList.toggle('on', !!w.buyAgain);
   echo('dtScoreEcho', dtDraft);
   document.getElementById('dt-notes').value = w.notes || '';
+  document.getElementById('dt-price').value = (w.price==null?'':w.price);
   document.getElementById('dtStatus').textContent='';
   document.getElementById('detailModal').classList.add('open');
 };
@@ -1083,7 +1098,7 @@ window.saveDetail = async function(){
     document.getElementById('dtStatus').textContent='⏳ Saving…';
     const ups = await uploadPhotos(dtDraft.id, piStore.dt);
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
-      score, tag:dtDraft.tag, buyAgain:dtDraft.buy,
+      score, tag:dtDraft.tag, buyAgain:dtDraft.buy, price:parsePriceInput('dt-price'),
       notes:document.getElementById('dt-notes').value.trim(),
       photos: ups.length?ups:null,
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
@@ -1373,7 +1388,7 @@ window.logPour = async function(){
       grape:document.getElementById('q-grape').value.trim(),
       vintage:document.getElementById('q-vintage').value.trim(),
       abv:document.getElementById('q-abv').value.replace('%','').trim(),
-      status:'opened', qty:0, predLow:null, predHigh:null,
+      status:'opened', qty:0, predLow:null, predHigh:null, price:parsePriceInput('q-price'),
       score:draft.score+(draft.half?0.5:0), tag:draft.tag, buyAgain:draft.buy,
       notes:document.getElementById('q-notes').value.trim(),
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
@@ -1387,7 +1402,7 @@ window.logPour = async function(){
   }catch(e){ showToast('Save failed: ' + (e.message||e)); }
 };
 function resetQuickLog(){
-  ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-notes'].forEach(id=>document.getElementById(id).value='');
+  ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-price','q-notes'].forEach(id=>document.getElementById(id).value='');
   piReset('q');
   dismissScout();
   draft={score:null,half:false,tag:null,buy:false};
@@ -1496,7 +1511,7 @@ window.confirmOpen = async function(){
 
 // ── ADD TO CELLAR ──
 window.openCellarAdd = ()=>{
-  ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
+  ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ca-qty').value = '1';
   piReset('ca');
   caSuggest = null;
@@ -1529,7 +1544,7 @@ window.addCellarBottle = async function(){
       vintage:document.getElementById('ca-vintage').value.trim(),
       abv:document.getElementById('ca-abv').value.replace('%','').trim(),
       status:'cellared', qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1),
-      predLow: pl===''?null:Number(pl), predHigh: ph===''?null:Number(ph),
+      predLow: pl===''?null:Number(pl), predHigh: ph===''?null:Number(ph), price:parsePriceInput('ca-price'),
       score:null, tag:null, buyAgain:false, notes:'',
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
       photos: ups.length?ups:null,
@@ -1559,6 +1574,8 @@ window.clearSearch = function(){ search=''; document.getElementById('searchbar')
 function matchSearch(w){ if(!search) return true; return [w.name,w.producer,w.region,w.grape,w.vintage,w.notes,w.tag,w.tag?tagInfo(w.tag).t:''].filter(Boolean).join(' ').toLowerCase().includes(search); }
 function scoreClass(r){ return r>=7?'s-hi':r>=5?'s-mid':'s-lo'; }
 function fmt(n){ return Number(n).toFixed(1).replace(/\.0$/,''); }
+function fmtPrice(p){ if(p==null||p==='') return ''; const n=Number(p); if(!isFinite(n)) return ''; return '$' + (n%1 ? n.toFixed(2) : n.toFixed(0)); }
+function parsePriceInput(id){ const el=document.getElementById(id); const v=((el&&el.value)||'').replace(/[^0-9.]/g,'').trim(); if(v==='') return null; const n=Number(v); return isFinite(n)?n:null; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function thumbHTML(w){ return w.photoUrl ? `<img class="thumb" src="${esc(w.photoUrl)}" alt="label" onclick="event.stopPropagation();viewImage('${esc(w.photoUrl)}')">` : ''; }
 function asArr(map){ return Object.keys(map||{}).map(id=>Object.assign({id}, map[id])); }
@@ -1576,7 +1593,7 @@ function render(){
   // Sort chips + display-mode toggle live on the tabs row (not per-view), shown only where relevant.
   const tc = document.getElementById('tabctrls');
   if(tc){
-    if(view==='all' || view==='logged') tc.innerHTML = chipRowHTML() + modeToggleHTML();
+    if(view==='all' || view==='logged') tc.innerHTML = (listMode==='list' ? '' : chipRowHTML()) + modeToggleHTML();
     else if(view==='buy') tc.innerHTML = chipRowHTML();
     else tc.innerHTML = '';
   }
@@ -1590,7 +1607,7 @@ function render(){
     const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch));
     let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers.</p></div>';
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No buy-again bottles yet. Flag the keepers as you log them.</p></div>'; return; }
-    c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`; }).join('') + '</div>';
+    c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div></div>`; }).join('') + '</div>';
     return;
   }
 
@@ -1619,7 +1636,7 @@ function modeToggleHTML(){
 }
 window.setListMode = function(m){ listMode=m; try{ localStorage.setItem('cellar_listmode', m); }catch(_){} render(); };
 function renderCollection(list){
-  if(listMode==='list')   return '<div class="list-view">' + list.map(listRowHTML).join('') + '</div>';
+  if(listMode==='list')   return listTableHTML(list);
   if(listMode==='kanban') return kanbanHTML(list);
   return '<div class="card-grid">' + list.map(collectionCardHTML).join('') + '</div>';
 }
@@ -1627,10 +1644,10 @@ function renderCollection(list){
 function collectionCardHTML(w){
   if(w.status==='cellared'){
     const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
-    const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
+    const row2=[w.vintage,w.grape,w.region,fmtPrice(w.price)].filter(Boolean).join(' · ');
     const qty = Number(w.qty)||1;
     const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>` : '';
-    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}</div></div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}</div></div></div>`;
   }
   return openedCardHTML(w);
 }
@@ -1741,16 +1758,62 @@ function schedScrape(){
     });
   }, 40);
 }
-// List — one dense line per wine.
-function listRowHTML(w){
+// List — a sortable table. Click a column header to sort by it; click again to flip direction.
+const LIST_COLS = [
+  { key:'name',    label:'Wine',    dir:1  },
+  { key:'tag',     label:'Flavor',  dir:1  },
+  { key:'score',   label:'Rating',  dir:-1, num:true },
+  { key:'price',   label:'Price',   dir:-1, num:true },
+  { key:'vintage', label:'Vintage', dir:-1 },
+  { key:'region',  label:'Region',  dir:1  },
+  { key:'slot',    label:'Slot',    dir:1  }
+];
+window.setListSort = function(key){
+  const col = LIST_COLS.find(c=>c.key===key); if(!col) return;
+  if(listSort.key===key){ listSort.dir *= -1; }
+  else { listSort.key = key; listSort.dir = col.dir; }
+  render();
+};
+function listSortVal(w, key){
+  const scored = w.status!=='cellared';
+  switch(key){
+    case 'name':    return (w.name||'').toLowerCase();
+    case 'tag':     return w.tag ? tagInfo(w.tag).t.toLowerCase() : '~';
+    case 'score':   return scored ? Number(w.score) : (w.predLow!=null ? (Number(w.predLow)+Number(w.predHigh!=null?w.predHigh:w.predLow))/2 : -1);
+    case 'price':   return (w.price==null||w.price==='') ? -1 : Number(w.price);
+    case 'vintage': return parseInt(String(w.vintage||'').replace(/[^0-9]/g,''),10) || 0;
+    case 'region':  return (w.region||'~').toLowerCase();
+    case 'slot':    return (w.rackCol&&w.rackRow) ? Number(w.rackCol)*100 + Number(w.rackRow) : 1e9;
+    default:        return 0;
+  }
+}
+function listTableHTML(list){
+  const { key, dir } = listSort;
+  const rows = list.slice().sort((a,b)=>{ const va=listSortVal(a,key), vb=listSortVal(b,key); if(va<vb) return -dir; if(va>vb) return dir; return 0; });
+  const thead = LIST_COLS.map(c=>{
+    const on = key===c.key;
+    const arrow = on ? (dir>0 ? ' ▲' : ' ▼') : '';
+    return `<th class="${c.num?'lt-num ':''}${on?'lsort-on':''}" onclick="setListSort('${c.key}')">${c.label}${arrow}</th>`;
+  }).join('');
+  return `<div class="ltable-wrap"><table class="ltable"><thead><tr>${thead}</tr></thead><tbody>${rows.map(listTrHTML).join('')}</tbody></table></div>`;
+}
+function listTrHTML(w){
   const scored = w.status!=='cellared';
   const score = scored ? fmt(w.score) : ((w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—');
   const cls = scored ? scoreClass(w.score) : 's-pred';
-  const meta=[w.producer,w.vintage,w.region,w.grape].filter(Boolean).join(' · ');
-  const ti=tagInfo(w.tag);
-  const slot=(w.rackCol&&w.rackRow)?`<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>`:'';
-  const tag=w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:'';
-  return `<div class="lrow" onclick="openDetail('${w.id}')"><div class="lrow-score ${cls}">${esc(score)}</div><div class="lrow-main"><span class="lrow-name">${esc(w.name)}</span><span class="lrow-meta">${esc(meta)}</span></div><div class="lrow-tags">${tag}${slot}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
+  const ti = tagInfo(w.tag);
+  const price = fmtPrice(w.price);
+  const slot = (w.rackCol&&w.rackRow) ? slotCode(w.rackCol,w.rackRow) : '';
+  const dim = '<span class="lt-dim">—</span>';
+  return `<tr onclick="openDetail('${w.id}')">`
+    + `<td class="lt-name"><span class="lt-wine">${esc(w.name||'')}</span>${w.producer?`<span class="lt-prod">${esc(w.producer)}</span>`:''}</td>`
+    + `<td>${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:dim}</td>`
+    + `<td class="lt-num"><span class="lt-score ${cls}">${esc(score)}</span></td>`
+    + `<td class="lt-num">${price?esc(price):dim}</td>`
+    + `<td>${w.vintage?esc(w.vintage):dim}</td>`
+    + `<td class="lt-region">${w.region?esc(w.region):dim}</td>`
+    + `<td>${slot?`<span class="slot-badge">${slot}</span>`:dim}</td>`
+    + `</tr>`;
 }
 // Kanban — columns by score band (unscored cellared bottles get their own column).
 function kanbanHTML(list){
@@ -1775,8 +1838,8 @@ function kanbanCardHTML(w){
 // Card for an opened/scored bottle — shared by All Bottles and the Logged list.
 function openedCardHTML(w){
   const ti=tagInfo(w.tag);
-  const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':''].filter(Boolean).join(' · ');
-  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
+  const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':'',fmtPrice(w.price)].filter(Boolean).join(' · ');
+  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:''}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div></div>`;
 }
 
 // ── RACK MAP: labels, matching, placement ──
