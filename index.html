@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.49</title>
+<title>The Cellar Ledger — Rev 2.50</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -170,7 +170,7 @@
   .wl-name{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch);line-height:1.15}
   .wl-meta{font-size:11px;color:var(--parch-dim);margin-top:3px}
   .wl-note{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--parch-dim);margin-top:4px}
-  .wl-add{display:grid;grid-template-columns:2fr 1fr auto;gap:9px;margin-bottom:18px}
+  .wl-add{display:grid;grid-template-columns:2fr 1fr auto auto;gap:9px;margin-bottom:18px}
   .wl-add input{font-family:'Inter';font-size:13px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:9px 11px}
   .wl-add input:focus{outline:none;border-color:var(--gold)}
   .wl-add button{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--ink);background:var(--gold);border:none;border-radius:3px;padding:0 16px;cursor:pointer;font-family:'Inter'}
@@ -485,7 +485,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.49</div>
+    <div class="auth-rev">Rev 2.50</div>
   </div>
 </div>
 
@@ -597,7 +597,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.49</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.50</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -848,6 +848,7 @@ let varietalFilter = '';   // 🍇 filter — e.g. 'grenache'; list orders by th
 const KINDS = [['wine','🍷 Wine'],['bourbon','🥃 Bourbon'],['tequila','🌵 Tequila'],['vodka','🍸 Vodka'],['cigar','🚬 Cigars'],['mixer','🧉 Mixers']];
 let kindFilter = 'all';    // 'all' or one of the KINDS keys — filters browse views & header stats
 function kindOf(w){ return w.kind || 'wine'; }
+function kindEmoji(k){ const e={wine:'🍷',bourbon:'🥃',tequila:'🌵',vodka:'🍸',cigar:'🚬',mixer:'🧉'}; return e[k]||'🍷'; }
 function kindMatch(w){ return kindFilter==='all' || kindOf(w)===kindFilter; }
 window.setKind = function(k){ kindFilter = k; renderKindRow(); render(); };
 function renderKindRow(){
@@ -2242,7 +2243,7 @@ function collectionCardHTML(w){
     const row2=[w.vintage,w.grape,w.region,fmtPrice(w.price)].filter(Boolean).join(' · ');
     const qty = Number(w.qty)||1;
     const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${esc(slotOf(w))}</span>` : '';
-    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${kindOf(w)!=='wine'?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
   }
   return openedCardHTML(w);
 }
@@ -2437,7 +2438,7 @@ function kanbanCardHTML(w){
 function openedCardHTML(w){
   const ti=tagInfo(w.tag);
   const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':'',fmtPrice(w.price)].filter(Boolean).join(' · ');
-  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${tagChipsHTML(w)}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div></div>`;
+  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${kindOf(w)!=='wine'?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${tagChipsHTML(w)}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div></div>`;
 }
 
 // ── RACK MAP: labels, matching, placement ──
@@ -2864,7 +2865,7 @@ window.rmDelete = async function(){
 // Money/count stats derive from bottle records (archived included, so drunk &
 // archived bottles keep counting); the timeline shows cellar/history events.
 function historyHTML(){
-  const all = asArr(bottles);
+  const all = asArr(bottles).filter(kindMatch);   // follows the collection picker (✦ All = everything)
   const boughtQty = (w)=> w.status==='cellared' ? Math.max(1, Number(w.qty)||1) : 1;
   const priceOf = (w)=>{ const n=Number(w.price); return isFinite(n)&&w.price!==''&&w.price!=null ? n : null; };
 
@@ -2961,11 +2962,12 @@ function palateHTML(){
 
 // ── WISHLIST (buy list) ──
 function wishlistHTML(){
-  const list = asArr(buylist).filter(w=>{ if(!search) return true; return deburr([w.name,w.region,w.note].filter(Boolean).join(' ').toLowerCase()).includes(search); }).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  const list = asArr(buylist).filter(kindMatch).filter(w=>{ if(!search) return true; return deburr([w.name,w.region,w.note].filter(Boolean).join(' ').toLowerCase()).includes(search); }).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
   let html = '<div class="shead"><p>Want-to-try list — scout a bottle in the store, or add one by hand.</p></div>';
-  html += `<div class="wl-add"><input id="wl-name" placeholder="Wine name"><input id="wl-region" placeholder="Region (optional)"><button onclick="addBuylistItem()">Add</button></div>`;
-  if(!list.length){ return html + '<div class="empty"><p>Nothing on the wishlist yet.</p></div>'; }
-  return html + '<div class="card-grid">' + list.map(w=>`<div class="wl-row"><div><div class="wl-name">${esc(w.name)}</div>${w.region?`<div class="wl-meta">${esc(w.region)}</div>`:''}${w.note?`<div class="wl-note">${esc(w.note)}</div>`:''}</div><button class="del" title="Remove" onclick="removeBuylistItem('${w.id}')">✕</button></div>`).join('') + '</div>';
+  const kindOpts = KINDS.map(k=>`<option value="${k[0]}" ${((kindFilter==='all'?'wine':kindFilter)===k[0])?'selected':''}>${k[1]}</option>`).join('');
+  html += `<div class="wl-add"><input id="wl-name" placeholder="Name"><input id="wl-region" placeholder="Region (optional)"><select id="wl-kind" class="rt-jump">${kindOpts}</select><button onclick="addBuylistItem()">Add</button></div>`;
+  if(!list.length){ return html + '<div class="empty"><p>Nothing on the wishlist' + (kindFilter!=='all' ? ' for this collection' : '') + ' yet.</p></div>'; }
+  return html + '<div class="card-grid">' + list.map(w=>`<div class="wl-row"><div><div class="wl-name">${kindOf(w)!=='wine'?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.region?`<div class="wl-meta">${esc(w.region)}</div>`:''}${w.note?`<div class="wl-note">${esc(w.note)}</div>`:''}</div><button class="del" title="Remove" onclick="removeBuylistItem('${w.id}')">✕</button></div>`).join('') + '</div>';
 }
 window.addBuylistItem = async function(){
   const name=(document.getElementById('wl-name').value||'').trim();
@@ -2973,7 +2975,8 @@ window.addBuylistItem = async function(){
   const region=(document.getElementById('wl-region').value||'').trim();
   try{
     const r = push(ref(db, 'cellar/buylist'));
-    await set(r, { name, region, note:'', addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now() });
+    const kindEl = document.getElementById('wl-kind');
+    await set(r, { name, region, note:'', kind:(kindEl&&kindEl.value)||'wine', addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now() });
     showToast('Added — ' + name);
   }catch(e){ showToast('Could not add'); }
 };

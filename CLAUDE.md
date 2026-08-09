@@ -17,10 +17,35 @@ Realtime Database backend, Google sign-in), hosted on GitHub Pages
 
 ## Data model (RTDB, project `philinity-893d2`)
 - Root node: `/cellar` — `people/{emailKey}`, `bottles/{bottleId}`,
-  `buylist/{itemId}`. One `bottles` collection holds both cellar (unopened) and
-  rated wines, distinguished by `status` (`cellared` | `opened`).
+  `buylist/{itemId}`, `racks/{rackId}`, `history/{eventId}`, `ask_history`.
+  Legacy `rack_layout` is a read-only fallback — never write to it.
+- One `bottles` collection holds cellar (unopened) and rated items,
+  distinguished by `status` (`cellared` | `opened`). Other key fields:
+  `kind` (missing = `wine`; else `bourbon|tequila|vodka|cigar|mixer`),
+  `price`, `vendor`, `grape` (free text; varietal % breakdowns are parsed
+  client-side), `tags`/`tag`, `photos:[{path,url}]` + `photoUrl/photoPath`
+  (main), `rackId`+`rackCol`+`rackRow` (missing rackId = `main`),
+  `archived` flag (archive, don't delete — restore via 📦 Data).
+- `racks/{id}`: `{name, cols, rows, cells:{c_r:{label}}, order}` — the rack
+  map renders entirely from this; `main` is the migrated Wine Wall.
+- `history`: append-only activity events (`logged/added/opened/placed/
+  swapped/unplaced/archived/restored/merged`, with `restock` flag) — History
+  tab money stats derive from bottles (incl. archived), not events.
+- Adding an already-cellared wine (same name+vintage, accent-insensitive)
+  RESTOCKS qty instead of duplicating; duplicates can be merged via the
+  detail modal. Storage photos live under `cellar/bottles/{id}/` (the
+  Storage rules allow `/cellar/**` — NOT `wine_cellar`).
 - `emailKey`: lowercase, dots → underscores via chained `.split('.').join('_')`
   (RTDB rules `.replace` is first-occurrence-only — sanitize fully in app code).
+
+## Bot coordination (two CodeBots ship daily — avoid collisions)
+- Rev numbers: check main AND open PRs before claiming one; if in doubt, skip
+  a number. We have collided on 2.16/2.19/2.37/2.38/2.44.
+- Functions: Node 22 runtime (`npm install` after pulling before any deploy);
+  always deploy with `--only functions:cellar:<name>` filters.
+- NEVER republish global RTDB/Storage rules wholesale — change only the
+  cellar block, additively. A global rules rewrite once orphaned Cellar's
+  roster and blanked the app for members.
 
 ## Access / roles
 - Roster at `/cellar/people/{emailKey}`, roles `admin` | `member`. The People
