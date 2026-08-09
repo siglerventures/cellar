@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.44</title>
+<title>The Cellar Ledger — Rev 2.45</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -432,6 +432,10 @@
   .mbtn.ghost{color:var(--parch-dim);background:transparent;border:1px solid var(--line)}
   .mbtn.ghost:hover{color:var(--parch);background:transparent}
   .mstatus{font-size:12px;color:var(--gold);margin-top:12px;min-height:16px}
+  /* Data manager sections */
+  .dm-sec{border:1px solid var(--line);border-radius:5px;padding:13px 14px;margin-bottom:10px;background:var(--glass)}
+  .dm-h{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;margin-bottom:3px}
+  .dm-d{font-size:12px;color:var(--parch-dim);margin-bottom:9px}
   /* Rack settings modal steppers */
   .rm-step{display:flex;gap:7px;align-items:center}
   .rm-step button{width:38px;height:38px;font-size:18px;color:var(--gold);background:transparent;border:1px solid var(--line);border-radius:3px;cursor:pointer;font-family:'Inter';line-height:1}
@@ -471,7 +475,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.44</div>
+    <div class="auth-rev">Rev 2.45</div>
   </div>
 </div>
 
@@ -580,11 +584,10 @@
   <div id="content"></div>
 
   <footer>
-    <span id="whoami"></span>
-    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
-    <button onclick="openArchiveModal()">🗄 Archived</button>
-    <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.44</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.45</span>
+    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <button onclick="openDataModal()">📦 Data</button>
+    <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
 
@@ -698,6 +701,36 @@
 </div>
 
 <!-- ── ARCHIVE HISTORY ── -->
+<!-- ── DATA MANAGER ── -->
+<div class="modal" id="dataModal">
+  <div class="modal-card">
+    <h3>📦 Data Manager</h3>
+    <div class="msub">Backup · Export · Restore · Archived</div>
+    <div class="dm-sec">
+      <div class="dm-h">🍷 Full Backup (JSON)</div>
+      <div class="dm-d">Download everything — bottles, racks, wishlist, history &amp; activity.</div>
+      <button class="mbtn" onclick="dataBackup()">⬇ Download Backup</button>
+    </div>
+    <div class="dm-sec">
+      <div class="dm-h">📊 Export Bottles as CSV</div>
+      <div class="dm-d">All bottles — opens in Excel or Google Sheets.</div>
+      <button class="mbtn" onclick="dataCSV()">⬇ Download CSV</button>
+    </div>
+    <div class="dm-sec">
+      <div class="dm-h">♻️ Restore from Backup</div>
+      <div class="dm-d">Select a philinity-cellar-backup-*.json file. Replaces bottles, racks, wishlist &amp; history — the people roster is never touched.</div>
+      <label class="mbtn" style="display:inline-block;cursor:pointer">📂 Choose Backup File<input type="file" accept=".json,application/json" style="display:none" onchange="dataRestore(this)"></label>
+    </div>
+    <div class="dm-sec">
+      <div class="dm-h">🗄 Archived Bottles</div>
+      <div class="dm-d">Bottles you've archived — restore any of them, or delete for good.</div>
+      <button class="mbtn" onclick="closeDataModal();openArchiveModal()">🗄 View Archived</button>
+    </div>
+    <div class="mrow" style="margin-top:14px"><button class="mbtn ghost" onclick="closeDataModal()">Close</button></div>
+    <div class="mstatus" id="dataStatus"></div>
+  </div>
+</div>
+
 <!-- ── RACK SETTINGS / NEW RACK MODAL ── -->
 <div class="modal" id="rackModal">
   <div class="modal-card">
@@ -1791,6 +1824,63 @@ window.purgeBottle = async function(id){
     showToast('Deleted permanently'); renderArchiveList();
   }catch(e){ showToast('Delete failed'); }
 };
+// ── DATA MANAGER: backup / CSV export / restore ──────────────────────────────
+window.openDataModal = function(){ document.getElementById('dataStatus').textContent=''; document.getElementById('dataModal').classList.add('open'); };
+window.closeDataModal = ()=>document.getElementById('dataModal').classList.remove('open');
+function dlFile(name, text, type){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+}
+window.dataBackup = async function(){
+  const st = document.getElementById('dataStatus');
+  st.textContent = '⏳ Building backup…';
+  try{
+    const snap = await dbGet('cellar');
+    const data = snap.val() || {};
+    dlFile('philinity-cellar-backup-' + new Date().toISOString().slice(0,10) + '.json', JSON.stringify(data, null, 2), 'application/json');
+    st.textContent = '✅ Backup downloaded.';
+  }catch(e){ st.textContent = '❌ ' + (e.message||e); }
+};
+window.dataCSV = function(){
+  const cols = ['name','producer','region','grape','vintage','abv','status','qty','score','tags','buyAgain','price','vendor','notes','rack','slot','archived','addedAt','openedAt'];
+  const cell = (v)=>{ v = v==null ? '' : String(v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; };
+  const rows = asArr(bottles).map(w=>[
+    w.name, w.producer, w.region, w.grape, w.vintage, w.abv, w.status, w.qty,
+    w.score, Array.isArray(w.tags)?w.tags.join('|'):(w.tag||''), w.buyAgain?'yes':'', w.price, w.vendor, w.notes,
+    (w.rackCol&&w.rackRow)?rackDef(bRack(w)).name:'', (w.rackCol&&w.rackRow)?slotCode(w.rackCol,w.rackRow):'',
+    w.archived?'yes':'',
+    w.addedAt?new Date(w.addedAt).toISOString().slice(0,10):'', w.openedAt?new Date(w.openedAt).toISOString().slice(0,10):''
+  ].map(cell).join(','));
+  dlFile('philinity-cellar-' + new Date().toISOString().slice(0,10) + '.csv', cols.join(',') + '\n' + rows.join('\n'), 'text/csv');
+  document.getElementById('dataStatus').textContent = '✅ CSV downloaded — ' + rows.length + ' bottles.';
+};
+window.dataRestore = function(input){
+  const file = input.files && input.files[0];
+  input.value = '';
+  if(!file) return;
+  const st = document.getElementById('dataStatus');
+  const reader = new FileReader();
+  reader.onload = async (ev)=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(!data || typeof data!=='object' || !data.bottles){ st.textContent='❌ Not a Cellar backup (no bottles found).'; return; }
+      const counts = 'bottles:' + Object.keys(data.bottles||{}).length + ' · racks:' + Object.keys(data.racks||{}).length + ' · wishlist:' + Object.keys(data.buylist||{}).length;
+      if(!confirm('Restore from "' + file.name + '"?\n\n' + counts + '\n\nThis REPLACES the current bottles, racks, wishlist and history. The people roster is not touched.')) return;
+      if(!confirm('Really sure? Current data will be overwritten. Consider downloading a fresh backup first.')) return;
+      st.textContent = '⏳ Restoring…';
+      const updates = {};
+      ['bottles','buylist','racks','history','rack_layout'].forEach(k=>{ if(data[k]!==undefined) updates['cellar/'+k] = data[k]; });
+      await dbUpdate('/', updates);
+      st.textContent = '✅ Restored from ' + file.name + '.';
+      showToast('Restore complete');
+    }catch(e){ st.textContent = '❌ Restore failed: ' + (e.message||e); }
+  };
+  reader.readAsText(file);
+};
+
 window.openArchiveModal = function(){ renderArchiveList(); document.getElementById('archiveModal').classList.add('open'); };
 window.closeArchiveModal = ()=>document.getElementById('archiveModal').classList.remove('open');
 function renderArchiveList(){
