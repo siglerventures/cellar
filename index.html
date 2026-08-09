@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.7</title>
+<title>The Cellar Ledger — Rev 2.8</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -127,6 +127,38 @@
   .wl-add input:focus{outline:none;border-color:var(--gold)}
   .wl-add button{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--ink);background:var(--gold);border:none;border-radius:3px;padding:0 16px;cursor:pointer;font-family:'Inter'}
   @media(max-width:520px){.wl-add{grid-template-columns:1fr}}
+  /* ── DISPLAY MODES: Browse / List / Kanban ── */
+  .modebar{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:0 0 12px}
+  .modebtn{font-family:'Inter';font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--parch-dim);background:transparent;border:none;border-right:1px solid var(--line);padding:8px 14px;cursor:pointer;transition:.15s}
+  .modebtn:last-child{border-right:none}
+  .modebtn.on{color:var(--ink);background:var(--gold)}
+  .modebtn:hover:not(.on){color:var(--parch);background:rgba(201,163,92,0.08)}
+  /* List */
+  .list-view{border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .lrow{display:grid;grid-template-columns:54px 1fr auto 28px;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer;transition:.12s}
+  .lrow:last-child{border-bottom:none}
+  .lrow:hover{background:rgba(236,227,210,0.03)}
+  .lrow-score{font-family:'Cormorant Garamond',serif;font-size:23px;font-weight:600;text-align:center;line-height:1}
+  .lrow-score.s-hi{color:var(--gold)}.lrow-score.s-mid{color:#c98a52}.lrow-score.s-lo{color:#9a5a55}
+  .lrow-score.s-pred{color:var(--parch-dim);font-size:14px}
+  .lrow-main{min-width:0}
+  .lrow-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--parch);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
+  .lrow-meta{font-size:11px;color:var(--parch-dim);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lrow-tags{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  /* Kanban */
+  .kanban{display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;align-items:flex-start}
+  .kcol{flex:0 0 230px;min-width:230px;background:var(--glass);border:1px solid var(--line);border-radius:6px;padding:10px}
+  .kcol-head{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--gold);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+  .kcol-head span{color:var(--parch-dim);font-family:'Cormorant Garamond',serif;font-size:16px}
+  .kcard{background:rgba(236,227,210,0.03);border:1px solid var(--line);border-radius:4px;padding:9px 11px;margin-bottom:8px;cursor:pointer;transition:.12s}
+  .kcard:last-child{margin-bottom:0}
+  .kcard:hover{border-color:var(--gold-dim)}
+  .kcard-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .kcard-score{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;line-height:1}
+  .kcard-score.s-hi{color:var(--gold)}.kcard-score.s-mid{color:#c98a52}.kcard-score.s-lo{color:#9a5a55}
+  .kcard-score.s-pred{color:var(--parch-dim);font-size:13px}
+  .kcard-name{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--parch);line-height:1.15}
+  .kcard-meta{font-size:11px;color:var(--parch-dim);margin-top:2px}
   /* ── RACK MAP ── */
   .rack-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--line);border-radius:4px;padding:10px 13px;margin-bottom:12px;background:rgba(201,163,92,0.06)}
   .rack-bar.rb-hint{background:rgba(236,227,210,0.03)}
@@ -322,7 +354,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.7</div>
+    <div class="auth-rev">Rev 2.8</div>
   </div>
 </div>
 
@@ -428,7 +460,7 @@
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.7</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.8</span>
   </footer>
 </div>
 
@@ -595,6 +627,8 @@ let bottles = {};   // id -> bottle
 let buylist = {};   // id -> item
 let view = 'all';
 let sortMode = 'rating';   // 'rating' | 'newest' | 'az' — sort chips on All Bottles / Buy-Again
+let listMode = 'browse';   // 'browse' | 'list' | 'kanban' — collection display mode (All Bottles / Logged)
+try{ const _m=localStorage.getItem('cellar_listmode'); if(['browse','list','kanban'].includes(_m)) listMode=_m; }catch(_){}
 let dtDraft = { id:null, score:null, half:false, tag:null, buy:false };  // detail-modal edit state
 let subscribed = false;
 let draft = { score:null, half:false, tag:null, buy:false };
@@ -1470,27 +1504,71 @@ function render(){
   if(view==='logged'){
     const list = applySort(opened.filter(matchSearch));
     const avg = opened.length ? (opened.reduce((s,w)=>s+Number(w.score||0),0)/opened.length).toFixed(1) : '—';
-    let html = `<div class="shead"><p>Every wine you've logged &amp; scored — ${opened.length} total, avg ${avg}. Sort by score, newest, or A–Z.</p></div>` + chipRowHTML();
+    let html = `<div class="shead"><p>Every wine you've logged &amp; scored — ${opened.length} total, avg ${avg}.</p></div>` + modeToggleHTML() + chipRowHTML();
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No scored wines yet. Tap “Log a pour” above.</p></div>'; return; }
-    c.innerHTML = html + '<div class="card-grid">' + list.map(openedCardHTML).join('') + '</div>';
+    c.innerHTML = html + renderCollection(list);
     return;
   }
 
   // all
   const list = applySort(all.filter(matchSearch));
-  let html = '<div class="shead"><p>Everything — opened &amp; cellared. Tap a bottle to view or edit it.</p></div>' + chipRowHTML();
+  let html = '<div class="shead"><p>Everything — opened &amp; cellared. Tap a bottle to view or edit it.</p></div>' + modeToggleHTML() + chipRowHTML();
   if(!list.length){ c.innerHTML = html + '<div class="empty"><p>Nothing logged yet. Tap “Log a pour” above.</p></div>'; return; }
-  c.innerHTML = html + '<div class="card-grid">' + list.map(w=>{
-    const ti=tagInfo(w.tag);
-    if(w.status==='cellared'){
-      const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
-      const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
-      const qty = Number(w.qty)||1;
-      const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>` : '';
-      return `<div class="wine" onclick="openDetail('${w.id}')"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="event.stopPropagation();openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
-    }
-    return openedCardHTML(w);
-  }).join('') + '</div>';
+  c.innerHTML = html + renderCollection(list);
+}
+
+// ── COLLECTION DISPLAY MODES (Browse / List / Kanban) ──
+function modeToggleHTML(){
+  const modes=[['browse','📋 Browse'],['list','📑 List'],['kanban','📊 Kanban']];
+  return '<div class="modebar">' + modes.map(m=>`<button class="modebtn ${listMode===m[0]?'on':''}" onclick="setListMode('${m[0]}')">${m[1]}</button>`).join('') + '</div>';
+}
+window.setListMode = function(m){ listMode=m; try{ localStorage.setItem('cellar_listmode', m); }catch(_){} render(); };
+function renderCollection(list){
+  if(listMode==='list')   return '<div class="list-view">' + list.map(listRowHTML).join('') + '</div>';
+  if(listMode==='kanban') return kanbanHTML(list);
+  return '<div class="card-grid">' + list.map(collectionCardHTML).join('') + '</div>';
+}
+// Browse card — cellared bottles show a predicted band, scored bottles the openedCard.
+function collectionCardHTML(w){
+  if(w.status==='cellared'){
+    const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
+    const row2=[w.vintage,w.grape,w.region].filter(Boolean).join(' · ');
+    const qty = Number(w.qty)||1;
+    const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>` : '';
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div><div class="meta">${thumbHTML(w)}<div class="name">${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}<button class="openbtn" onclick="event.stopPropagation();openMarkOpened('${w.id}')">Mark opened</button></div></div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
+  }
+  return openedCardHTML(w);
+}
+// List — one dense line per wine.
+function listRowHTML(w){
+  const scored = w.status!=='cellared';
+  const score = scored ? fmt(w.score) : ((w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—');
+  const cls = scored ? scoreClass(w.score) : 's-pred';
+  const meta=[w.producer,w.vintage,w.region,w.grape].filter(Boolean).join(' · ');
+  const ti=tagInfo(w.tag);
+  const slot=(w.rackCol&&w.rackRow)?`<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>`:'';
+  const tag=w.tag?`<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`:'';
+  return `<div class="lrow" onclick="openDetail('${w.id}')"><div class="lrow-score ${cls}">${esc(score)}</div><div class="lrow-main"><span class="lrow-name">${esc(w.name)}</span><span class="lrow-meta">${esc(meta)}</span></div><div class="lrow-tags">${tag}${slot}</div><button class="del" title="Remove" onclick="event.stopPropagation();del('${w.id}')">✕</button></div>`;
+}
+// Kanban — columns by score band (unscored cellared bottles get their own column).
+function kanbanHTML(list){
+  const bands=[
+    {label:'Loved · 9–10', test:w=>w.status!=='cellared' && Number(w.score)>=9},
+    {label:'Great · 7–8',  test:w=>w.status!=='cellared' && Number(w.score)>=7 && Number(w.score)<9},
+    {label:'Good · 5–6',   test:w=>w.status!=='cellared' && Number(w.score)>=5 && Number(w.score)<7},
+    {label:'Pass · under 5', test:w=>w.status!=='cellared' && Number(w.score)<5},
+    {label:'Cellared',     test:w=>w.status==='cellared'}
+  ];
+  const cols = bands.map(b=>({b, items:list.filter(b.test)})).filter(col=>col.items.length>0);
+  if(!cols.length) return '<div class="empty"><p>Nothing to board yet.</p></div>';
+  return '<div class="kanban">' + cols.map(col=>`<div class="kcol"><div class="kcol-head">${esc(col.b.label)}<span>${col.items.length}</span></div>${col.items.map(kanbanCardHTML).join('')}</div>`).join('') + '</div>';
+}
+function kanbanCardHTML(w){
+  const scored=w.status!=='cellared';
+  const s=scored?fmt(w.score):((w.predLow!=null && w.predHigh!=null)?fmt(w.predLow)+'–'+fmt(w.predHigh):'—');
+  const cls=scored?scoreClass(w.score):'s-pred';
+  const slot=(w.rackCol&&w.rackRow)?`<span class="slot-badge">${slotCode(w.rackCol,w.rackRow)}</span>`:'';
+  return `<div class="kcard" onclick="openDetail('${w.id}')"><div class="kcard-top"><span class="kcard-score ${cls}">${esc(s)}</span>${slot}</div><div class="kcard-name">${esc(w.name)}</div><div class="kcard-meta">${esc([w.producer,w.vintage].filter(Boolean).join(' · '))}</div></div>`;
 }
 // Card for an opened/scored bottle — shared by All Bottles and the Logged list.
 function openedCardHTML(w){
