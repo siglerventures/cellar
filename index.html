@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.42</title>
+<title>The Cellar Ledger — Rev 2.43</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -469,7 +469,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.42</div>
+    <div class="auth-rev">Rev 2.43</div>
   </div>
 </div>
 
@@ -582,7 +582,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.42</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.43</span>
   </footer>
 </div>
 
@@ -680,6 +680,7 @@
       <input id="dt-price" placeholder="Price $" type="number" step="0.01" min="0">
       <input id="dt-abv" placeholder="ABV %">
       <input id="dt-vendor" placeholder="Vendor / store">
+      <input id="dt-grape" placeholder="Grape(s) — e.g. 65% Grenache, 15% Syrah">
       <input id="dt-rep" placeholder="Representative">
     </div>
     <div class="qlabel" style="margin-top:14px">Notes / comments</div>
@@ -1299,7 +1300,7 @@ window.setVarietal = function(v){ varietalFilter = v; render(); };
 function varietalSelectHTML(){
   const counts = {};
   activeArr().forEach(w=>parseVarietals(w.grape).forEach(v=>{ counts[v.fam]=(counts[v.fam]||0)+1; }));
-  const fams = Object.keys(counts).sort((a,b)=>counts[b]-counts[a] || a.localeCompare(b));
+  const fams = Object.keys(counts).sort((a,b)=>a.localeCompare(b));
   if(!fams.length) return '';
   const cap = (t)=>t.replace(/\b\w/g,c=>c.toUpperCase());
   return `<select class="rt-jump" style="border-radius:20px;padding:6px 12px" onchange="setVarietal(this.value)"><option value="">🍇 Varietal…</option>` +
@@ -1370,6 +1371,7 @@ window.openDetail = function(id){
   document.getElementById('dt-price').value = (w.price==null?'':w.price);
   document.getElementById('dt-abv').value = w.abv||'';
   document.getElementById('dt-vendor').value = w.vendor||'';
+  document.getElementById('dt-grape').value = w.grape||'';
   document.getElementById('dt-rep').value = w.rep||'';
   document.getElementById('dtStatus').textContent='';
   document.getElementById('detailModal').classList.add('open');
@@ -1426,7 +1428,7 @@ window.saveDetail = async function(){
     document.getElementById('dtStatus').textContent='⏳ Saving…';
     const ups = await uploadPhotos(dtDraft.id, piStore.dt);
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
-      score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price:parsePriceInput('dt-price'), vendor:document.getElementById('dt-vendor').value.trim(),
+      score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price:parsePriceInput('dt-price'), vendor:document.getElementById('dt-vendor').value.trim(), grape:document.getElementById('dt-grape').value.trim(),
       vintage:document.getElementById('dt-vintage').value.trim(),
       abv:document.getElementById('dt-abv').value.replace('%','').trim(), rep:document.getElementById('dt-rep').value.trim(),
       notes:document.getElementById('dt-notes').value.trim(),
