@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.48</title>
+<title>The Cellar Ledger — Rev 2.49</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -485,7 +485,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.48</div>
+    <div class="auth-rev">Rev 2.49</div>
   </div>
 </div>
 
@@ -582,6 +582,9 @@
     <div class="askhist" id="askHist" style="display:none"></div>
   </div>
 
+  <!-- ── COLLECTION PICKER: wine · bourbon · tequila · vodka · cigars · mixers ── -->
+  <div class="chiprow" id="kindRow" style="margin:0 0 10px"></div>
+
   <div class="tabs">
     <button class="vtab on" data-view="all" onclick="setView('all')">All Bottles</button>
     <button class="vtab" data-view="cellar" onclick="setView('cellar')">Cellar</button>
@@ -594,7 +597,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.48</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.49</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -841,6 +844,21 @@ let askLog = {};    // id -> {q,a,at,by} Ask-AI conversation history (cellar/ask
 let view = 'all';
 let sortMode = 'rating';   // 'rating' | 'newest' | 'az' — sort chips on All Bottles / Buy-Again
 let varietalFilter = '';   // 🍇 filter — e.g. 'grenache'; list orders by that grape's share
+// ── COLLECTIONS: every item carries a kind (missing = wine, so all existing data just works)
+const KINDS = [['wine','🍷 Wine'],['bourbon','🥃 Bourbon'],['tequila','🌵 Tequila'],['vodka','🍸 Vodka'],['cigar','🚬 Cigars'],['mixer','🧉 Mixers']];
+let kindFilter = 'all';    // 'all' or one of the KINDS keys — filters browse views & header stats
+function kindOf(w){ return w.kind || 'wine'; }
+function kindMatch(w){ return kindFilter==='all' || kindOf(w)===kindFilter; }
+window.setKind = function(k){ kindFilter = k; renderKindRow(); render(); };
+function renderKindRow(){
+  const el = document.getElementById('kindRow'); if(!el) return;
+  const present = new Set(activeArr().map(kindOf));
+  const chips = [['all','✦ All']].concat(KINDS.filter(k=>present.has(k[0]) || k[0]==='wine'));
+  el.innerHTML = chips.map(k=>`<button class="sortchip ${kindFilter===k[0]?'on':''}" onclick="setKind('${k[0]}')">${k[1]}</button>`).join('');
+}
+function kindSelectHTML(id){
+  return `<select id="${id}" class="rt-jump" style="width:100%;margin-bottom:12px">` + KINDS.map(k=>`<option value="${k[0]}">${k[1]}</option>`).join('') + `</select>`;
+}
 let listMode = 'browse';   // 'browse' | 'list' | 'kanban' — collection display mode (All Bottles / Logged)
 let listSort = { key:'score', dir:-1 };  // List-mode column sort: key + direction (1 asc, -1 desc)
 try{ const _m=localStorage.getItem('cellar_listmode'); if(['browse','list','kanban'].includes(_m)) listMode=_m; }catch(_){}
@@ -1169,7 +1187,7 @@ function collectionSummary(){
     name:w.name||'', producer:w.producer||'', region:w.region||'', grape:w.grape||'',
     vintage:w.vintage||'', abv:w.abv||'', rating:(w.score==null?null:Number(w.score)),
     tag:w.tag||null, buyAgain:!!w.buyAgain, status:w.status||'', qty:Number(w.qty)||0,
-    price:(w.price==null||w.price===''?null:Number(w.price)), vendor:w.vendor||''
+    price:(w.price==null||w.price===''?null:Number(w.price)), vendor:w.vendor||'', kind:kindOf(w)
   }));
   // Keep the payload compact; notes are already stripped (never included above).
   return arr;
@@ -1263,7 +1281,7 @@ async function handleAIAnswer(answer){
         predLow:null, predHigh:null,
         score: status==='opened' ? score : null,
         tag, tags:(tag?[tag]:[]), buyAgain:!!b.buyAgain, notes:String(b.notes||""),
-        price, vendor:String(b.vendor||''),
+        price, vendor:String(b.vendor||''), kind:(KINDS.some(k=>k[0]===b.kind)?b.kind:'wine'),
         photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
         photos: ups.length?ups:null,
         addedBy:uid, addedAt:now, openedAt: status==='opened' ? now : null
@@ -1417,6 +1435,7 @@ window.openDetail = function(id){
   document.getElementById('dt-abv').value = w.abv||'';
   document.getElementById('dt-vendor').value = w.vendor||'';
   document.getElementById('dt-grape').value = w.grape||'';
+  document.getElementById('dt-kind').value = kindOf(w);
   document.getElementById('dt-rep').value = w.rep||'';
   document.getElementById('dtStatus').textContent='';
   document.getElementById('detailModal').classList.add('open');
@@ -1486,7 +1505,7 @@ window.saveDetail = async function(){
     const after  = [nn(score),nn(price),nn(notes),nn(vendor),nn(grape),nn(vintage),nn(abv),nn(rep),(dtDraft.buy?'1':''),dtDraft.tags.join(','),ups.length].join('¦');
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
       score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
-      vintage, abv, rep, notes,
+      vintage, abv, rep, notes, kind:document.getElementById('dt-kind').value,
       photos: ups.length?ups:null,
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
     });
@@ -1662,11 +1681,13 @@ function fillScanFields(which, d){
   const set=(id,v)=>{ const el=document.getElementById(id); if(el && v) el.value=v; };
   if(which==='q'){
     document.getElementById('q-name').value = d.name || d.producer || '';
+    if(d.kind && KINDS.some(k=>k[0]===d.kind)) document.getElementById('q-kind').value = d.kind;
     set('q-prod', d.producer); set('q-region', d.region); set('q-grape', d.grape);
     set('q-vintage', d.vintage); set('q-abv', d.abv);
     document.getElementById('moregrid').classList.add('show');
   }else{
     document.getElementById('ca-name').value = d.name || d.producer || '';
+    if(d.kind && KINDS.some(k=>k[0]===d.kind)) document.getElementById('ca-kind').value = d.kind;
     set('ca-prod', d.producer); set('ca-region', d.region); set('ca-grape', d.grape);
     set('ca-vintage', d.vintage); set('ca-abv', d.abv);
     if(d.predLow!=null) document.getElementById('ca-predlow').value = d.predLow;
@@ -1795,6 +1816,7 @@ window.logPour = async function(){
 };
 function resetQuickLog(){
   ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-price','q-vendor','q-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('q-kind').value = (kindFilter==='all') ? 'wine' : kindFilter;
   piReset('q');
   dismissScout();
   draft={score:null,half:false,tags:[],buy:false};
@@ -1971,6 +1993,7 @@ window.confirmOpen = async function(){
 window.openCellarAdd = ()=>{
   ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ca-qty').value = '1';
+  document.getElementById('ca-kind').value = (kindFilter==='all') ? 'wine' : kindFilter;
   piReset('ca');
   caSuggest = null;
   document.getElementById('ca-suggest').classList.remove('show');
@@ -2101,12 +2124,14 @@ function findCellaredMatch(name, vintage){
 }
 
 function render(){
+  renderKindRow();
   const all = activeArr();
   const opened = all.filter(w=>w.status==='opened');
   const cellared = all.filter(w=>w.status==='cellared');
-  document.getElementById('st-count').textContent = opened.length;
-  document.getElementById('st-buy').textContent = opened.filter(w=>w.buyAgain).length;
-  document.getElementById('st-avg').textContent = opened.length ? (opened.reduce((s,w)=>s+Number(w.score||0),0)/opened.length).toFixed(1) : '—';
+  const kOpened = opened.filter(kindMatch);
+  document.getElementById('st-count').textContent = kOpened.length;
+  document.getElementById('st-buy').textContent = kOpened.filter(w=>w.buyAgain).length;
+  document.getElementById('st-avg').textContent = kOpened.length ? (kOpened.reduce((s,w)=>s+Number(w.score||0),0)/kOpened.length).toFixed(1) : '—';
 
   // Sort chips + display-mode toggle live on the tabs row (not per-view), shown only where relevant.
   const tc = document.getElementById('tabctrls');
@@ -2124,7 +2149,7 @@ function render(){
   if(view==='wishlist'){ c.innerHTML = wishlistHTML(); return; }
 
   if(view==='buy'){
-    const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch).filter(vMatch));
+    const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch).filter(vMatch).filter(kindMatch));
     let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers.</p></div>';
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No buy-again bottles yet. Flag the keepers as you log them.</p></div>'; return; }
     c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${tagChipsHTML(w)}</div></div>`; }).join('') + '</div>';
@@ -2134,7 +2159,7 @@ function render(){
   if(view==='cellar'){ c.innerHTML = rackHTML(); return; }
 
   if(view==='logged'){
-    const list = applySort(opened.filter(matchSearch).filter(vMatch));
+    const list = applySort(opened.filter(matchSearch).filter(vMatch).filter(kindMatch));
     const avg = opened.length ? (opened.reduce((s,w)=>s+Number(w.score||0),0)/opened.length).toFixed(1) : '—';
     let html = `<div class="shead"><p>Every wine you've logged &amp; scored — ${opened.length} total, avg ${avg}.</p></div>`;
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>No scored wines yet. Tap “Log a pour” above.</p></div>'; return; }
@@ -2143,7 +2168,7 @@ function render(){
   }
 
   // all
-  const list = applySort(all.filter(matchSearch).filter(vMatch));
+  const list = applySort(all.filter(matchSearch).filter(vMatch).filter(kindMatch));
   let html = '';
   if(!list.length){ c.innerHTML = html + '<div class="empty"><p>Nothing logged yet. Tap “Log a pour” above.</p></div>'; return; }
   c.innerHTML = html + renderCollection(list);
