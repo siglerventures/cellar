@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.55</title>
+<title>The Cellar Ledger — Rev 2.56</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.55</div>
+    <div class="auth-rev">Rev 2.56</div>
   </div>
 </div>
 
@@ -526,7 +526,7 @@
   <div class="quick" id="quickPanel">
     <div class="qhead"><h3>Log a pour</h3><button class="qclose" title="Close" onclick="closeLogPanel()">✕</button></div>
     <input class="qname" id="q-name" placeholder="Name">
-    <select id="q-kind" class="rt-jump" style="width:100%;margin-bottom:12px"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
+    <select id="q-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('q')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
     <div class="qlabel">Photos — the first is scanned for details &amp; used as the card image</div>
     <div class="pintake" id="q-intake" ondragover="piDragOver(event,'q')" ondragleave="piDragLeave(event,'q')" ondrop="piDrop(event,'q')"></div>
     <div class="scanstatus" id="q-scanstatus"></div>
@@ -609,7 +609,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.55</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.56</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -661,7 +661,7 @@
     <h3>Add to cellar</h3>
     <div class="msub">An unopened bottle you're holding. Score it later when you open it.</div>
     <input id="ca-name" placeholder="Name">
-    <select id="ca-kind" class="rt-jump" style="width:100%;margin-bottom:12px"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
+    <select id="ca-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('ca')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
     <div class="mgrid">
       <input id="ca-prod" placeholder="Producer">
       <input id="ca-region" placeholder="Region">
@@ -712,7 +712,7 @@
       <input id="dt-abv" placeholder="ABV %">
       <input id="dt-vendor" placeholder="Vendor / store">
       <input id="dt-grape" placeholder="Grape(s) — e.g. 65% Grenache, 15% Syrah">
-      <select id="dt-kind" class="rt-jump" style="width:100%"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
+      <select id="dt-kind" class="rt-jump" style="width:100%" onchange="applyKindFields('dt')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
       <input id="dt-rep" placeholder="Representative">
     </div>
     <div class="qlabel" style="margin-top:14px">Notes / comments</div>
@@ -860,10 +860,29 @@ let sortMode = 'rating';   // 'rating' | 'newest' | 'az' — sort chips on All B
 let varietalFilter = '';   // 🍇 filter — e.g. 'grenache'; list orders by that grape's share
 // ── COLLECTIONS: every item carries a kind (missing = wine, so all existing data just works)
 const KINDS = [['wine','🍷 Wine'],['bourbon','🥃 Bourbon'],['tequila','🌵 Tequila'],['vodka','🍸 Vodka'],['cigar','🚬 Cigars'],['mixer','🧉 Mixers']];
-let kindFilter = 'all';    // 'all' or one of the KINDS keys — filters browse views & header stats
+let kindFilter = 'wine';   // default collection — the homepage opens on Wine; ✦ All is one tap away
 function kindOf(w){ return w.kind || 'wine'; }
 function kindEmoji(k){ const e={wine:'🍷',bourbon:'🥃',tequila:'🌵',vodka:'🍸',cigar:'🚬',mixer:'🧉'}; return e[k]||'🍷'; }
 function kindLabel(k){ const f=KINDS.find(x=>x[0]===k); return f?f[1]:'🍷 Wine'; }
+// Per-kind form shaping: which fields make sense, and what to call them.
+const KIND_FIELDS = {
+  wine:    { grape:true,  abv:true,  vintagePH:'Vintage',                       abvPH:'ABV %' },
+  bourbon: { grape:false, abv:true,  vintagePH:'Age / bottling year',           abvPH:'Proof or ABV' },
+  tequila: { grape:false, abv:true,  vintagePH:'Blanco / reposado / añejo',     abvPH:'ABV %' },
+  vodka:   { grape:false, abv:true,  vintagePH:'Year (optional)',               abvPH:'ABV %' },
+  cigar:   { grape:false, abv:false, vintagePH:'Vitola / size',                 abvPH:'' },
+  mixer:   { grape:false, abv:true,  vintagePH:'Year (optional)',               abvPH:'ABV %' }
+};
+window.applyKindFields = function(pfx){
+  const sel = document.getElementById(pfx+'-kind'); if(!sel) return;
+  const cfg = KIND_FIELDS[sel.value] || KIND_FIELDS.wine;
+  const setEl = (id, show, ph)=>{ const el=document.getElementById(pfx+'-'+id); if(!el) return; el.style.display = show?'':'none'; if(show && ph!==undefined && ph!=='') el.placeholder = ph; };
+  setEl('grape', cfg.grape);
+  setEl('abv', cfg.abv, cfg.abvPH);
+  setEl('vintage', true, cfg.vintagePH);
+  // wine-only prediction inputs on the Add-to-Cellar form
+  setEl('predlow', cfg.grape); setEl('predhigh', cfg.grape);
+};
 function emptyForKind(fallback){
   if(kindFilter==='all') return fallback;
   return 'Your ' + kindLabel(kindFilter) + ' collection starts here — tap “Log a pour” for one you\'re enjoying, or “＋ Add to cellar” (Cellar tab) for one you\'re keeping. The scanner recognizes ' + kindLabel(kindFilter).replace(/^\S+ /,'').toLowerCase() + ' labels too.';
@@ -1467,7 +1486,7 @@ window.openDetail = function(id){
   document.getElementById('dt-abv').value = w.abv||'';
   document.getElementById('dt-vendor').value = w.vendor||'';
   document.getElementById('dt-grape').value = w.grape||'';
-  { const ke = document.getElementById('dt-kind'); if(ke) ke.value = kindOf(w); }
+  { const ke = document.getElementById('dt-kind'); if(ke) ke.value = kindOf(w); } applyKindFields('dt');
   document.getElementById('dt-rep').value = w.rep||'';
   document.getElementById('dtStatus').textContent='';
   document.getElementById('detailModal').classList.add('open');
@@ -1713,13 +1732,13 @@ function fillScanFields(which, d){
   const set=(id,v)=>{ const el=document.getElementById(id); if(el && v) el.value=v; };
   if(which==='q'){
     document.getElementById('q-name').value = d.name || d.producer || '';
-    if(d.kind && KINDS.some(k=>k[0]===d.kind)){ const ke=document.getElementById('q-kind'); if(ke) ke.value = d.kind; }
+    if(d.kind && KINDS.some(k=>k[0]===d.kind)){ const ke=document.getElementById('q-kind'); if(ke) ke.value = d.kind; applyKindFields('q'); }
     set('q-prod', d.producer); set('q-region', d.region); set('q-grape', d.grape);
     set('q-vintage', d.vintage); set('q-abv', d.abv);
     document.getElementById('moregrid').classList.add('show');
   }else{
     document.getElementById('ca-name').value = d.name || d.producer || '';
-    if(d.kind && KINDS.some(k=>k[0]===d.kind)){ const ke=document.getElementById('ca-kind'); if(ke) ke.value = d.kind; }
+    if(d.kind && KINDS.some(k=>k[0]===d.kind)){ const ke=document.getElementById('ca-kind'); if(ke) ke.value = d.kind; applyKindFields('ca'); }
     set('ca-prod', d.producer); set('ca-region', d.region); set('ca-grape', d.grape);
     set('ca-vintage', d.vintage); set('ca-abv', d.abv);
     if(d.predLow!=null) document.getElementById('ca-predlow').value = d.predLow;
@@ -1848,7 +1867,7 @@ window.logPour = async function(){
 };
 function resetQuickLog(){
   ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-price','q-vendor','q-notes'].forEach(id=>document.getElementById(id).value='');
-  { const ke=document.getElementById('q-kind'); if(ke) ke.value = (kindFilter==='all') ? 'wine' : kindFilter; }
+  { const ke=document.getElementById('q-kind'); if(ke) ke.value = (kindFilter==='all') ? 'wine' : kindFilter; } applyKindFields('q');
   piReset('q');
   dismissScout();
   draft={score:null,half:false,tags:[],buy:false};
@@ -2025,7 +2044,7 @@ window.confirmOpen = async function(){
 window.openCellarAdd = ()=>{
   ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ca-qty').value = '1';
-  { const ke=document.getElementById('ca-kind'); if(ke) ke.value = (kindFilter==='all') ? 'wine' : kindFilter; }
+  { const ke=document.getElementById('ca-kind'); if(ke) ke.value = (kindFilter==='all') ? 'wine' : kindFilter; } applyKindFields('ca');
   piReset('ca');
   caSuggest = null;
   document.getElementById('ca-suggest').classList.remove('show');
