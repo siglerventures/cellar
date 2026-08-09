@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.14</title>
+<title>The Cellar Ledger — Rev 2.15</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,7 +63,18 @@
   /* ── Bottle detail modal ── */
   .modal-card textarea{font-family:'Inter';font-size:14px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:10px 12px;width:100%;margin-bottom:12px;min-height:72px;resize:vertical}
   .modal-card textarea:focus{outline:none;border-color:var(--gold)}
-  .dt-del{margin-left:auto;color:#c0635c!important;border-color:rgba(192,99,92,.4)!important}
+  .dt-save{margin-left:auto}
+  .dt-archive{color:var(--gold-dim)!important;border-color:rgba(140,112,56,.5)!important}
+  .dt-archive:hover{color:var(--gold)!important;border-color:var(--gold)!important}
+  /* Archive history modal */
+  .arch-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .arch-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--parch);line-height:1.2}
+  .arch-meta{font-size:11px;color:var(--parch-dim);margin-top:2px}
+  .arch-actions{display:flex;gap:6px;flex-shrink:0}
+  .arch-btn{font-size:11px;letter-spacing:.06em;font-weight:600;color:var(--gold);background:transparent;border:1px solid var(--line);border-radius:3px;padding:6px 12px;cursor:pointer;font-family:'Inter';transition:.15s}
+  .arch-btn:hover{border-color:var(--gold)}
+  .arch-btn.danger{color:#c0635c;border-color:rgba(192,99,92,.4)}
+  .arch-btn.danger:hover{border-color:#c0635c}
   .dt-del:hover{border-color:#c0635c!important}
   .wine,.lb-row{cursor:pointer}
   .qhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
@@ -360,7 +371,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.14</div>
+    <div class="auth-rev">Rev 2.15</div>
   </div>
 </div>
 
@@ -465,8 +476,9 @@
   <footer>
     <span id="whoami"></span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
+    <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.14</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.15</span>
   </footer>
 </div>
 
@@ -558,11 +570,21 @@
     <div class="qlabel" style="margin-top:14px">Notes / comments</div>
     <textarea id="dt-notes" placeholder="Tasting notes, where you had it, who you shared it with…"></textarea>
     <div class="mrow">
-      <button class="mbtn" onclick="saveDetail()">Save</button>
       <button class="mbtn ghost" onclick="closeDetail()">Close</button>
-      <button class="mbtn ghost dt-del" onclick="deleteDetail()">Delete</button>
+      <button class="mbtn ghost dt-archive" onclick="archiveDetail()">Archive</button>
+      <button class="mbtn dt-save" onclick="saveDetail()">Save</button>
     </div>
     <div class="mstatus" id="dtStatus"></div>
+  </div>
+</div>
+
+<!-- ── ARCHIVE HISTORY ── -->
+<div class="modal" id="archiveModal">
+  <div class="modal-card">
+    <h3>Archived</h3>
+    <div class="msub">Bottles you've archived. Restore any of them, or delete for good.</div>
+    <div id="archiveList"></div>
+    <div class="mrow" style="margin-top:16px"><button class="mbtn ghost" onclick="closeArchiveModal()">Close</button></div>
   </div>
 </div>
 
@@ -821,7 +843,7 @@ async function ensureRackLayout(){
 function subscribe(){
   if(subscribed) return;
   subscribed = true;
-  onValue(ref(db, 'cellar/bottles'), snap => { bottles = snap.val() || {}; render(); });
+  onValue(ref(db, 'cellar/bottles'), snap => { bottles = snap.val() || {}; render(); if(document.getElementById('archiveModal').classList.contains('open')) renderArchiveList(); });
   onValue(ref(db, 'cellar/buylist'), snap => { buylist = snap.val() || {}; render(); });
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
 }
@@ -928,7 +950,7 @@ window.wsToWishlist = async function(i){
 
 // ── ASK AI (server-side only — question + compact collection summary → askAI Cloud Function) ──
 function collectionSummary(){
-  const arr = asArr(bottles).map(w=>({
+  const arr = activeArr().map(w=>({
     name:w.name||'', producer:w.producer||'', region:w.region||'', grape:w.grape||'',
     vintage:w.vintage||'', abv:w.abv||'', rating:(w.score==null?null:Number(w.score)),
     tag:w.tag||null, buyAgain:!!w.buyAgain, status:w.status||'', qty:Number(w.qty)||0
@@ -1065,16 +1087,10 @@ window.saveDetail = async function(){
     showToast('Saved — ' + (w.name||'bottle'));
   }catch(e){ document.getElementById('dtStatus').textContent='❌ ' + (e.message||e); }
 };
-window.deleteDetail = async function(){
+window.archiveDetail = async function(){
   const id = dtDraft.id; const w = bottles[id]; if(!w){ closeDetail(); return; }
-  if(!confirm('Remove this bottle?')) return;
-  const paths = bottlePhotoPaths(w);
-  try{
-    await dbRemove('cellar/bottles/' + id);
-    paths.forEach(p=>deleteObject(storageRef(storage, p)).catch(()=>{}));
-    closeDetail();
-    showToast('Removed — ' + (w.name||'bottle'));
-  }catch(e){ document.getElementById('dtStatus').textContent='❌ Delete failed'; }
+  if(await archiveBottle(id)){ closeDetail(); showToast('Archived — ' + (w.name||'bottle')); }
+  else document.getElementById('dtStatus').textContent='❌ Archive failed';
 };
 
 function echo(id, d){ const e=document.getElementById(id); if(d.score==null){ e.textContent=''; return; } e.textContent=(d.score+(d.half?0.5:0)).toFixed(1); }
@@ -1373,14 +1389,44 @@ function bottlePhotoPaths(w){
   (Array.isArray(w.photos)?w.photos:[]).forEach(p=>{ if(p && p.path) paths.add(p.path); });
   return [...paths];
 }
+// ── ARCHIVE (soft): nothing is hard-deleted from the main UI; restore from 🗄 Archived ──
+async function archiveBottle(id){
+  const w = bottles[id]; if(!w) return false;
+  try{ await dbUpdate('cellar/bottles/' + id, { archived:true, archivedAt:Date.now(), archivedBy:(auth.currentUser&&auth.currentUser.uid)||'' }); return true; }
+  catch(e){ return false; }
+}
 window.del = async function(id){
-  if(!confirm('Remove this bottle?')) return;
-  const paths = bottlePhotoPaths(bottles[id]);
+  const w = bottles[id]; if(!w) return;
+  if(await archiveBottle(id)) showToast('Archived — ' + (w.name||'bottle') + ' · restore from 🗄 Archived');
+  else showToast('Archive failed');
+};
+window.restoreBottle = async function(id){
+  const w = bottles[id]; if(!w) return;
+  try{ await dbUpdate('cellar/bottles/' + id, { archived:null, archivedAt:null, archivedBy:null }); showToast('Restored — ' + (w.name||'bottle')); renderArchiveList(); }
+  catch(e){ showToast('Restore failed'); }
+};
+window.purgeBottle = async function(id){
+  const w = bottles[id]; if(!w) return;
+  if(!confirm('Permanently delete “' + (w.name||'this bottle') + '”? This cannot be undone.')) return;
+  const paths = bottlePhotoPaths(w);
   try{
     await dbRemove('cellar/bottles/' + id);
     paths.forEach(p=>deleteObject(storageRef(storage, p)).catch(()=>{}));
+    showToast('Deleted permanently'); renderArchiveList();
   }catch(e){ showToast('Delete failed'); }
 };
+window.openArchiveModal = function(){ renderArchiveList(); document.getElementById('archiveModal').classList.add('open'); };
+window.closeArchiveModal = ()=>document.getElementById('archiveModal').classList.remove('open');
+function renderArchiveList(){
+  const wrap = document.getElementById('archiveList'); if(!wrap) return;
+  const list = asArr(bottles).filter(w=>w.archived).sort((a,b)=>(b.archivedAt||0)-(a.archivedAt||0));
+  if(!list.length){ wrap.innerHTML = '<div class="empty" style="padding:22px 0"><p>Nothing archived.</p></div>'; return; }
+  wrap.innerHTML = list.map(w=>{
+    const meta = [w.producer, w.vintage, w.region].filter(Boolean).join(' · ');
+    const sc = (w.status!=='cellared' && w.score!=null) ? ' · ' + fmt(w.score) : '';
+    return `<div class="arch-row"><div><div class="arch-name">${esc(w.name||'Untitled')}${sc}</div>${meta?`<div class="arch-meta">${esc(meta)}</div>`:''}</div><div class="arch-actions"><button class="arch-btn" onclick="restoreBottle('${w.id}')">Restore</button><button class="arch-btn danger" onclick="purgeBottle('${w.id}')">Delete</button></div></div>`;
+  }).join('');
+}
 
 // ── TOGGLE BUY-AGAIN INLINE ──
 window.toggleBuyList = async function(id){
@@ -1498,9 +1544,11 @@ function fmt(n){ return Number(n).toFixed(1).replace(/\.0$/,''); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function thumbHTML(w){ return w.photoUrl ? `<img class="thumb" src="${esc(w.photoUrl)}" alt="label" onclick="event.stopPropagation();viewImage('${esc(w.photoUrl)}')">` : ''; }
 function asArr(map){ return Object.keys(map||{}).map(id=>Object.assign({id}, map[id])); }
+// Active (non-archived) bottles — everything user-facing filters through this.
+function activeArr(){ return asArr(bottles).filter(w=>!w.archived); }
 
 function render(){
-  const all = asArr(bottles);
+  const all = activeArr();
   const opened = all.filter(w=>w.status==='opened');
   const cellared = all.filter(w=>w.status==='cellared');
   document.getElementById('st-count').textContent = opened.length;
@@ -1620,7 +1668,7 @@ function colLabels(col){                                                 // dist
 // Header label = the whole column's range (reflects live edits), e.g. "Sauv Blanc → Chardonnay → Pinot Gris"
 function colHeaderLabel(col){ const ls = colLabels(col); return ls.length ? ls.join(' → ') : ('Col ' + col); }
 function repLabel(col){ return cellLabel(col, 1); }
-function placedAt(col,row){ return asArr(bottles).find(w=>w.status==='cellared' && Number(w.rackCol)===col && Number(w.rackRow)===row) || null; }
+function placedAt(col,row){ return activeArr().find(w=>w.status==='cellared' && Number(w.rackCol)===col && Number(w.rackRow)===row) || null; }
 function firstOpenRow(col){ for(let r=1;r<=RACK_ROWS;r++){ if(!placedAt(col,r)) return r; } return null; }
 function nearestOpenColumn(pref){
   for(let d=1; d<RACK_COLS; d++){
@@ -1679,7 +1727,7 @@ async function placeBottle(id, col, row){
 
 // ── RACK MAP RENDER ──
 function rackHTML(){
-  const cellared = asArr(bottles).filter(w=>w.status==='cellared');
+  const cellared = activeArr().filter(w=>w.status==='cellared');
   const placed = {}, unplaced = [];
   cellared.forEach(w=>{
     const col = Number(w.rackCol), row = Number(w.rackRow);
