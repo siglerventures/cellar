@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.15</title>
+<title>The Cellar Ledger — Rev 2.16</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -279,8 +279,11 @@
   /* Left rail: score stacked above a bottle-shaped label thumbnail */
   .wine-left{display:flex;flex-direction:column;align-items:center;gap:8px}
   .wine-left .score{width:100%}
+  .wine-left .score b{font-size:23px}
+  .wine-left .s-pred b{font-size:15.5px}
   .cardphoto{width:86px;height:110px;border-radius:4px;overflow:hidden;background:linear-gradient(160deg,#2c1016 0%,#160a0c 70%);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .cardphoto img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;display:block}
+  /* contain (not cover) so the whole bottle is visible, letterboxed on the dark ground */
+  .cardphoto img{width:100%;height:100%;object-fit:contain;cursor:zoom-in;display:block}
   .cardphoto.ph .ph-glass{font-size:26px;opacity:.5}
   .score b{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:600;line-height:.9;display:block;text-align:center}
   .score s{text-decoration:none;font-size:9px;letter-spacing:.1em;color:var(--parch-dim);text-transform:uppercase;display:block;text-align:center}
@@ -371,7 +374,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.15</div>
+    <div class="auth-rev">Rev 2.16</div>
   </div>
 </div>
 
@@ -478,7 +481,7 @@
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 People</button>
     <button onclick="openArchiveModal()">🗄 Archived</button>
     <button onclick="signOutUser()">Sign out</button>
-    <span class="rev">The Cellar Ledger &middot; Rev 2.15</span>
+    <span class="rev">The Cellar Ledger &middot; Rev 2.16</span>
   </footer>
 </div>
 
