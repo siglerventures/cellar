@@ -35,10 +35,11 @@ Realtime Database backend, Google sign-in), hosted on GitHub Pages
 - Rev 1.0 uses `auth != null` on `/cellar`; people-management writes gated to the
   two root UIDs + `admin` role. See `firebase-rules-cellar-block.json`.
 - Cloud Functions share ONE namespace across apps too. `askAI` (unprefixed)
-  belongs to EATS — Cellar keeps an Eats-compatible proxy for it in
-  `functions/index.js` and must NEVER repoint or remove it. Prefix all new
-  Cellar functions (`cellarAskAI`, …) and check `firebase functions:list`
-  before choosing a name.
+  belongs to EATS — Cellar must NEVER export, deploy, delete, or modify it, or
+  anything else Eats-related. Prefix all Cellar functions (`cellarAskAI`, …),
+  check `firebase functions:list` before choosing a name, and always deploy
+  with explicit `--only functions:cellar:<name>` filters (never a bare
+  `--only functions`, which could prompt deletions of other apps' functions).
 
 ## Pull-request hygiene
 - One change = one fresh branch = one new PR; share the link on push.
