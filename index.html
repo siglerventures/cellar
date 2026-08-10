@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.70</title>
+<title>The Cellar Ledger — Rev 2.71</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.70</div>
+    <div class="auth-rev">Rev 2.71</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.70</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.71</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -703,14 +703,16 @@
     <div class="msub">Everything you know so far — photos, notes, where you saw it.</div>
     <input id="wl-d-name" placeholder="Name">
     <input id="wl-d-desc" placeholder="Description — e.g. Tequila Añejo, limited edition">
-    <select id="wl-d-kind" class="rt-jump" style="width:100%;margin-bottom:12px"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
+    <select id="wl-d-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('wl-d')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
     <div class="mgrid">
       <input id="wl-d-prod" placeholder="Producer">
       <input id="wl-d-region" placeholder="Region">
-      <input id="wl-d-grape" placeholder="Grape(s) / style">
-      <input id="wl-d-vintage" placeholder="Vintage / class">
+      <input id="wl-d-grape" placeholder="Grape(s) — e.g. 65% Grenache, 15% Syrah">
+      <input id="wl-d-vintage" placeholder="Vintage">
       <input id="wl-d-abv" placeholder="ABV %">
       <input id="wl-d-price" placeholder="Price seen $" type="number" step="0.01" min="0">
+      <input id="wl-d-vendor" placeholder="Vendor / where you saw it" list="vendorList">
+      <input id="wl-d-url" placeholder="Product URL (optional)" style="grid-column:1/-1">
     </div>
     <div class="qlabel" style="margin-top:12px">Photos — first is the card image</div>
     <div class="pintake" id="wl-intake" ondragover="piDragOver(event,'wl')" ondragleave="piDragLeave(event,'wl')" ondrop="piDrop(event,'wl')"></div>
@@ -981,7 +983,7 @@ let openDraft = { id:null, score:null, half:false, tags:[], buy:false };
 // Photo intake per context — q (log), ca (add-to-cellar), dt (detail modal), ai (Ask AI).
 // Each entry: {dataUrl} for new pics, {path,url} for already-uploaded ones. Index 0 = MAIN.
 let piStore = { q:[], ca:[], dt:[], ai:[], ws:[], wl:[] };
-let piScanned = { q:false, ca:false };  // first photo per form triggers a scanLabel run
+let piScanned = { q:false, ca:false, wl:false };  // first photo per form triggers a scanLabel run
 let dtRemoved = [];                     // Storage paths to delete when the detail modal saves
 let search = '';      // current search filter
 let lastScout = null; // last scanned wine details (for scout quick-actions)
@@ -1912,6 +1914,7 @@ async function piAddFiles(ctx, files){
       draftQueue(ctx);
       // Scan from the untouched original — the model reads it more reliably.
       if((ctx==='q'||ctx==='ca') && !piScanned[ctx]){ piScanned[ctx]=true; scanAndFill(raw, ctx); }
+      if(ctx==='wl' && !piScanned.wl){ piScanned.wl=true; wlModalScanFill(raw); }
     }catch(e){ showToast('Could not read that photo — try again.'); }
   }
 }
@@ -3498,10 +3501,12 @@ window.openWlDetail = function(id){
   set('wl-d-name', w.name); set('wl-d-desc', w.desc); set('wl-d-prod', w.producer);
   set('wl-d-region', w.region); set('wl-d-grape', w.grape); set('wl-d-vintage', w.vintage);
   set('wl-d-abv', w.abv); set('wl-d-price', w.price); set('wl-d-note', w.note);
-  { const ke=document.getElementById('wl-d-kind'); if(ke) ke.value = kindOf(w); }
+  set('wl-d-vendor', w.vendor); set('wl-d-url', w.url);
+  { const ke=document.getElementById('wl-d-kind'); if(ke) ke.value = kindOf(w); } applyKindFields('wl-d');
   piStore.wl = (Array.isArray(w.photos) && w.photos.length)
     ? w.photos.filter(p=>p && p.url).map(p=>({ path:p.path||null, url:p.url }))
     : (w.photoUrl ? [{ path:w.photoPath||null, url:w.photoUrl }] : []);
+  piScanned.wl = piStore.wl.length > 0;   // only auto-scan the first photo of a bare item
   piRender('wl');
   document.getElementById('wlStatus').textContent='';
   document.getElementById('wlModal').classList.add('open');
@@ -3518,6 +3523,7 @@ window.saveWlDetail = async function(){
       name:v('wl-d-name')||buylist[id].name, desc:v('wl-d-desc'), producer:v('wl-d-prod'),
       region:v('wl-d-region'), grape:v('wl-d-grape'), vintage:v('wl-d-vintage'),
       abv:v('wl-d-abv').replace('%',''), price:(price===''?null:Number(price)), note:v('wl-d-note'),
+      vendor:v('wl-d-vendor'), url:v('wl-d-url'),
       kind:(document.getElementById('wl-d-kind')||{value:'wine'}).value,
       photos: ups.length?ups:null,
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
@@ -3526,6 +3532,26 @@ window.saveWlDetail = async function(){
     showToast('Saved — ' + (v('wl-d-name')||'wishlist item'));
   }catch(e){ document.getElementById('wlStatus').textContent='❌ ' + (e.message||e); }
 };
+// First photo added inside the wishlist modal → scan it and fill any EMPTY
+// fields (never overwrites something you typed). Same brain as Add Bottle.
+async function wlModalScanFill(dataUrl){
+  const st = document.getElementById('wlStatus');
+  if(st) st.textContent = '⏳ Reading the label…';
+  try{
+    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:(dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg' });
+    const r = res && res.data;
+    if(!r || !r.ok){ if(st) st.textContent = (r && r.error) || 'Couldn’t read that one — type it in.'; return; }
+    const d = r.data;
+    if(String(d.vintage).trim().toUpperCase()==='NV') d.vintage='';
+    const fill=(id,v)=>{ const e=document.getElementById(id); if(e && v && !e.value.trim()) e.value=v; };
+    fill('wl-d-name', d.name || d.producer); fill('wl-d-desc', d.description);
+    fill('wl-d-prod', d.producer); fill('wl-d-region', d.region); fill('wl-d-grape', d.grape);
+    fill('wl-d-vintage', d.vintage); fill('wl-d-abv', d.abv); fill('wl-d-price', d.price);
+    if(d.kind && KINDS.some(k=>k[0]===d.kind)){ const ke=document.getElementById('wl-d-kind'); if(ke && ke.value==='wine') ke.value=d.kind; }
+    applyKindFields('wl-d');
+    if(st) st.textContent = '✅ Filled from the photo — check it and Save';
+  }catch(e){ console.warn('[Cellar] wl modal scan failed:', e); if(st) st.textContent='Scan isn’t available — type it in.'; }
+}
 window.wlDetailRemove = function(){ const id=wlDetailId; closeWlModal(); if(id) removeBuylistItem(id); };
 window.wlDetailBought = function(){ const id=wlDetailId; closeWlModal(); if(id) wlBought(id); };
 // Wishlist scan: one photo → scanLabel → the add-row fills itself; the extras
@@ -3582,6 +3608,7 @@ window.wlBought = function(id){
   const set=(el,v)=>{ const e=document.getElementById(el); if(e && v!=null && v!=='') e.value=v; };
   set('ca-name', w.name); set('ca-desc', w.desc); set('ca-prod', w.producer); set('ca-region', w.region);
   set('ca-grape', w.grape); set('ca-vintage', w.vintage); set('ca-abv', w.abv);
+  set('ca-vendor', w.vendor); set('ca-url', w.url);
   if(w.price!=null && w.price!=='') set('ca-price', w.price);
   { const ke=document.getElementById('ca-kind'); if(ke && w.kind) ke.value=w.kind; } applyKindFields('ca');
   const ph = (Array.isArray(w.photos) && w.photos.length)
