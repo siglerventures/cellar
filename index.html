@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.98</title>
+<title>The Cellar Ledger — Rev 2.99</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -557,7 +557,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.98</div>
+    <div class="auth-rev">Rev 2.99</div>
   </div>
 </div>
 
@@ -674,7 +674,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.98</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.99</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -1794,13 +1794,14 @@ window.saveTypeNotes = async function(){
 };
 function varietalSelectHTML(list, emoji){
   const src = list || activeArr().filter(kindMatch);
-  const em = emoji || '🍇';
+  // Chip icon follows the selected collection — 🥃 on Bourbon, 🌵 on Tequila…
+  const em = emoji || ({bourbon:'🥃',tequila:'🌵',vodka:'🍸',cigar:'🚬',mixer:'🥤'}[kindFilter] || '🍇');
   const counts = {};
   src.forEach(w=>typesOf(w).forEach(v=>{ counts[v.fam]=(counts[v.fam]||0)+1; }));
   const fams = Object.keys(counts).sort((a,b)=>a.localeCompare(b));
   if(!fams.length) return '';
   const cap = (t)=>t.replace(/\b\w/g,c=>c.toUpperCase());
-  const label = varietalFilter ? (em + ' ' + cap(varietalFilter)) : (em + ' Type…');
+  const label = varietalFilter ? (em + ' ' + cap(varietalFilter)) : (em + ' Type');
   return `<span class="dd"><button class="sortchip ${varietalFilter?'on':''}" onclick="ddToggle(event,this)">${esc(label)} ▾</button><span class="dd-panel">` +
     `<button class="dd-opt ${!varietalFilter?'on':''}" onclick="setVarietal('')">All types</button>` +
     fams.map(f=>`<button class="dd-opt ${varietalFilter===f?'on':''}" data-tinfo="${esc(f)}" onclick="setVarietal('${esc(f)}')">${esc(cap(f))} <em>(${counts[f]})</em></button>`).join('') + `</span></span>`;
@@ -1813,7 +1814,7 @@ function flavorSelectHTML(list){
   src.forEach(w=>bottleTags(w).forEach(k=>{ counts[k]=(counts[k]||0)+1; }));
   const keys = Object.keys(counts).sort((a,b)=>tagInfo(a).t.localeCompare(tagInfo(b).t));
   if(!keys.length) return '';
-  const label = flavorFilter ? ('🏷 ' + tagInfo(flavorFilter).t) : '🏷 Flavor…';
+  const label = flavorFilter ? ('🏷 ' + tagInfo(flavorFilter).t) : '🏷 Flavor';
   return `<span class="dd"><button class="sortchip ${flavorFilter?'on':''}" onclick="ddToggle(event,this)">${esc(label)} ▾</button><span class="dd-panel">` +
     `<button class="dd-opt ${!flavorFilter?'on':''}" onclick="setFlavor('')">All flavors</button>` +
     keys.map(k=>`<button class="dd-opt ${flavorFilter===k?'on':''}" onclick="setFlavor('${esc(k)}')">${esc(tagInfo(k).t)} <em>(${counts[k]})</em></button>`).join('') + `</span></span>`;
