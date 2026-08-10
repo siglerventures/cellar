@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.12</title>
+<title>The Cellar Ledger — Rev 3.13</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -628,7 +628,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.12</div>
+    <div class="auth-rev">Rev 3.13</div>
   </div>
 </div>
 
@@ -746,7 +746,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.12</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.13</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -1166,9 +1166,18 @@ function refreshDatalists(){
 function renderKindRow(){
   const el = document.getElementById('kindRow'); if(!el) return;
   const present = new Set(activeArr().map(kindOf));
-  const chips = [['all','✦ All']].concat(kindsOrdered().filter(k=>present.has(k[0]) || k[0]==='wine'));
+  // The selected kind always shows, even while still empty (just picked via ➕ Add).
+  const chips = [['all','✦ All']].concat(kindsOrdered().filter(k=>present.has(k[0]) || k[0]==='wine' || k[0]===kindFilter));
+  // Collections with no bottles yet live behind a ➕ Add dropdown — no guessing
+  // what's available (Gin, Rum, Whiskey/Scotch…). Picking one opens that
+  // (empty) collection, ready for its first bottle.
+  const missing = kindsOrdered().filter(k=>!present.has(k[0]) && k[0]!=='wine' && k[0]!==kindFilter);
+  const addChip = missing.length
+    ? `<span class="dd"><button class="sortchip" onclick="ddToggle(event,this)">➕ Add</button><span class="dd-panel">` +
+      missing.map(k=>`<button class="dd-opt" onclick="setKind('${k[0]}')">${esc(k[1])}</button>`).join('') + `</span></span>`
+    : '';
   // data-kind on the collection chips → admins right-click for Edit / Move left / right.
-  el.innerHTML = chips.map(k=>`<button class="sortchip ${kindFilter===k[0]?'on':''}"${k[0]==='all'?'':` data-kind="${k[0]}"`} onclick="setKind('${k[0]}')">${esc(k[1])}</button>`).join('');
+  el.innerHTML = chips.map(k=>`<button class="sortchip ${kindFilter===k[0]?'on':''}"${k[0]==='all'?'':` data-kind="${k[0]}"`} onclick="setKind('${k[0]}')">${esc(k[1])}</button>`).join('') + addChip;
 }
 function kindSelectHTML(id){
   return `<select id="${id}" class="rt-jump" style="width:100%;margin-bottom:12px">` + kindsOrdered().map(k=>`<option value="${k[0]}">${esc(k[1])}</option>`).join('') + `</select>`;
