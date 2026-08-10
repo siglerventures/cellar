@@ -65,16 +65,38 @@ const PROMPT = [
   '- "fit": one of "love", "like", "maybe", "pass"',
   '- "verdict": one short sentence (max ~22 words) on whether it fits the taster and why',
   "Use an empty string for any label field you cannot read. ALWAYS provide predLow,",
-  "predHigh, fit, and verdict as your best judgment from the label + the palate below.",
-  "IMPORTANT — the palate below describes the taster's WINE preferences. Apply it",
-  "only when kind is wine. For bourbon/tequila/vodka/mixers judge on general",
-  "quality, typicity, age statements, proof, and reputation (they enjoy quality",
-  "spirits — full-flavored, well-made; no strong known biases yet). For cigars",
-  "judge on construction, origin, and reputation. Still ALWAYS give predLow,",
-  "predHigh, fit, and verdict.",
-  "",
-  "The taster's WINE palate: " + PALATE
+  "predHigh, fit, and verdict as your best judgment from the label + the palate below."
 ].join('\n');
+
+// The palate section: prefer the LIVE per-collection summary the app computes
+// from the taster's own ratings; fall back to the baked-in wine snapshot.
+function buildPrompt(livePalate) {
+  const tail = livePalate
+    ? [
+        "IMPORTANT — the palate below is derived LIVE from this taster's own",
+        "ratings, split by collection (WINE / BOURBON / TEQUILA / …). Base",
+        "predLow/predHigh/fit/verdict on the section matching this bottle's kind:",
+        "favor what they score high, mark down what they score low. If their",
+        "history has a close sibling of this bottle (same producer or line),",
+        "anchor to those scores. If this bottle's collection has no section,",
+        "judge on general quality, typicity, age statements, proof, and",
+        "reputation. Still ALWAYS give predLow, predHigh, fit, and verdict.",
+        "",
+        "The taster's palate, by collection:",
+        livePalate
+      ].join('\n')
+    : [
+        "IMPORTANT — the palate below describes the taster's WINE preferences. Apply it",
+        "only when kind is wine. For bourbon/tequila/vodka/mixers judge on general",
+        "quality, typicity, age statements, proof, and reputation (they enjoy quality",
+        "spirits — full-flavored, well-made; no strong known biases yet). For cigars",
+        "judge on construction, origin, and reputation. Still ALWAYS give predLow,",
+        "predHigh, fit, and verdict.",
+        "",
+        "The taster's WINE palate: " + PALATE
+      ].join('\n');
+  return PROMPT + '\n' + tail;
+}
 
 function parseModelJson(message) {
   const text = (message.content || [])
@@ -267,6 +289,7 @@ exports.scanLabel = onCall(
     }
     const imageBase64 = request.data && request.data.imageBase64;
     const mediaType = (request.data && request.data.mediaType) || 'image/jpeg';
+    const livePalate = String((request.data && request.data.palate) || '').slice(0, 4000);
     if (!imageBase64 || typeof imageBase64 !== 'string') {
       throw new HttpsError('invalid-argument', 'No image supplied.');
     }
@@ -282,7 +305,7 @@ exports.scanLabel = onCall(
             role: 'user',
             content: [
               { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
-              { type: 'text', text: PROMPT }
+              { type: 'text', text: buildPrompt(livePalate) }
             ]
           }
         ]
