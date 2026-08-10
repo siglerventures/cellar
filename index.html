@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.78</title>
+<title>The Cellar Ledger — Rev 2.79</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -505,7 +505,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.78</div>
+    <div class="auth-rev">Rev 2.79</div>
   </div>
 </div>
 
@@ -622,7 +622,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.78</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.79</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -3294,6 +3294,25 @@ document.addEventListener('mousemove', (e)=>{
   peekEl.style.left = Math.max(8,x) + 'px'; peekEl.style.top = Math.max(8,y) + 'px';
 });
 document.addEventListener('scroll', ()=>peekEl.classList.remove('show'), true);
+// ── Double-click (desktop) / long-press (mobile) a slot or tray chip → full detail card ──
+document.addEventListener('dblclick', (e)=>{
+  const t = e.target.closest ? e.target.closest('[data-peek]') : null;
+  if(!t || !bottles[t.dataset.peek]) return;
+  e.preventDefault();
+  placing = null; inspect = null;
+  peekEl.classList.remove('show');
+  openDetail(t.dataset.peek);
+});
+let lpTimer = null, lpFired = false;
+document.addEventListener('touchstart', (e)=>{
+  const t = e.target.closest ? e.target.closest('[data-peek]') : null;
+  if(!t || !bottles[t.dataset.peek]) return;
+  const id = t.dataset.peek;
+  lpTimer = setTimeout(()=>{ lpFired = true; placing = null; inspect = null; openDetail(id); }, 550);
+}, {passive:true});
+['touchend','touchmove','touchcancel'].forEach(ev=>document.addEventListener(ev, ()=>{ if(lpTimer){ clearTimeout(lpTimer); lpTimer=null; } }, {passive:true}));
+// Swallow the tap that follows a long-press so it doesn't also select/place.
+document.addEventListener('click', (e)=>{ if(lpFired){ lpFired=false; e.stopPropagation(); e.preventDefault(); } }, true);
 window.rackDragOver = function(e){ if(rackEdit) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(_){} e.currentTarget.classList.add('drop-hi'); };
 window.rackDragLeave = function(e){ e.currentTarget.classList.remove('drop-hi'); };
 window.rackDrop = function(e, col, row){ e.preventDefault(); e.currentTarget.classList.remove('drop-hi'); const id = dragId || (e.dataTransfer && e.dataTransfer.getData('text/plain')); dragId = null; if(id) placeBottle(id, col, row); };
