@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.84</title>
+<title>The Cellar Ledger — Rev 2.85</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -524,7 +524,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.84</div>
+    <div class="auth-rev">Rev 2.85</div>
   </div>
 </div>
 
@@ -641,7 +641,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.84</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.85</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -3162,7 +3162,7 @@ function rackHTML(){
     ${admin?`<button class="rt-btn ${rackEdit?'on':''}" onclick="rackToggleEdit()">${rackEdit?'✓ Done editing':'Edit labels'}</button>`:''}
     <div class="rt-group">${varietalSelectHTML(rackScope, rkEmoji)}${varietalFilter?`<button class="rt-btn on" title="Clear type highlight" onclick="setVarietal('')">✕</button>`:''}</div>
     <div class="rt-group">${flavorSelectHTML(rackScope)}${flavorFilter?`<button class="rt-btn on" title="Clear flavor highlight" onclick="setFlavor('')">✕</button>`:''}</div>
-    <span style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--parch-dim);align-self:center">${esc(d.name)} — ${d.cols} columns × ${d.rows} rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</span>
+    <span style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:var(--parch);align-self:center">${esc(String(d.name||'').replace(/^[^\p{L}\p{N}]+\s*/u,''))} — ${d.cols} columns × ${d.rows} rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</span>
   </div>`;
 
   // Action / status bar
@@ -3182,7 +3182,7 @@ function rackHTML(){
   // Tray of unplaced bottles (draggable). Identical bottles (same wine) collapse into
   // one chip with a ×N count; placing/dragging acts on one bottle, so N ticks down.
   // The whole zone is a drop target — drag a PLACED bottle here to pull it off the rack.
-  let tray = `<div class="rack-tray-zone" ondragover="rackTrayOver(event)" ondragleave="rackTrayLeave(event)" ondrop="rackDropTray(event)"><div class="rack-tray-head"><span>${(rkind && tray_all>unplaced.length)?`<em style="opacity:.55;font-style:normal">+${tray_all-unplaced.length} other bottles in the Wine Wall tray</em>`:''}</span></div>`;
+  let tray = `<div class="rack-tray-zone" ondragover="rackTrayOver(event)" ondragleave="rackTrayLeave(event)" ondrop="rackDropTray(event)"></div>`;
   if(unplaced.length){
     tray += '<div class="rack-tray">' + groupBrowse(unplaced).map(g=>{
       const rep = g[0];
@@ -3194,7 +3194,7 @@ function rackHTML(){
       return `<button class="tray-chip ${on}" data-peek="${rep.id}" draggable="true" ondragstart="rackDragStart(event,'${rep.id}')" onclick="rackTapBottle('${rep.id}')" title="${ttl}">${esc(rep.name)}${vin}${rep.status==='opened'?' ◐':''}${cnt}</button>`;
     }).join('') + '</div>';
   }else{
-    tray += '<div class="rack-tray-empty">Drag a bottle here to pull it off the rack.</div>';
+    tray += '';   // empty tray stays a silent drop target (drag a placed bottle here to unplace it)
   }
   tray += '</div>';
 
