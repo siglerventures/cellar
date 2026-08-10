@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.95</title>
+<title>The Cellar Ledger — Rev 2.96</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -556,7 +556,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.95</div>
+    <div class="auth-rev">Rev 2.96</div>
   </div>
 </div>
 
@@ -673,7 +673,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.95</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.96</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -796,7 +796,11 @@
     <h3 id="dt-name" title="Double-click (or long-press) to rename">—</h3>
     <input id="dt-name-input" style="display:none;width:100%;font-size:17px;font-weight:700;margin:0 0 6px" placeholder="Bottle name">
     <div class="msub" id="dt-name-hint" style="display:none;margin:-4px 0 8px">✏️ Renaming — press Save below to keep it</div>
-    <div class="msub" id="dt-meta">—</div>
+    <div class="msub" id="dt-meta" title="Double-click (or long-press) to edit producer & region">—</div>
+    <div id="dt-meta-edit" style="display:none">
+      <div class="msub" style="margin:2px 0 6px">✏️ Editing — press Save below to keep it</div>
+      <div class="mgrid"><input id="dt-prod" placeholder="Producer"><input id="dt-region" placeholder="Region"></div>
+    </div>
     <div class="msub" id="dt-loc" style="display:none"></div>
     <a id="dtUrlA" href="#" target="_blank" rel="noopener" style="display:none;font-size:12px;color:var(--gold);text-decoration:underline;margin:-10px 0 12px">🔗 Product page</a>
     <div class="dt-sibs" id="dtSibs" style="display:none"></div>
@@ -1724,8 +1728,10 @@ window.openDetail = function(id){
   document.getElementById('dt-name').textContent = w.name || '—';
   dtNameEditReset();
   const meta=[w.desc,w.producer,w.vintage,w.grape,w.region,w.abv?w.abv+'%':'',fmtPrice(w.price),w.vendor?('from '+w.vendor):''].filter(Boolean).join(' · ');
-  const state = w.status==='cellared' ? ('Cellared'+(Number(w.qty)>1?' · ×'+w.qty:'')) : 'Opened';
-  document.getElementById('dt-meta').textContent = [state, meta].filter(Boolean).join(' — ');
+  const state = w.status==='cellared' ? (Number(w.qty)>1?'×'+w.qty:'') : 'Opened';
+  document.getElementById('dt-meta').textContent = [state, meta].filter(Boolean).join(' — ') || '—';
+  { const me=document.getElementById('dt-meta-edit'); if(me) me.style.display='none'; document.getElementById('dt-meta').style.display=''; }
+  { const pe=document.getElementById('dt-prod'); if(pe) pe.value=w.producer||''; const re=document.getElementById('dt-region'); if(re) re.value=w.region||''; }
   // 📍 Where is it? A dedicated location line for anything cellared — tap to jump to the rack.
   (function(){
     const el = document.getElementById('dt-loc'); if(!el) return;
@@ -1859,6 +1865,22 @@ function dtStartRename(){
     else if(e.key==='Escape'){ dtNameEditReset(); }
   });
 })();
+// Double-click / long-press the meta line → edit producer & region in place.
+function dtStartMetaEdit(){
+  const w = bottles[dtDraft.id]; if(!w) return;
+  const m=document.getElementById('dt-meta'), e=document.getElementById('dt-meta-edit');
+  if(!m||!e) return;
+  m.style.display='none'; e.style.display='';
+  const p=document.getElementById('dt-prod'); if(p){ p.focus(); p.select(); }
+}
+(function(){
+  const m=document.getElementById('dt-meta');
+  if(!m) return;
+  m.addEventListener('dblclick', dtStartMetaEdit);
+  let t=null;
+  m.addEventListener('touchstart', ()=>{ t=setTimeout(dtStartMetaEdit, 600); }, {passive:true});
+  ['touchend','touchmove','touchcancel'].forEach(ev=>m.addEventListener(ev, ()=>{ if(t){clearTimeout(t); t=null;} }, {passive:true}));
+})();
 window.dtToggleHalf = ()=>{ dtDraft.half=!dtDraft.half; document.getElementById('dtHalfbtn').classList.toggle('on',dtDraft.half); echo('dtScoreEcho',dtDraft); };
 window.dtToggleBuy = ()=>{ dtDraft.buy=!dtDraft.buy; document.getElementById('dtBuyflag').classList.toggle('on',dtDraft.buy); };
 window.saveDetail = async function(){
@@ -1873,6 +1895,8 @@ window.saveDetail = async function(){
   const url = document.getElementById('dt-url').value.trim();
   const desc = (document.getElementById('dt-desc')||{value:(w.desc||'')}).value.trim();
   const notes = document.getElementById('dt-notes').value.trim();
+  const producer = (document.getElementById('dt-prod')||{value:(w.producer||'')}).value.trim();
+  const region = (document.getElementById('dt-region')||{value:(w.region||'')}).value.trim();
   // A non-empty rename (via double-click / long-press on the title) wins; blank keeps the old name.
   const nameIn = document.getElementById('dt-name-input');
   const name = (nameIn && nameIn.style.display!=='none' && nameIn.value.trim()) ? nameIn.value.trim() : (w.name||'');
@@ -1882,10 +1906,10 @@ window.saveDetail = async function(){
     // Snapshot before/after so a real edit gets recorded in Activity.
     const nn = v => (v==null?'':String(v)).trim();
     const photoCount = (a)=> Array.isArray(a) ? a.length : 0;
-    const before = [nn(w.name),nn(w.desc),nn(w.score),nn(w.price),nn(w.notes),nn(w.vendor),nn(w.grape),nn(w.vintage),nn(w.abv),nn(w.rep),(w.buyAgain?'1':''),bottleTags(w).join(','),photoCount(w.photos)||(w.photoUrl?1:0)].join('¦');
-    const after  = [nn(name),nn(desc),nn(score),nn(price),nn(notes),nn(vendor),nn(grape),nn(vintage),nn(abv),nn(rep),(dtDraft.buy?'1':''),dtDraft.tags.join(','),ups.length].join('¦');
+    const before = [nn(w.producer),nn(w.region),nn(w.name),nn(w.desc),nn(w.score),nn(w.price),nn(w.notes),nn(w.vendor),nn(w.grape),nn(w.vintage),nn(w.abv),nn(w.rep),(w.buyAgain?'1':''),bottleTags(w).join(','),photoCount(w.photos)||(w.photoUrl?1:0)].join('¦');
+    const after  = [nn(producer),nn(region),nn(name),nn(desc),nn(score),nn(price),nn(notes),nn(vendor),nn(grape),nn(vintage),nn(abv),nn(rep),(dtDraft.buy?'1':''),dtDraft.tags.join(','),ups.length].join('¦');
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
-      name, score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
+      name, producer, region, score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
       vintage, abv, rep, url, desc, notes, kind:(document.getElementById('dt-kind')||{value:kindOf(w)}).value,
       photos: ups.length?ups:null,
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
