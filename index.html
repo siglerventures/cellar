@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.91</title>
+<title>The Cellar Ledger — Rev 2.92</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -548,7 +548,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.91</div>
+    <div class="auth-rev">Rev 2.92</div>
   </div>
 </div>
 
@@ -665,7 +665,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.91</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.92</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2652,6 +2652,8 @@ function predNum(w){
 // predicted rating marked "est", or an empty column when there's no prediction.
 // (No more redundant "CELLARED" label on spirits cards.)
 function cellaredScoreHTML(w){
+  // A score YOU gave always wins — "est" is only for bottles you haven't rated.
+  if(w.score!=null && w.score!=='') return `<div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>`;
   const pn=predNum(w);
   return pn!=null ? `<div class="score s-pred"><b>${fmt(pn)}</b><s>est</s></div>` : `<div class="score s-pred"></div>`;
 }
@@ -2793,7 +2795,7 @@ function groupedCardHTML(recs){
   }
   const scoreBlock = latest
     ? `<div class="score ${scoreClass(latest.score)}"><b>${fmt(latest.score)}</b></div>`
-    : cellaredScoreHTML({ kind:kindOf(recs[0]), predLow:pick(r=>r.predLow), predHigh:pick(r=>r.predHigh) });
+    : cellaredScoreHTML({ kind:kindOf(recs[0]), score:pick(r=>r.score), predLow:pick(r=>r.predLow), predHigh:pick(r=>r.predHigh) });
   const badges=[];
   if(qty) badges.push(`<span class="gbadge gb-cellar">×${qty}${slots.length?(' · '+esc(slots.join(', '))):''}</span>`);
   const chips = tagset.map(k=>{ const ti=tagInfo(k); return `<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`; }).join('');
