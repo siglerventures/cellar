@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.4</title>
+<title>The Cellar Ledger — Rev 3.5</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -192,6 +192,14 @@
   .modebtn:last-child{border-right:none}
   .modebtn.on{color:var(--ink);background:var(--gold)}
   .modebtn:hover:not(.on){color:var(--parch);background:rgba(201,163,92,0.08)}
+  /* Right-click menu on the category chips (Edit / Move left / Move right) */
+  .kind-ctx{position:fixed;z-index:2000;display:none;flex-direction:column;min-width:158px;padding:5px;
+    background:#1c0d10;border:1px solid var(--line);border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,0.55)}
+  .kind-ctx.show{display:flex}
+  .kind-ctx button{font-family:'Inter';font-size:13px;color:var(--parch);background:transparent;border:none;
+    text-align:left;padding:8px 12px;border-radius:6px;cursor:pointer;transition:.12s}
+  .kind-ctx button:hover:not(:disabled){background:rgba(201,163,92,0.14);color:var(--gold)}
+  .kind-ctx button:disabled{opacity:.32;cursor:default}
   /* List */
   /* List = sortable table */
   .ltable-wrap{border:1px solid var(--line);border-radius:6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -567,7 +575,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.4</div>
+    <div class="auth-rev">Rev 3.5</div>
   </div>
 </div>
 
@@ -684,7 +692,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.4</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.5</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -1015,9 +1023,18 @@ let flavorFilter = '';     // 🏷 flavor-tag filter — e.g. 'tqcaramel'
 // ── COLLECTIONS: every item carries a kind (missing = wine, so all existing data just works)
 const KINDS = [['wine','🍷 Wine'],['bourbon','🥃 Bourbon'],['tequila','🌵 Tequila'],['vodka','🍸 Vodka'],['cigar','🚬 Cigars'],['mixer','🧉 Mixers']];
 let kindFilter = 'wine';   // default collection — the homepage opens on Wine; ✦ All is one tap away
+// Admin-set overrides for the category chips (order + renamed labels), synced via
+// cellar/kind_prefs — right-click a chip to Edit / Move left / Move right.
+let kindPrefs = {};        // { order:[keys…], labels:{key:label} }
+function kindKeysOrdered(){
+  const keys = KINDS.map(k=>k[0]);
+  const ord = Array.isArray(kindPrefs.order) ? kindPrefs.order.filter(k=>keys.includes(k)) : [];
+  return ord.concat(keys.filter(k=>!ord.includes(k)));   // any new/unlisted kinds fall to the end
+}
+function kindsOrdered(){ const L=kindPrefs.labels||{}; return kindKeysOrdered().map(k=>{ const b=KINDS.find(x=>x[0]===k); return [k, L[k]||b[1]]; }); }
 function kindOf(w){ return w.kind || 'wine'; }
 function kindEmoji(k){ const e={wine:'🍷',bourbon:'🥃',tequila:'🌵',vodka:'🍸',cigar:'🚬',mixer:'🧉'}; return e[k]||'🍷'; }
-function kindLabel(k){ const f=KINDS.find(x=>x[0]===k); return f?f[1]:'🍷 Wine'; }
+function kindLabel(k){ const L=kindPrefs.labels||{}; const f=KINDS.find(x=>x[0]===k); return f?(L[k]||f[1]):'🍷 Wine'; }
 // Per-kind form shaping: which fields make sense, and what to call them.
 const KIND_FIELDS = {
   wine:    { grape:true,  abv:true,  vintagePH:'Vintage',                       abvPH:'ABV %',        descPH:'Description — e.g. Amarone della Valpolicella Classico' },
@@ -1063,12 +1080,59 @@ function refreshDatalists(){
 function renderKindRow(){
   const el = document.getElementById('kindRow'); if(!el) return;
   const present = new Set(activeArr().map(kindOf));
-  const chips = [['all','✦ All']].concat(KINDS.filter(k=>present.has(k[0]) || k[0]==='wine'));
-  el.innerHTML = chips.map(k=>`<button class="sortchip ${kindFilter===k[0]?'on':''}" onclick="setKind('${k[0]}')">${k[1]}</button>`).join('');
+  const chips = [['all','✦ All']].concat(kindsOrdered().filter(k=>present.has(k[0]) || k[0]==='wine'));
+  // data-kind on the collection chips → admins right-click for Edit / Move left / right.
+  el.innerHTML = chips.map(k=>`<button class="sortchip ${kindFilter===k[0]?'on':''}"${k[0]==='all'?'':` data-kind="${k[0]}"`} onclick="setKind('${k[0]}')">${esc(k[1])}</button>`).join('');
 }
 function kindSelectHTML(id){
-  return `<select id="${id}" class="rt-jump" style="width:100%;margin-bottom:12px">` + KINDS.map(k=>`<option value="${k[0]}">${k[1]}</option>`).join('') + `</select>`;
+  return `<select id="${id}" class="rt-jump" style="width:100%;margin-bottom:12px">` + kindsOrdered().map(k=>`<option value="${k[0]}">${esc(k[1])}</option>`).join('') + `</select>`;
 }
+// ── Category chip right-click editor (admin): Edit label / Move left / Move right ──
+const kindCtx = document.createElement('div');
+kindCtx.className = 'kind-ctx';
+document.body.appendChild(kindCtx);
+function hideKindCtx(){ kindCtx.classList.remove('show'); }
+document.addEventListener('click', hideKindCtx);
+document.addEventListener('scroll', hideKindCtx, true);
+window.addEventListener('resize', hideKindCtx);
+document.addEventListener('contextmenu', (e)=>{
+  const t = e.target.closest ? e.target.closest('[data-kind]') : null;
+  if(!t) return;
+  e.preventDefault(); e.stopPropagation();
+  if(!isAdmin()){ showToast('Admins can rearrange collections'); return; }
+  const k = t.dataset.kind;
+  const order = kindKeysOrdered(), i = order.indexOf(k);
+  const canL = i>0, canR = i>=0 && i<order.length-1;
+  kindCtx.innerHTML =
+    `<button onclick="kindEdit('${k}')">✏️ Edit label…</button>` +
+    `<button ${canL?'':'disabled'} onclick="kindMove('${k}',-1)">◀ Move left</button>` +
+    `<button ${canR?'':'disabled'} onclick="kindMove('${k}',1)">▶ Move right</button>`;
+  kindCtx.classList.add('show');
+  const r = kindCtx.getBoundingClientRect();
+  let x = e.clientX, y = e.clientY;
+  if(x + r.width  > window.innerWidth  - 8) x = window.innerWidth  - r.width  - 8;
+  if(y + r.height > window.innerHeight - 8) y = window.innerHeight - r.height - 8;
+  kindCtx.style.left = Math.max(8,x)+'px'; kindCtx.style.top = Math.max(8,y)+'px';
+}, true);
+window.kindMove = function(k, dir){
+  hideKindCtx();
+  const order = kindKeysOrdered(), i = order.indexOf(k), j = i + dir;
+  if(i<0 || j<0 || j>=order.length) return;
+  order.splice(j, 0, order.splice(i, 1)[0]);   // move item i to position j (adjacent swap)
+  dbSet('cellar/kind_prefs/order', order).then(()=>showToast('Moved')).catch(err=>showToast('❌ '+(err.message||err)));
+};
+window.kindEdit = function(k){
+  hideKindCtx();
+  const base = (KINDS.find(x=>x[0]===k)||[])[1] || '';
+  const cur  = (kindPrefs.labels && kindPrefs.labels[k]) || base;
+  const val  = prompt('Category label (include an emoji if you like):', cur);
+  if(val==null) return;
+  const label = val.trim();
+  if(!label){ showToast('Label can’t be empty'); return; }
+  // Store null when it matches the built-in label, so the DB stays tidy.
+  dbSet('cellar/kind_prefs/labels/'+k, label===base ? null : label)
+    .then(()=>showToast('Renamed')).catch(err=>showToast('❌ '+(err.message||err)));
+};
 let listMode = 'browse';   // 'browse' | 'list' | 'kanban' — collection display mode (All Bottles / Logged)
 let cardSize = 'm';        // 's' | 'm' | 'l' | 'img' — browse-card size ('img' = photos only)
 try{ const _cs=localStorage.getItem('cellar_cardsize'); if(['s','m','l','img'].includes(_cs)) cardSize=_cs; }catch(_){}
@@ -1356,6 +1420,7 @@ function subscribe(){
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
   onValue(ref(db, 'cellar/racks'), snap => { racks = snap.val() || {}; if(!racks[curRack] && Object.keys(racks).length) curRack = rackIds()[0]; if(view==='cellar') render(); });
   onValue(ref(db, 'cellar/type_notes'), snap => { typeNotes = snap.val() || {}; });
+  onValue(ref(db, 'cellar/kind_prefs'), snap => { kindPrefs = snap.val() || {}; renderKindRow(); });
   onValue(ref(db, 'cellar/custom_tags'), snap => {
     customTags = snap.val() || {};
     Object.keys(TAG_PADS).forEach(id=>{ const p=TAG_PADS[id]; if(p.kind) rebuildTagPad(id, p.kind); });
@@ -4004,7 +4069,7 @@ function palateHTML(){
 function wishlistHTML(){
   const list = asArr(buylist).filter(kindMatch).filter(w=>{ if(!search) return true; return deburr([w.name,w.desc,w.region,w.note].filter(Boolean).join(' ').toLowerCase()).includes(search); }).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
   let html = '<div class="shead"><p>Want-to-try list — snap a label or a store product page, or add one by hand.</p></div>';
-  const kindOpts = KINDS.map(k=>`<option value="${k[0]}" ${((kindFilter==='all'?'wine':kindFilter)===k[0])?'selected':''}>${k[1]}</option>`).join('');
+  const kindOpts = kindsOrdered().map(k=>`<option value="${k[0]}" ${((kindFilter==='all'?'wine':kindFilter)===k[0])?'selected':''}>${esc(k[1])}</option>`).join('');
   html += `<div class="wl-add"><input id="wl-name" placeholder="Name"><input id="wl-region" placeholder="Region (optional)"><select id="wl-kind" class="rt-jump">${kindOpts}</select><button onclick="addBuylistItem()">Add</button></div>
   <div class="pi-btns" style="margin:-6px 0 14px">
     <button class="pi-btn" onclick="document.getElementById('wl-pi-cam').click()">📷 Scan a label / product page</button>
