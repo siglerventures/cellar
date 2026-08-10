@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.3</title>
+<title>The Cellar Ledger — Rev 3.4</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -567,7 +567,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.3</div>
+    <div class="auth-rev">Rev 3.4</div>
   </div>
 </div>
 
@@ -684,7 +684,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.3</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.4</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -842,7 +842,7 @@
     <div class="mrow" style="margin-top:4px">
       <button class="buyflag" id="dtBuyflag" onclick="dtToggleBuy()"><span class="dot"></span> Buy again</button>
       <input id="dt-vintage" class="dt-year" placeholder="Year">
-      <button class="mbtn ghost dt-open" id="dtOpenBtn" style="display:none" onclick="dtMarkOpened()">Opened</button>
+      <select id="dt-status-sel" class="rt-jump dt-open" style="width:auto;margin-bottom:0" onchange="dtStatusChange(this)"></select>
     </div>
     <div class="dt-grid">
       <input id="dt-qty" placeholder="Qty on hand" title="Bottles on hand — bump it when you buy more" type="number" min="0" step="1">
@@ -1894,7 +1894,16 @@ window.openDetail = function(id){
     }).join('');
     box.style.display='';
   })();
-  document.getElementById('dtOpenBtn').style.display = w.status==='cellared' ? '' : 'none';
+  // Status dropdown — one place for the bottle's lifecycle + quick actions.
+  { const s=document.getElementById('dt-status-sel'); if(s){
+      const cur = w.status==='cellared' ? 'cellared' : 'opened';
+      s.innerHTML =
+        `<option value="cellared" ${cur==='cellared'?'selected':''}>🍾 Cellared — sealed</option>` +
+        `<option value="opened" ${cur==='opened'?'selected':''}>◐ Opened</option>` +
+        `<option value="archived">🏁 Finished — archive</option>` +
+        `<option value="rebuy">${w.buyAgain?'✓ On Re-Buy list — remove':'🔁 Add to Re-Buy list'}</option>` +
+        `<option value="wishlist">🧾 Copy to Wishlist</option>`;
+  } }
   dtMergeWith = null;
   if(w.status==='cellared'){
     const nameOf=(x)=>normWine(x.name,'').split('|')[0];
@@ -1931,6 +1940,47 @@ window.openDetail = function(id){
 window.closeDetail = ()=>document.getElementById('detailModal').classList.remove('open');
 // Detail modal → the mark-opened (score it) flow for a cellared bottle.
 window.dtMarkOpened = function(){ const id = dtDraft.id; closeDetail(); if(id) openMarkOpened(id); };
+// Status dropdown actions — every one of them lands in the Activity history.
+window.dtStatusChange = async function(sel){
+  const id = dtDraft.id; const w = bottles[id]; if(!w) return;
+  const v = sel.value;
+  const cur = w.status==='cellared' ? 'cellared' : 'opened';
+  if(v===cur) return;
+  if(v==='opened'){ dtMarkOpened(); return; }                      // scoring flow logs 'opened'
+  if(v==='archived'){ archiveDetail(); return; }                   // logs 'archived'
+  if(v==='rebuy'){
+    sel.value = cur;
+    try{
+      await dbUpdate('cellar/bottles/'+id, { buyAgain: !w.buyAgain });
+      logEvent('flagged', { bottleId:id, name:w.name||'', on:!w.buyAgain });
+      showToast(!w.buyAgain ? 'Added to Buy-Again — '+(w.name||'bottle') : 'Removed from Buy-Again');
+      openDetail(id);
+    }catch(e){ showToast('Update failed'); }
+    return;
+  }
+  if(v==='wishlist'){
+    sel.value = cur;
+    try{
+      const r = push(ref(db, 'cellar/buylist'));
+      await set(r, { name:w.name||'', region:w.region||'', note:'', kind:kindOf(w), desc:w.desc||'',
+        producer:w.producer||'', vintage:w.vintage||'', abv:w.abv||'', grape:w.grape||'',
+        price:(w.price==null?null:w.price), photoUrl:w.photoUrl||null, photoPath:w.photoPath||null,
+        addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now() });
+      logEvent('wishlisted', { bottleId:id, name:w.name||'' });
+      showToast('Copied to Wishlist — ' + (w.name||'bottle'));
+    }catch(e){ showToast('Could not add to wishlist'); }
+    return;
+  }
+  if(v==='cellared'){
+    // Un-open (fixing a mistaken "opened"): back to sealed stock.
+    try{
+      await dbUpdate('cellar/bottles/'+id, { status:'cellared', qty:Math.max(1, Number(w.qty)||1) });
+      logEvent('edited', { bottleId:id, name:w.name||'', vintage:w.vintage||'' });
+      showToast('Back to sealed stock — ' + (w.name||'bottle'));
+      openDetail(id);
+    }catch(e){ showToast('Update failed'); }
+  }
+};
 
 // ── MERGE DUPLICATES ─────────────────────────────────────────────────────────
 // Combine two cellared records of the same wine into one, losing nothing:
@@ -3922,7 +3972,7 @@ function historyHTML(){
     html += '</tbody></table></div>';
   }
 
-  const EV_LABEL = { logged:'🍷 Logged a pour', added:'🛒 Added to cellar', opened:'🍾 Opened', placed:'📍 Placed', swapped:'🔄 Swapped', unplaced:'🧺 To the tray', archived:'🗄 Archived', restored:'↩️ Restored', merged:'🔗 Merged', edited:'✏️ Edited' };
+  const EV_LABEL = { logged:'🍷 Logged a pour', added:'🛒 Added to cellar', opened:'🍾 Opened', placed:'📍 Placed', swapped:'🔄 Swapped', unplaced:'🧺 To the tray', archived:'🗄 Archived', restored:'↩️ Restored', merged:'🔗 Merged', edited:'✏️ Edited', flagged:'🔁 Re-Buy flag', wishlisted:'🧾 To wishlist' };
   const recent = evs.sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,50);
   html += `<h3 class="hist-h">Activity</h3>`;
   if(!recent.length){
@@ -4215,7 +4265,7 @@ onAuthStateChanged(auth, async (user)=>{
 (function integrityCheck(){
   const critical = ['quickPanel','wsPanel','askwrap','askInput','askAnswer','kindRow','searchrow','searchbar',
     'wlModal','wl-intake','wl-d-name','detailModal','dtScorepad','dtTags','dtHalfbtn','dtBuyflag','dt-name','dt-name-input','dt-meta','dt-loc','dt-desc','ca-desc','dt-notes','dt-price',
-    'dt-vendor','dt-grape','dt-kind','dt-vintage','dt-abv','dtOpenBtn','dtMergeBtn','dtStatus',
+    'dt-vendor','dt-grape','dt-kind','dt-vintage','dt-abv','dt-status-sel','dtMergeBtn','dtStatus',
     'q-name','q-kind','q-intake','ca-name','ca-kind','ca-intake','ws-intake','ai-intake-wrap',
     'openModal','cellarAddModal','accessModal','archiveModal','dataModal','rackModal','content','toast','auth-gate','authError'];
   const missing = critical.filter(id=>!document.getElementById(id));
