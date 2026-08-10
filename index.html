@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.6</title>
+<title>The Cellar Ledger — Rev 3.7</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -483,6 +483,9 @@
   .bar{height:5px;background:rgba(236,227,210,0.07);border-radius:3px;overflow:hidden}
   .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--garnet),var(--gold));border-radius:3px}
   .palate-sum{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch-dim);margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+  .axis-tag.turn{color:#b06a63}
+  .palate-empty{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch-dim);padding:6px 0 4px}
+  .palate-div{height:1px;background:var(--line);margin:26px 0 22px}
   footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);text-align:center;font-size:11px;letter-spacing:.1em;color:var(--parch-dim);opacity:.7;display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap}
   footer button{background:none;border:none;color:var(--parch-dim);font-size:11px;letter-spacing:.1em;cursor:pointer;font-family:'Inter';text-decoration:underline;opacity:.9}
   footer button:hover{color:var(--gold)}
@@ -587,7 +590,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.6</div>
+    <div class="auth-rev">Rev 3.7</div>
   </div>
 </div>
 
@@ -704,7 +707,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.6</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.7</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -4066,15 +4069,47 @@ function historyHTML(){
   return `<div class="narrow" style="max-width:820px">${html}</div>`;
 }
 
+// Tasted (scored) bottles of one collection — archived pours included (still data).
+function palateRated(k){ return asArr(bottles).filter(w=>kindOf(w)===k && w.score!=null && w.score!=='' && isFinite(Number(w.score))); }
+// One collection's palate, computed live from YOUR ratings: each flavor tag's bar
+// is the average score of the bottles you gave it, sorted best-liked first.
+function palateSection(k){
+  const l = palateRated(k);
+  const kn = kindLabel(k), knLow = kn.replace(/^\S+\s*/,'').toLowerCase();
+  if(l.length < 2){
+    return `<div class="shead"><p>${esc(kn)}</p></div><div class="palate-empty">Only ${l.length} ${esc(knLow)} rated so far — log &amp; score a couple more pours and your ${esc(knLow)} palate builds itself.</div>`;
+  }
+  const avgAll = l.reduce((s,w)=>s+Number(w.score),0)/l.length;
+  const rows = tagsFor(k).map(t=>{
+    const tg = l.filter(w=>bottleTags(w).includes(t.k));
+    if(!tg.length) return null;
+    return { t:t.t, n:tg.length, avg: tg.reduce((s,w)=>s+Number(w.score),0)/tg.length };
+  }).filter(Boolean).sort((a,b)=>b.avg-a.avg);
+  const head = `<div class="shead"><p>${esc(kn)} — what your ratings keep confirming (${l.length} rated · avg ${fmt(avgAll)}). Sharpens with every pour you log.</p></div>`;
+  if(!rows.length){
+    return head + `<div class="palate-empty">No flavor tags on your ${esc(knLow)} yet — tag a few pours when you score them and this fills in.</div>`;
+  }
+  const labelFor = (r,i)=> r.avg<=5 ? ['turn','Turn-off'] : (i===0&&r.avg>=7) ? ['core','Core driver'] : r.avg>=8 ? ['core','Loves it'] : r.avg>=6.5 ? ['','Likes it'] : ['','Mixed'];
+  const bars = rows.map((r,i)=>{
+    const [cls,lab] = labelFor(r,i);
+    const w = Math.max(6, Math.min(100, Math.round(r.avg*10)));
+    const fill = r.avg<=5 ? 'background:linear-gradient(90deg,#3a1418,#9a5a55)' : '';
+    return `<div class="axis"><div class="axis-top"><span class="axis-name">${esc(r.t)}</span><span class="axis-tag ${cls}" title="${r.n} rated · avg ${fmt(r.avg)}">${lab} · ${fmt(r.avg)}</span></div><div class="bar"><i style="width:${w}%;${fill}"></i></div></div>`;
+  }).join('');
+  const hi = rows.filter(r=>r.avg>=7).map(r=>r.t.split(' / ')[0]).slice(0,3);
+  const lo = rows.filter(r=>r.avg<=5.5).map(r=>r.t.split(' / ')[0]).slice(0,3);
+  let sum = `Your ${esc(knLow)} scores lean toward ${hi.length?esc(hi.join(', ')):'no clear favorite yet'}`;
+  if(lo.length) sum += `; ${esc(lo.join(', '))} tend to lose`;
+  sum += '.';
+  return head + bars + `<div class="palate-sum">${sum}</div>`;
+}
 function palateHTML(){
-  return `<div class="narrow"><div class="shead"><p>What the ratings keep confirming. This sharpens with every pour you log.</p></div>
-  <div class="axis"><div class="axis-top"><span class="axis-name">Earthy / Savory / Dried-fruit</span><span class="axis-tag core">Core driver</span></div><div class="bar"><i style="width:95%"></i></div></div>
-  <div class="axis"><div class="axis-top"><span class="axis-name">Body / Weight / Concentration</span><span class="axis-tag core">Matters</span></div><div class="bar"><i style="width:88%"></i></div></div>
-  <div class="axis"><div class="axis-top"><span class="axis-name">Structure — tannin &amp; acid grip</span><span class="axis-tag core">Likes it</span></div><div class="bar"><i style="width:82%"></i></div></div>
-  <div class="axis"><div class="axis-top"><span class="axis-name">Bottle age / Tertiary complexity</span><span class="axis-tag">Favors aged</span></div><div class="bar"><i style="width:78%"></i></div></div>
-  <div class="axis"><div class="axis-top"><span class="axis-name">Smoke / Leather / Meat</span><span class="axis-tag">Bonus — 7→9</span></div><div class="bar"><i style="width:70%"></i></div></div>
-  <div class="axis"><div class="axis-top"><span class="axis-name">Excess SO₂ · light/tart/funky natural</span><span class="axis-tag" style="color:#9a5a55">Turn-off</span></div><div class="bar"><i style="width:14%;background:linear-gradient(90deg,#3a1418,#9a5a55)"></i></div></div>
-  <div class="palate-sum">Earthy, savory, structured European reds with real weight — bottle age welcome, smoke and leather a bonus. Light/tart/funky and SO₂-sharp lose. Nebbiolo has underperformed (two lowest scores).</div></div>`;
+  if(kindFilter==='all'){
+    const kinds = kindKeysOrdered().filter(k=>palateRated(k).length>=1);
+    if(!kinds.length) return `<div class="narrow"><div class="palate-empty">Log &amp; score a few pours and your palate — one per collection — appears here.</div></div>`;
+    return `<div class="narrow">${kinds.map((k,i)=>(i?'<div class="palate-div"></div>':'')+palateSection(k)).join('')}</div>`;
+  }
+  return `<div class="narrow">${palateSection(kindFilter)}</div>`;
 }
 
 // ── WISHLIST (buy list) ──
