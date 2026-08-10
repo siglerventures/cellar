@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.90</title>
+<title>The Cellar Ledger — Rev 2.91</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -243,7 +243,7 @@
   .tray-x{font-weight:700;color:var(--gold);margin-left:2px}
   .tray-chip.on .tray-x{color:var(--ink)}
   .rack-tray-empty{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch-dim);margin-bottom:16px}
-  .slot-badge{display:inline-block;font-size:9px;letter-spacing:.06em;font-weight:700;color:var(--gold);border:1px solid var(--gold-dim);border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+  .slot-badge{display:inline-block;font-size:12px;letter-spacing:.06em;font-weight:700;color:var(--gold);border:1px solid var(--gold-dim);border-radius:3px;padding:2px 7px;margin-left:6px;vertical-align:middle}
   /* toolbar: zoom + column jump + edit-labels */
   .rack-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
   .rack-tools .rt-group{display:flex;align-items:center;gap:5px}
@@ -518,7 +518,7 @@
     .card-grid>.wine,.card-grid>.lb-row,.card-grid>.wl-row{border-bottom:none;border:1px solid var(--line);border-radius:5px;padding:14px 16px;background:var(--glass)}
   }
   @media(min-width:1200px){
-    .wrap{max-width:1440px}
+    .wrap{max-width:96vw}   /* use the whole monitor — no dead side margins on wide screens */
   }
   /* Browse-card size (S/M/L picker on the main page) — M is the classic look */
   #content.cs-s .cardphoto{width:64px;height:96px}
@@ -548,7 +548,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.90</div>
+    <div class="auth-rev">Rev 2.91</div>
   </div>
 </div>
 
@@ -665,7 +665,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.90</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.91</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2648,13 +2648,22 @@ function predNum(w){
   if(!vals.length) return null;
   return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*2)/2;
 }
-// Score column for a cellared bottle. WINE ONLY shows a predicted rating (marked
-// "est", or an empty column when there's no prediction). Bourbon / tequila / other
-// kinds keep the original "cellared" label untouched.
+// Score column for a cellared bottle — every kind now works the same way:
+// predicted rating marked "est", or an empty column when there's no prediction.
+// (No more redundant "CELLARED" label on spirits cards.)
 function cellaredScoreHTML(w){
-  if(kindOf(w)!=='wine') return `<div class="score s-pred"><s>cellared</s></div>`;
   const pn=predNum(w);
   return pn!=null ? `<div class="score s-pred"><b>${fmt(pn)}</b><s>est</s></div>` : `<div class="score s-pred"></div>`;
+}
+// Slot badge text: just the slot code ("8-2") — the rack name is only prefixed
+// when the bottle sits on a rack that ISN'T its kind's home (e.g. a bourbon
+// overflowing on the Wine Wall), where the bare code would mislead.
+function slotBadgeText(w){
+  if(!(w.rackCol && w.rackRow)) return '';
+  const rid = bRack(w);
+  const away = rid==='main' ? (kindOf(w)!=='wine' ) : (rackKind(rid)!==null && rackKind(rid)!==kindOf(w));
+  const nm = away ? String(rackDef(rid).name||'').replace(/^[^\p{L}\p{N}]+\s*/u,'') + ' ' : '';
+  return nm + slotCode(Number(w.rackCol), Number(w.rackRow));
 }
 function fmtPrice(p){ if(p==null||p==='') return ''; const n=Number(p); if(!isFinite(n)) return ''; return '$' + (n%1 ? n.toFixed(2) : n.toFixed(0)); }
 function parsePriceInput(id){ const el=document.getElementById(id); const v=((el&&el.value)||'').replace(/[^0-9.]/g,'').trim(); if(v==='') return null; const n=Number(v); return isFinite(n)?n:null; }
@@ -2814,7 +2823,7 @@ function collectionCardHTML(w){
     }
     // Non-wine (bourbon/tequila): unchanged.
     const qty = Number(w.qty)||1;
-    const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${esc(slotOf(w))}</span>` : '';
+    const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${esc(slotBadgeText(w))}</span>` : '';
     return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left">${cellaredScoreHTML(w)}${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(!w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
   }
   return openedCardHTML(w);
@@ -2978,7 +2987,7 @@ function listTrHTML(w){
   const cls = scored ? scoreClass(w.score) : 's-pred';
   const ti = tagInfo(w.tag);
   const price = fmtPrice(w.price);
-  const slot = (w.rackCol&&w.rackRow) ? slotOf(w) : '';
+  const slot = (w.rackCol&&w.rackRow) ? slotBadgeText(w) : '';
   const dim = '<span class="lt-dim">—</span>';
   return `<tr onclick="openDetail('${w.id}')">`
     + `<td class="lt-name"><span class="lt-wine">${esc(w.name||'')}</span>${w.producer?`<span class="lt-prod">${esc(w.producer)}</span>`:''}</td>`
@@ -3008,7 +3017,7 @@ function kanbanCardHTML(w){
   const scored=w.status!=='cellared';
   const s=scored?fmt(w.score):((w.predLow!=null && w.predHigh!=null)?fmt(w.predLow)+'–'+fmt(w.predHigh):'—');
   const cls=scored?scoreClass(w.score):'s-pred';
-  const slot=(w.rackCol&&w.rackRow)?`<span class="slot-badge">${esc(slotOf(w))}</span>`:'';
+  const slot=(w.rackCol&&w.rackRow)?`<span class="slot-badge">${esc(slotBadgeText(w))}</span>`:'';
   return `<div class="kcard" onclick="openDetail('${w.id}')"><div class="kcard-top"><span class="kcard-score ${cls}">${esc(s)}</span>${slot}</div><div class="kcard-name">${esc(w.name)}</div><div class="kcard-meta">${esc([w.producer,w.vintage].filter(Boolean).join(' · '))}</div></div>`;
 }
 // Card for an opened/scored bottle — shared by All Bottles and the Logged list.
