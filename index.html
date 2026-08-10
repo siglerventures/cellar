@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.11</title>
+<title>The Cellar Ledger — Rev 3.12</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -575,6 +575,44 @@
     #content.cs-s .card-grid>.wine{padding:10px 12px}
     #content.cs-l .card-grid{grid-template-columns:repeat(auto-fill,minmax(430px,1fr))}
   }
+  /* ── COCKTAILS ── */
+  .ck-chips{margin-bottom:16px}
+  .ck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .ck-card{text-align:left;font-family:inherit;color:var(--parch);background:var(--glass);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:6px;padding:13px 15px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:6px}
+  .ck-card:hover{border-color:var(--gold);background:rgba(201,163,92,0.06)}
+  .ck-card.ck-can{border-left-color:var(--green)}
+  .ck-card.ck-sub{border-left-color:#7fb06a}
+  .ck-card.ck-one{border-left-color:var(--gold)}
+  .ck-card.ck-cant{border-left-color:rgba(201,163,92,0.18);opacity:.62}
+  .ck-top{display:flex;align-items:baseline;gap:8px}
+  .ck-name{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;line-height:1.05}
+  .ck-iba{font-size:8.5px;letter-spacing:.14em;font-weight:700;color:var(--gold);border:1px solid var(--line);border-radius:3px;padding:1px 4px;margin-left:auto;flex-shrink:0}
+  .ck-badge{font-size:11px;font-weight:700;letter-spacing:.03em}
+  .ck-can .ck-badge,.ck-sub .ck-badge{color:var(--green)}
+  .ck-one .ck-badge{color:var(--gold)}
+  .ck-cant .ck-badge{color:var(--parch-dim)}
+  .ck-spirits{font-size:12px;color:var(--parch-dim);line-height:1.35}
+  .ck-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+  .ck-fam{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--gold-dim);font-weight:600}
+  .ck-tag{font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--parch-dim);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:20px;padding:2px 8px}
+  /* detail modal */
+  .ck-d-status{font-size:13px;font-weight:600;border-radius:5px;padding:10px 12px;border:1px solid var(--line)}
+  .ck-d-status.ck-can,.ck-d-status.ck-sub{color:var(--green);border-color:rgba(111,174,106,0.4);background:rgba(111,174,106,0.08)}
+  .ck-d-status.ck-one{color:var(--gold);border-color:rgba(201,163,92,0.4);background:rgba(201,163,92,0.08)}
+  .ck-d-status.ck-cant{color:var(--parch-dim);background:rgba(236,227,210,0.03)}
+  .ck-d-ings{display:flex;flex-direction:column;gap:1px}
+  .ck-row{display:flex;align-items:center;gap:9px;padding:7px 2px;border-bottom:1px solid rgba(201,163,92,0.1);font-size:13.5px}
+  .ck-ic{width:16px;text-align:center;flex-shrink:0;font-weight:700}
+  .ck-r-have .ck-ic{color:var(--green)}
+  .ck-r-sub .ck-ic{color:#7fb06a}
+  .ck-r-miss .ck-ic{color:#c96a6a}
+  .ck-r-pantry{opacity:.62}.ck-r-pantry .ck-ic{color:var(--parch-dim)}
+  .ck-amt{flex-shrink:0;min-width:58px;color:var(--parch-dim);font-size:12px}
+  .ck-item{flex:1}.ck-item em{color:var(--parch-dim);font-style:italic;font-size:12px}
+  .ck-slot{font-size:10px;letter-spacing:.04em;color:var(--gold);border:1px solid var(--line);border-radius:4px;padding:1px 6px;flex-shrink:0}
+  .ck-subnote{font-size:11px;color:var(--parch-dim);font-style:italic;flex-shrink:0}
+  .ck-d-steps{font-size:13.5px;line-height:1.5;color:var(--parch)}
+  .ck-d-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 </style>
 </head>
 <body>
@@ -590,7 +628,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.11</div>
+    <div class="auth-rev">Rev 3.12</div>
   </div>
 </div>
 
@@ -699,6 +737,7 @@
     <button class="vtab on" data-view="all" onclick="setView('all')">All</button>
     <button class="vtab" data-view="cellar" onclick="setView('cellar')">Cellar</button>
     <button class="vtab" data-view="palate" onclick="setView('palate')">Palate</button>
+    <button class="vtab" data-view="cocktails" onclick="setView('cocktails')">Cocktails</button>
     <button class="vtab" data-view="buy" onclick="setView('buy')">Buy</button>
     <button class="vtab" data-view="wishlist" onclick="setView('wishlist')">Wishlist</button>
     <button class="vtab" data-view="history" onclick="setView('history')">History</button>
@@ -707,7 +746,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.11</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.12</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -890,6 +929,23 @@
   </div>
 </div>
 
+<!-- ── COCKTAIL DETAIL ── -->
+<div class="modal" id="cocktailModal">
+  <div class="modal-card">
+    <h3 id="ck-d-name" style="margin-bottom:4px">—</h3>
+    <div class="msub" id="ck-d-meta" style="margin-bottom:12px">—</div>
+    <div class="ck-d-status" id="ck-d-status"></div>
+    <div class="qlabel" style="margin-top:14px">Ingredients</div>
+    <div id="ck-d-ings" class="ck-d-ings"></div>
+    <div class="qlabel" style="margin-top:14px">Method</div>
+    <div id="ck-d-steps" class="ck-d-steps"></div>
+    <div class="ck-d-tags" id="ck-d-tags"></div>
+    <div class="mrow" style="margin-top:16px">
+      <button class="mbtn dt-close" onclick="closeCocktail()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── ARCHIVE HISTORY ── -->
 <!-- ── BARCODE SCANNER ── -->
 <div class="modal" id="bcModal">
@@ -920,6 +976,11 @@
       <div class="dm-h">♻️ Restore from Backup</div>
       <div class="dm-d">Select a philinity-cellar-backup-*.json file. Replaces bottles, racks, wishlist &amp; history — the people roster is never touched.</div>
       <label class="mbtn" style="display:inline-block;cursor:pointer">📂 Choose Backup File<input type="file" accept=".json,application/json" style="display:none" onchange="dataRestore(this)"></label>
+    </div>
+    <div class="dm-sec">
+      <div class="dm-h">🍸 Cocktail Recipes</div>
+      <div class="dm-d">The Cocktails tab reads a curated recipe set from <code>cellar/cocktails</code>. It's static — imported once. Download the JSON, then in the Firebase console (Realtime Database → the <code>cellar</code> node → ⋮ → Import JSON) import it under a child named <code>cocktails</code>. Matching against your bottles is 100% in-app; no re-import needed as your bar changes.</div>
+      <button class="mbtn" onclick="downloadCocktailSeed()">⬇ Download cocktails.json</button>
     </div>
     <div class="dm-sec">
       <div class="dm-h">🗄 Archived Bottles</div>
@@ -1028,6 +1089,8 @@ const dbRemove = (p) => remove(ref(db, p));
 
 // ── STATE ──
 let bottles = {};   // id -> bottle
+let cocktails = {};  // id -> recipe (cellar/cocktails) — static, imported once via console
+let cocktailFilter = 'can';  // 'all' | 'can' | 'one' | family key ('agave'|'whiskey'|…)
 let buylist = {};   // id -> item
 let histLog = {};   // id -> activity event (cellar/history)
 let askLog = {};    // id -> {q,a,at,by} Ask-AI conversation history (cellar/ask_history)
@@ -1430,6 +1493,7 @@ function subscribe(){
   subscribed = true;
   onValue(ref(db, 'cellar/bottles'), snap => { bottles = snap.val() || {}; render(); if(document.getElementById('archiveModal').classList.contains('open')) renderArchiveList(); });
   onValue(ref(db, 'cellar/buylist'), snap => { buylist = snap.val() || {}; render(); });
+  onValue(ref(db, 'cellar/cocktails'), snap => { cocktails = snap.val() || {}; if(view==='cocktails') render(); });
   onValue(ref(db, 'cellar/history'), snap => { histLog = snap.val() || {}; if(view==='history') render(); });
   onValue(ref(db, 'cellar/ask_history'), snap => { askLog = snap.val() || {}; const el=document.getElementById('askHist'); if(el && el.style.display!=='none') renderAskHistory(); });
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
@@ -2714,6 +2778,19 @@ function dlFile(name, text, type){
   a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
 }
+// Curated recipe set lives at data/cocktails.json (committed alongside the app).
+// Grab it here so an admin can one-time Import-JSON it into cellar/cocktails.
+window.downloadCocktailSeed = async function(){
+  const st = document.getElementById('dataStatus');
+  st.textContent = '⏳ Fetching cocktails.json…';
+  try{
+    const res = await fetch('data/cocktails.json', {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const arr = await res.json();
+    dlFile('cocktails.json', JSON.stringify(arr, null, 2), 'application/json');
+    st.textContent = '✅ Downloaded '+ (Array.isArray(arr)?arr.length:0) +' recipes — Import-JSON it under cellar/cocktails.';
+  }catch(e){ st.textContent = '❌ '+(e.message||e); }
+};
 window.dataBackup = async function(){
   const st = document.getElementById('dataStatus');
   st.textContent = '⏳ Building backup…';
@@ -2944,7 +3021,7 @@ window.goHome = function(){
   setView('all');
   window.scrollTo({ top:0, behavior:'smooth' });
 };
-window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; document.getElementById('kindRow').style.display = (v==='cellar') ? 'none' : ''; { const ar=document.getElementById('actionRow'); if(ar) ar.style.display = (v==='cellar')?'none':''; const tr=document.getElementById('tabsRow'); if(tr) tr.style.display = (v==='cellar')?'none':''; } render(); };
+window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = (hideSearch||v==='cocktails') ? 'none' : ''; document.getElementById('kindRow').style.display = (v==='cellar'||v==='cocktails') ? 'none' : ''; { const ar=document.getElementById('actionRow'); if(ar) ar.style.display = (v==='cellar')?'none':''; const tr=document.getElementById('tabsRow'); if(tr) tr.style.display = (v==='cellar')?'none':''; } render(); };
 // Strip accents/diacritics so "chateauneuf" matches "Châteauneuf", "rose" matches "rosé", etc.
 function deburr(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 window.onSearch = function(v){ search=deburr((v||'').trim().toLowerCase()); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
@@ -3058,6 +3135,8 @@ function render(){
   if(view==='history'){ c.innerHTML = historyHTML(); return; }
 
   if(view==='palate'){ c.innerHTML = palateHTML(); return; }
+
+  if(view==='cocktails'){ c.innerHTML = cocktailsHTML(); return; }
 
   if(view==='wishlist'){ c.innerHTML = wishlistHTML(); return; }
 
@@ -4111,6 +4190,238 @@ function palateHTML(){
   }
   return `<div class="narrow">${palateSection(kindFilter)}</div>`;
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// COCKTAILS — "what can I make" from the bar. Recipes live in cellar/cocktails
+// (static, imported once). Matching is 100% client-side against your bottles.
+// ══════════════════════════════════════════════════════════════════════════
+
+// Recipe ingredient `item` strings ARE the canonical vocabulary. We map each
+// owned bottle → the set of canonical tokens it can stand in for, by keyword
+// (works no matter which collection a bottle was filed under) + kind defaults.
+const INGREDIENT_KEYWORDS = [
+  // ── base spirits ──
+  ['mezcal',        ['mezcal']],
+  ['tequila',       ['tequila']],
+  ['rye whiskey',   ['rye']],
+  ['scotch',        ['scotch']],
+  ['bourbon',       ['bourbon']],
+  ['whiskey',       ['whiskey','whisky']],
+  ['gin',           ['gin']],
+  ['vodka',         ['vodka']],
+  ['white rum',     ['white rum','light rum','silver rum','blanco rum','rum']],
+  ['aged rum',      ['aged rum','gold rum','anejo rum','reserva rum','rhum']],
+  ['dark rum',      ['dark rum','black rum','spiced rum']],
+  ['cachaça',       ['cachaca']],
+  ['cognac',        ['cognac','brandy','armagnac']],
+  ['drambuie',      ['drambuie']],
+  ['lillet blanc',  ['lillet','kina']],
+  // ── liqueurs / fortified ──
+  ['orange liqueur',['cointreau','triple sec','grand marnier','curacao','orange liqueur']],
+  ['sweet vermouth',['sweet vermouth','rosso','red vermouth','carpano','antica']],
+  ['dry vermouth',  ['dry vermouth','vermouth blanc']],
+  ['sweet vermouth',['vermouth']],   // bare "vermouth" → assume sweet (fallback)
+  ['campari',       ['campari']],
+  ['aperol',        ['aperol']],
+  ['amaro',         ['amaro','averna','montenegro','nonino','ramazzotti','fernet','braulio']],
+  ['maraschino liqueur',['maraschino','luxardo']],
+  ['green chartreuse',  ['chartreuse']],
+  ['crème de cassis',   ['cassis']],
+  ['crème de cacao',    ['cacao']],
+  ['crème de violette', ['violette','violet']],
+  ['coffee liqueur',['coffee liqueur','kahlua','tia maria','mr black','mr. black']],
+  ['amaretto',      ['amaretto','disaronno']],
+  ['cherry liqueur',['cherry heering','cherry liqueur','cherry brandy','heering']],
+  // ── sparkling / wine ──
+  ['champagne',     ['champagne']],
+  ['prosecco',      ['prosecco','cava','sparkling wine','spumante','brut']],
+  ['red wine',      ['red wine']],
+  // ── mixers you might actually shelve (juices/syrups/soda are assumed pantry
+  //    below, but if you DO log one as a 🧉 mixer it still matches) ──
+  ['ginger beer',   ['ginger beer','ginger ale']],
+  ['tonic water',   ['tonic']],
+  ['soda water',    ['club soda','soda water','seltzer','sparkling water']],
+  ['cola',          ['cola','coke']],
+  ['coffee liqueur',[]],
+  ['grenadine',     ['grenadine']],
+  ['orgeat',        ['orgeat']],
+  ['agave syrup',   ['agave']],
+  ['coconut cream', ['coconut cream','cream of coconut']]
+];
+const KIND_DEFAULT_TOKENS = { bourbon:['bourbon','whiskey'], tequila:['tequila'], vodka:['vodka'] };
+
+// If you're short one bottle, these owned bottles can stand in for it. Only
+// spirit/liqueur/sparkling swaps matter — pantry items are assumed on hand.
+const COCKTAIL_SUBS = {
+  'bourbon':['rye whiskey','whiskey'], 'rye whiskey':['bourbon','whiskey'],
+  'whiskey':['bourbon','rye whiskey','scotch'], 'scotch':['whiskey','bourbon'],
+  'white rum':['aged rum','dark rum'], 'aged rum':['dark rum','white rum'],
+  'dark rum':['aged rum','white rum'], 'tequila':['mezcal'], 'mezcal':['tequila'],
+  'cognac':['aged rum','bourbon'], 'cachaça':['white rum'],
+  'sweet vermouth':['amaro'], 'dry vermouth':['lillet blanc'], 'lillet blanc':['dry vermouth'],
+  'aperol':['campari'], 'campari':['aperol'], 'amaro':['campari','aperol'],
+  'cherry liqueur':['maraschino liqueur'], 'maraschino liqueur':['cherry liqueur'],
+  'orange liqueur':['cointreau'], 'champagne':['prosecco'], 'prosecco':['champagne'],
+  'drambuie':['honey syrup'], 'gin':[]
+};
+// Sparkling wine is something you must own; every other non-spirit/liqueur
+// ingredient (juice, syrup, soda, dairy, herbs, sugar, bitters, garnish) is an
+// assumed pantry staple and never blocks "can make".
+const SPARKLING = new Set(['champagne','prosecco']);
+function ingRequired(ing){
+  if(ing.optional) return false;
+  if(ing.role==='base_spirit' || ing.role==='liqueur') return true;
+  return SPARKLING.has(ing.item);
+}
+
+// Tokens a single bottle provides.
+function bottleTokens(w){
+  const text = deburr(((w.name||'')+' '+(w.desc||'')+' '+(w.grape||'')+' '+(w.vintage||'')).toLowerCase());
+  const out = new Set();
+  (KIND_DEFAULT_TOKENS[kindOf(w)]||[]).forEach(t=>out.add(t));
+  INGREDIENT_KEYWORDS.forEach(([token,kws])=>{
+    for(const kw of kws){
+      const re = new RegExp('(^|[^a-z])'+kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^a-z]|$)');
+      if(re.test(text)){ out.add(token); break; }
+    }
+  });
+  return out;
+}
+// Bar = every on-shelf bottle. Map token → the first bottle providing it (for
+// slot badges in the detail card). Rebuilt each render (inventory is small).
+function barTokenMap(){
+  const map = new Map();
+  activeArr().filter(onShelf).forEach(w=>{ bottleTokens(w).forEach(t=>{ if(!map.has(t)) map.set(t, w); }); });
+  return map;
+}
+function cocktailArr(){
+  return Object.keys(cocktails||{}).map(k=>Object.assign({id:k}, cocktails[k]))
+    .filter(c=>c && c.name && Array.isArray(c.ingredients));
+}
+const FAMILY = { tequila:'agave', mezcal:'agave', bourbon:'whiskey', 'rye whiskey':'whiskey',
+  whiskey:'whiskey', scotch:'whiskey', vodka:'vodka', gin:'gin', 'white rum':'rum',
+  'dark rum':'rum', 'aged rum':'rum', 'cachaça':'rum', cognac:'brandy' };
+const FAMILY_LABEL = { agave:'🌵 Agave', whiskey:'🥃 Whiskey', vodka:'🍸 Vodka',
+  gin:'🌿 Gin', rum:'🏝 Rum', brandy:'🍑 Brandy', other:'✦ Aperitivo' };
+function cocktailFamily(c){
+  const b = c.ingredients.find(i=>i.role==='base_spirit' && !i.optional) || c.ingredients.find(i=>i.role==='base_spirit');
+  return (b && FAMILY[b.item]) || 'other';
+}
+// Compute makeable status for a recipe against an owned-token set.
+function cocktailStatus(c, have){
+  const req = c.ingredients.filter(ingRequired);
+  const missing = [], subs = [];
+  for(const ing of req){
+    if(have.has(ing.item)) continue;
+    const s = (COCKTAIL_SUBS[ing.item]||[]).find(x=>have.has(x));
+    if(s) subs.push({need:ing.item, use:s}); else missing.push(ing.item);
+  }
+  let state;
+  if(missing.length===0) state = subs.length ? 'sub' : 'can';
+  else if(missing.length===1) state = 'one';
+  else state = 'cant';
+  return { state, missing, subs, rank:(state==='can'?0:state==='sub'?1:state==='one'?2:3) };
+}
+function cocktailMatchSearch(c){
+  if(!search) return true;
+  const hay = deburr([c.name, c.category, (c.tags||[]).join(' '),
+    c.ingredients.map(i=>i.item).join(' ')].join(' ').toLowerCase());
+  return hay.includes(search);
+}
+
+function cocktailsHTML(){
+  const list = cocktailArr();
+  if(!list.length){
+    return `<div class="shead"><p>Cocktails you can make from your bar.</p></div>
+      <div class="empty"><p>No recipe data loaded yet. An admin imports the curated recipe set once into <code>cellar/cocktails</code> (see the Data modal), then every drink you can pour from your shelves shows up here — sorted by what you can make right now.</p></div>`;
+  }
+  const map = barTokenMap();
+  const have = new Set(map.keys());
+  const rows = list.map(c=>({ c, fam:cocktailFamily(c), st:cocktailStatus(c, have) }));
+  const canN = rows.filter(r=>r.st.rank<=1).length;
+  const oneN = rows.filter(r=>r.st.state==='one').length;
+  const fams = [...new Set(rows.map(r=>r.fam))].filter(f=>FAMILY_LABEL[f]);
+  const famOrder = ['agave','whiskey','vodka','gin','rum','brandy','other'];
+  fams.sort((a,b)=>famOrder.indexOf(a)-famOrder.indexOf(b));
+
+  const chip = (key,label,on)=>`<button class="sortchip ${on?'on':''}" onclick="setCocktailFilter('${key}')">${esc(label)}</button>`;
+  let chips = chip('can','✓ Can make ('+canN+')', cocktailFilter==='can')
+            + chip('one','● Missing one ('+oneN+')', cocktailFilter==='one')
+            + chip('all','All ('+rows.length+')', cocktailFilter==='all')
+            + fams.map(f=>chip(f, FAMILY_LABEL[f], cocktailFilter===f)).join('');
+
+  // Filter → search → sort (can-make first, then by state, then A–Z).
+  let shown = rows;
+  if(cocktailFilter==='can') shown = rows.filter(r=>r.st.rank<=1);
+  else if(cocktailFilter==='one') shown = rows.filter(r=>r.st.state==='one');
+  else if(cocktailFilter!=='all') shown = rows.filter(r=>r.fam===cocktailFilter);
+  shown = shown.filter(r=>cocktailMatchSearch(r.c));
+  shown.sort((a,b)=> a.st.rank-b.st.rank || a.c.name.localeCompare(b.c.name));
+
+  const barEmpty = have.size===0;
+  const head = `<div class="shead"><p>${barEmpty
+      ? 'Add a few bottles to your shelves and the cocktails you can pour rise to the top.'
+      : '<b>'+canN+'</b> of '+rows.length+' cocktails are within reach of your bar right now.'}</p></div>
+    <div class="chiprow ck-chips">${chips}</div>`;
+
+  if(!shown.length) return head + '<div class="empty"><p>No cocktails match — try a different filter or search.</p></div>';
+
+  const cards = shown.map(r=>{
+    const c=r.c, st=r.st;
+    let badge, cls;
+    if(st.state==='can'){ badge='✓ Can make'; cls='ck-can'; }
+    else if(st.state==='sub'){ badge='✓ Can make · sub '+esc(st.subs[0].use); cls='ck-sub'; }
+    else if(st.state==='one'){ badge='● Need '+esc(st.missing[0]); cls='ck-one'; }
+    else { badge='✕ '+st.missing.length+' missing'; cls='ck-cant'; }
+    const spirits = c.ingredients.filter(i=>i.role==='base_spirit'||i.role==='liqueur').map(i=>esc(i.item)).join(' · ');
+    const tags = (c.tags||[]).slice(0,3).map(t=>`<span class="ck-tag">${esc(t)}</span>`).join('');
+    return `<button class="ck-card ${cls}" onclick="openCocktail('${c.id}')">
+      <div class="ck-top"><span class="ck-name">${esc(c.name)}</span>${c.iba?'<span class="ck-iba" title="IBA official">IBA</span>':''}</div>
+      <div class="ck-badge">${badge}</div>
+      <div class="ck-spirits">${spirits}</div>
+      <div class="ck-tags">${FAMILY_LABEL[r.fam]?`<span class="ck-fam">${esc(FAMILY_LABEL[r.fam])}</span>`:''}${tags}</div>
+    </button>`;
+  }).join('');
+  return head + '<div class="ck-grid">'+cards+'</div>';
+}
+window.setCocktailFilter = function(k){ cocktailFilter=k; render(); };
+
+window.openCocktail = function(id){
+  const c = cocktails[id]; if(!c) return;
+  const map = barTokenMap();
+  const have = new Set(map.keys());
+  const st = cocktailStatus(c, have);
+  document.getElementById('ck-d-name').textContent = c.name || 'Cocktail';
+  const metaBits = [c.category, c.glass, c.method?('shake'===c.method?'shaken':'stir'===c.method?'stirred':c.method):'', c.iba?'IBA official':''].filter(Boolean);
+  document.getElementById('ck-d-meta').textContent = metaBits.join('  ·  ');
+  // status banner
+  const bn = document.getElementById('ck-d-status');
+  bn.className = 'ck-d-status';
+  if(st.state==='can'){ bn.classList.add('ck-can'); bn.textContent='✓ You can make this right now.'; }
+  else if(st.state==='sub'){ bn.classList.add('ck-sub'); bn.textContent='✓ Can make — using '+st.subs.map(s=>s.use+' for '+s.need).join(', ')+'.'; }
+  else if(st.state==='one'){ bn.classList.add('ck-one'); bn.textContent='● One bottle away — you\'re missing '+st.missing[0]+'.'; }
+  else { bn.classList.add('ck-cant'); bn.textContent='✕ Missing '+st.missing.length+': '+st.missing.join(', ')+'.'; }
+  // ingredient rows
+  const rows = (c.ingredients||[]).map(ing=>{
+    const amt = [ing.amount, ing.unit].filter(Boolean).join(' ');
+    const own = have.has(ing.item);
+    const subUse = !own ? (COCKTAIL_SUBS[ing.item]||[]).find(x=>have.has(x)) : null;
+    const req = ingRequired(ing);
+    let icon, note='', rowcls='';
+    if(own){ icon='✓'; rowcls='ck-r-have';
+      const b = map.get(ing.item);
+      if(b && onShelf(b)){ const sl = slotBadgeText(b); if(sl) note = `<span class="ck-slot">${esc(sl)}</span>`; }
+    } else if(subUse){ icon='↔'; rowcls='ck-r-sub'; note=`<span class="ck-subnote">use ${esc(subUse)}</span>`; }
+    else if(!req){ icon='○'; rowcls='ck-r-pantry'; note=`<span class="ck-subnote">${ing.optional?'optional':'pantry'}</span>`; }
+    else { icon='✕'; rowcls='ck-r-miss'; note=`<span class="ck-subnote">not on your shelves</span>`; }
+    return `<div class="ck-row ${rowcls}"><span class="ck-ic">${icon}</span><span class="ck-amt">${esc(amt)}</span><span class="ck-item">${esc(ing.item)}${ing.optional?' <em>(optional)</em>':''}</span>${note}</div>`;
+  }).join('');
+  document.getElementById('ck-d-ings').innerHTML = rows;
+  document.getElementById('ck-d-steps').textContent = c.instructions || '';
+  document.getElementById('ck-d-tags').innerHTML = (c.tags||[]).map(t=>`<span class="ck-tag">${esc(t)}</span>`).join('');
+  document.getElementById('cocktailModal').classList.add('open');
+};
+window.closeCocktail = ()=>document.getElementById('cocktailModal').classList.remove('open');
 
 // ── WISHLIST (buy list) ──
 function wishlistHTML(){
