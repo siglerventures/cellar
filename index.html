@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.93</title>
+<title>The Cellar Ledger — Rev 2.94</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -410,21 +410,24 @@
   /* Wine cards only: one FIXED, uniform box (no flavor tags/notes on the card) so
      every wine tile is the same compact size — no wasted space, no ragged heights.
      Bourbon/other kinds are untouched (they never get the .w-wine class). */
-  .w-wine{align-items:center;height:168px;overflow:hidden;position:relative}
-  /* Bottle photo FILLS the frame (no backdrop, no side gaps) — cover-crop. */
-  .w-wine .cardphoto{width:104px;height:150px;border-radius:6px;overflow:hidden;background:none}
+  /* Compact card: height hugs the content (photo + a 2-line-clamped name + producer
+     + one meta line) so there's no dead band below the text and long names can't
+     overflow/clip. */
+  .w-wine{align-items:center;height:132px;overflow:hidden;position:relative;gap:12px}
+  .w-wine .cardphoto{width:86px;height:118px;border-radius:6px;overflow:hidden;background:none}
   /* contain = the WHOLE bottle always shows (no cropping); it sits on the dark card. */
   .w-wine .cardphoto img{width:100%;height:100%;object-fit:contain;padding:0}
+  .w-wine .meta{padding-right:40px}
+  .w-wine .name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   /* Score badge lives in the top-right corner of the whole card. */
-  .w-wine .meta{padding-right:44px}
-  .w-wine .cp-score{position:absolute;top:10px;right:10px;z-index:3;font-family:'Cormorant Garamond',serif;
-    font-weight:600;font-size:20px;line-height:.9;color:var(--gold);display:flex;flex-direction:column;align-items:center}
-  .w-wine .cp-score.s-pred{color:var(--parch-dim);font-size:17px}
+  .w-wine .cp-score{position:absolute;top:9px;right:10px;z-index:3;font-family:'Cormorant Garamond',serif;
+    font-weight:600;font-size:19px;line-height:.9;color:var(--gold);display:flex;flex-direction:column;align-items:center}
+  .w-wine .cp-score.s-pred{color:var(--parch-dim);font-size:16px}
   .w-wine .cp-score i{font-style:normal;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
-  #content.cs-s .w-wine{height:126px}
-  #content.cs-s .w-wine .cardphoto{width:74px;height:104px}
-  #content.cs-l .w-wine{height:236px}
-  #content.cs-l .w-wine .cardphoto{width:150px;height:210px}
+  #content.cs-s .w-wine{height:104px}
+  #content.cs-s .w-wine .cardphoto{width:62px;height:90px}
+  #content.cs-l .w-wine{height:196px}
+  #content.cs-l .w-wine .cardphoto{width:120px;height:172px}
   /* 🖼️ Photos-only gallery */
   .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
   .img-tile{aspect-ratio:3/4;border:1px solid var(--line);border-radius:6px;overflow:hidden;cursor:pointer;
@@ -553,7 +556,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.93</div>
+    <div class="auth-rev">Rev 2.94</div>
   </div>
 </div>
 
@@ -670,7 +673,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.93</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.94</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
