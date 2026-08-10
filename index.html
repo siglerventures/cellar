@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.2</title>
+<title>The Cellar Ledger — Rev 3.3</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -533,7 +533,8 @@
   }
   /* Buy-Again: card wrapper carrying the 🛒 Bought-it button */
   .wine-buywrap{position:relative}
-  .wine-buywrap .bought-btn{position:absolute;top:12px;right:12px;z-index:2}
+  .wine-buywrap .bought-btn{position:absolute;bottom:12px;right:12px;z-index:2}
+  .wine-buywrap>.wine{padding-bottom:52px!important}
   @media(min-width:768px){
     .card-grid>.wine-buywrap>.wine{border:1px solid var(--line);border-radius:5px;padding:14px 16px;background:var(--glass);height:100%;box-sizing:border-box}
     .card-grid>.wine-buywrap{border-bottom:none}
@@ -566,7 +567,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.2</div>
+    <div class="auth-rev">Rev 3.3</div>
   </div>
 </div>
 
@@ -683,7 +684,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.2</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.3</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2020,9 +2021,11 @@ function dtStartMetaEdit(){
 // Buy-Again → "🛒 Bought it": Add Bottle prefilled from the bottle's record.
 // Set the Qty there (buy 2 → qty 2); saving RESTOCKS the matching cellared
 // record instead of duplicating, or creates fresh stock for a pour-only entry.
+let pendingBuyAgain = null;
 window.boughtAgain = function(id){
   const w = bottles[id]; if(!w) return;
   openCellarAdd();
+  pendingBuyAgain = id;   // on save: un-flag it so it leaves the Buy-Again tab
   const set=(el,v)=>{ const e=document.getElementById(el); if(e && v!=null && v!=='') e.value=v; };
   set('ca-name', w.name); set('ca-desc', w.desc); set('ca-prod', w.producer); set('ca-region', w.region);
   set('ca-grape', w.grape); set('ca-vintage', w.vintage); set('ca-abv', w.abv);
@@ -2696,6 +2699,7 @@ window.confirmOpen = async function(){
 // ── ADD TO CELLAR ──
 window.openCellarAdd = ()=>{
   pendingWishlistBuy = null;
+  pendingBuyAgain = null;
   ['ca-name','ca-desc','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-url','ca-notes','ca-predlow','ca-predhigh'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('ca-qty').value = '1';
   // Rack / shelf destination: auto (scan suggestion) · a specific rack's first open slot · the tray
@@ -2759,6 +2763,7 @@ window.addCellarBottle = async function(){
       logEvent('added', { bottleId:existing.id, name:existing.name, vintage:existing.vintage||'', qty:addQty, price:p, vendor:v, restock:true });
       caSuggest = null;
       if(pendingWishlistBuy){ dbRemove('cellar/buylist/'+pendingWishlistBuy).catch(()=>{}); pendingWishlistBuy=null; }
+      if(pendingBuyAgain){ dbUpdate('cellar/bottles/'+pendingBuyAgain, { buyAgain:false }).catch(()=>{}); pendingBuyAgain=null; }
       closeCellarAddModal();
       showToast('Restocked — ' + existing.name + ' (now ×' + newQty + ')');
       return;
@@ -2783,6 +2788,7 @@ window.addCellarBottle = async function(){
     });
     caSuggest = null;
     if(pendingWishlistBuy){ dbRemove('cellar/buylist/'+pendingWishlistBuy).catch(()=>{}); pendingWishlistBuy=null; }
+      if(pendingBuyAgain){ dbUpdate('cellar/bottles/'+pendingBuyAgain, { buyAgain:false }).catch(()=>{}); pendingBuyAgain=null; }
     closeCellarAddModal();
     logEvent('added', { bottleId:r.key, name, vintage:document.getElementById('ca-vintage').value.trim(), qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1), price:parsePriceInput('ca-price'), vendor:document.getElementById('ca-vendor').value.trim(), slot:placeCol?slotCode(placeCol,placeRow):null });
     // Stay on the current screen — the new bottle shows up in its collection;
