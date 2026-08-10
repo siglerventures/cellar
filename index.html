@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.67</title>
+<title>The Cellar Ledger — Rev 2.68</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.67</div>
+    <div class="auth-rev">Rev 2.68</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.67</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.68</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2039,14 +2039,14 @@ function fillScanFields(which, d){
     document.getElementById('q-name').value = d.name || d.producer || '';
     if(d.kind && KINDS.some(k=>k[0]===d.kind)){ const ke=document.getElementById('q-kind'); if(ke) ke.value = d.kind; applyKindFields('q'); }
     set('q-prod', d.producer); set('q-region', d.region); set('q-grape', d.grape);
-    set('q-vintage', d.vintage); set('q-abv', d.abv);
+    set('q-vintage', d.vintage); set('q-abv', d.abv); set('q-price', d.price);
     document.getElementById('moregrid').classList.add('show');
   }else{
     document.getElementById('ca-name').value = d.name || d.producer || '';
     if(d.kind && KINDS.some(k=>k[0]===d.kind)){ const ke=document.getElementById('ca-kind'); if(ke) ke.value = d.kind; applyKindFields('ca'); }
     set('ca-desc', d.description);
     set('ca-prod', d.producer); set('ca-region', d.region); set('ca-grape', d.grape);
-    set('ca-vintage', d.vintage); set('ca-abv', d.abv);
+    set('ca-vintage', d.vintage); set('ca-abv', d.abv); set('ca-price', d.price);
     if(d.predLow!=null) document.getElementById('ca-predlow').value = d.predLow;
     if(d.predHigh!=null) document.getElementById('ca-predhigh').value = d.predHigh;
   }
@@ -2412,6 +2412,7 @@ window.confirmOpen = async function(){
 
 // ── ADD TO CELLAR ──
 window.openCellarAdd = ()=>{
+  pendingWishlistBuy = null;
   ['ca-name','ca-desc','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-url','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ca-qty').value = '1';
   // Rack / shelf destination: auto (scan suggestion) · a specific rack's first open slot · the tray
@@ -2474,6 +2475,7 @@ window.addCellarBottle = async function(){
       await dbUpdate('cellar/bottles/' + existing.id, upd);
       logEvent('added', { bottleId:existing.id, name:existing.name, vintage:existing.vintage||'', qty:addQty, price:p, vendor:v, restock:true });
       caSuggest = null;
+      if(pendingWishlistBuy){ dbRemove('cellar/buylist/'+pendingWishlistBuy).catch(()=>{}); pendingWishlistBuy=null; }
       closeCellarAddModal();
       showToast('Restocked — ' + existing.name + ' (now ×' + newQty + ')');
       setView('cellar');
@@ -2498,6 +2500,7 @@ window.addCellarBottle = async function(){
       addedBy:uid, addedAt:now, openedAt:null
     });
     caSuggest = null;
+    if(pendingWishlistBuy){ dbRemove('cellar/buylist/'+pendingWishlistBuy).catch(()=>{}); pendingWishlistBuy=null; }
     closeCellarAddModal();
     logEvent('added', { bottleId:r.key, name, vintage:document.getElementById('ca-vintage').value.trim(), qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1), price:parsePriceInput('ca-price'), vendor:document.getElementById('ca-vendor').value.trim(), slot:placeCol?slotCode(placeCol,placeRow):null });
     if(placeCol){ curRack = placeRack; flashSlot = placeCol+'_'+placeRow; showToast('Added — ' + name + ' → ' + slotCode(placeCol,placeRow)); }
@@ -3431,13 +3434,50 @@ function palateHTML(){
 
 // ── WISHLIST (buy list) ──
 function wishlistHTML(){
-  const list = asArr(buylist).filter(kindMatch).filter(w=>{ if(!search) return true; return deburr([w.name,w.region,w.note].filter(Boolean).join(' ').toLowerCase()).includes(search); }).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-  let html = '<div class="shead"><p>Want-to-try list — scout a bottle in the store, or add one by hand.</p></div>';
+  const list = asArr(buylist).filter(kindMatch).filter(w=>{ if(!search) return true; return deburr([w.name,w.desc,w.region,w.note].filter(Boolean).join(' ').toLowerCase()).includes(search); }).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  let html = '<div class="shead"><p>Want-to-try list — snap a label or a store product page, or add one by hand.</p></div>';
   const kindOpts = KINDS.map(k=>`<option value="${k[0]}" ${((kindFilter==='all'?'wine':kindFilter)===k[0])?'selected':''}>${k[1]}</option>`).join('');
-  html += `<div class="wl-add"><input id="wl-name" placeholder="Name"><input id="wl-region" placeholder="Region (optional)"><select id="wl-kind" class="rt-jump">${kindOpts}</select><button onclick="addBuylistItem()">Add</button></div>`;
+  html += `<div class="wl-add"><input id="wl-name" placeholder="Name"><input id="wl-region" placeholder="Region (optional)"><select id="wl-kind" class="rt-jump">${kindOpts}</select><button onclick="addBuylistItem()">Add</button></div>
+  <div class="pi-btns" style="margin:-6px 0 14px">
+    <button class="pi-btn" onclick="document.getElementById('wl-pi-cam').click()">📷 Scan a label / product page</button>
+    <button class="pi-btn" onclick="document.getElementById('wl-pi-lib').click()">🖼 From library</button>
+    ${wlDraft.photo?`<img src="${wlDraft.photo}" alt="" style="height:34px;border-radius:6px" onclick="viewImage(this.src)">`:''}
+    <span class="scanstatus${wlScanMsg?' show':''}" id="wl-scanstatus" style="margin:0">${esc(wlScanMsg)}</span>
+  </div>
+  <input type="file" id="wl-pi-cam" accept="image/*" capture="environment" style="display:none" onchange="wlScanFile(this)">
+  <input type="file" id="wl-pi-lib" accept="image/*" style="display:none" onchange="wlScanFile(this)">`;
   if(!list.length){ return html + '<div class="empty"><p>Nothing on the wishlist' + (kindFilter!=='all' ? ' for this collection' : '') + ' yet.</p></div>'; }
-  return html + '<div class="card-grid">' + list.map(w=>`<div class="wl-row"><div><div class="wl-name">${kindOf(w)!=='wine'?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.region?`<div class="wl-meta">${esc(w.region)}</div>`:''}${w.note?`<div class="wl-note">${esc(w.note)}</div>`:''}</div><button class="del" title="Remove" onclick="removeBuylistItem('${w.id}')">✕</button></div>`).join('') + '</div>';
+  return html + '<div class="card-grid">' + list.map(w=>{
+    const meta = [w.region, w.vintage, w.abv?w.abv+'%':'', (w.price!=null&&w.price!=='')?fmtPrice(w.price):''].filter(Boolean).join(' · ');
+    const thumb = w.photoUrl ? `<img src="${esc(w.photoUrl)}" alt="" style="width:44px;height:56px;object-fit:cover;border-radius:6px;margin-right:10px;cursor:pointer" onclick="viewImage('${esc(w.photoUrl)}')">` : '';
+    return `<div class="wl-row">${thumb}<div style="flex:1"><div class="wl-name">${kindOf(w)!=='wine'?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.desc?`<div class="wl-meta">${esc(w.desc)}</div>`:''}${meta?`<div class="wl-meta">${esc(meta)}</div>`:''}${w.note?`<div class="wl-note">${esc(w.note)}</div>`:''}<button class="pi-btn" style="margin-top:8px" onclick="wlBought('${w.id}')">🛒 Bought it</button></div><button class="del" title="Remove" onclick="removeBuylistItem('${w.id}')">✕</button></div>`;
+  }).join('') + '</div>';
 }
+// Wishlist scan: one photo → scanLabel → the add-row fills itself; the extras
+// (price/vintage/desc/photo) ride along on the saved item for the 🛒 flow.
+let wlDraft = { photo:null, data:null };
+let wlScanMsg = '';
+window.wlScanFile = async function(input){
+  const f = (input.files||[])[0]; input.value='';
+  if(!f || !f.type || !f.type.startsWith('image/')) return;
+  wlScanMsg = 'Reading…'; render();
+  try{
+    const raw = await compressImage(f);
+    wlDraft.photo = raw;
+    const res = await scanLabelFn({ imageBase64: raw.split(',')[1], mediaType:'image/jpeg' });
+    const r = res && res.data;
+    if(!r || !r.ok){ wlScanMsg = (r && r.error) || 'Couldn’t read that — type it in.'; render(); return; }
+    const d = r.data;
+    if(String(d.vintage).trim().toUpperCase()==='NV') d.vintage='';
+    wlDraft.data = d;
+    wlScanMsg = '✅ Got it — check the name and tap Add';
+    render();
+    const set=(id,v)=>{ const el=document.getElementById(id); if(el && v) el.value=v; };
+    set('wl-name', d.name || d.producer);
+    set('wl-region', d.region);
+    if(d.kind && KINDS.some(k=>k[0]===d.kind)){ const ke=document.getElementById('wl-kind'); if(ke) ke.value=d.kind; }
+  }catch(e){ console.warn('[Cellar] wishlist scan failed:', e); wlScanMsg='Scan failed — type it in.'; render(); }
+};
 window.addBuylistItem = async function(){
   const name=(document.getElementById('wl-name').value||'').trim();
   if(!name){ document.getElementById('wl-name').focus(); return; }
@@ -3445,9 +3485,33 @@ window.addBuylistItem = async function(){
   try{
     const r = push(ref(db, 'cellar/buylist'));
     const kindEl = document.getElementById('wl-kind');
-    await set(r, { name, region, note:'', kind:(kindEl&&kindEl.value)||'wine', addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now() });
+    const d = wlDraft.data || {};
+    const item = { name, region, note:'', kind:(kindEl&&kindEl.value)||'wine', addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now(),
+      desc:d.description||'', vintage:d.vintage||'', abv:d.abv||'', grape:d.grape||'', producer:d.producer||'',
+      price:(d.price!=null&&d.price!=='')?Number(d.price):null };
+    if(wlDraft.photo){
+      try{ const up = await uploadLabel('wl_'+r.key, wlDraft.photo); item.photoUrl=up.url; item.photoPath=up.path; }
+      catch(e){ console.warn('[Cellar] wishlist photo upload failed:', e); }
+    }
+    await set(r, item);
+    wlDraft = { photo:null, data:null }; wlScanMsg='';
     showToast('Added — ' + name);
   }catch(e){ showToast('Could not add'); }
+};
+// 🛒 Bought it → the Add Bottle form, prefilled from the wishlist item (photo
+// included). When that bottle saves, the wishlist entry removes itself.
+let pendingWishlistBuy = null;
+window.wlBought = function(id){
+  const w = buylist[id]; if(!w) return;
+  openCellarAdd();
+  const set=(el,v)=>{ const e=document.getElementById(el); if(e && v!=null && v!=='') e.value=v; };
+  set('ca-name', w.name); set('ca-desc', w.desc); set('ca-prod', w.producer); set('ca-region', w.region);
+  set('ca-grape', w.grape); set('ca-vintage', w.vintage); set('ca-abv', w.abv);
+  if(w.price!=null && w.price!=='') set('ca-price', w.price);
+  { const ke=document.getElementById('ca-kind'); if(ke && w.kind) ke.value=w.kind; } applyKindFields('ca');
+  if(w.photoUrl){ piStore.ca=[{ path:w.photoPath||null, url:w.photoUrl }]; piScanned.ca=true; piRender('ca'); }
+  pendingWishlistBuy = id;
+  showToast('Fill in price/vendor and hit Add — it moves off the wishlist');
 };
 window.removeBuylistItem = async function(id){
   if(!confirm('Remove from wishlist?')) return;
