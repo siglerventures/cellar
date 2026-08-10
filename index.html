@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.62</title>
+<title>The Cellar Ledger — Rev 2.63</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.62</div>
+    <div class="auth-rev">Rev 2.63</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.62</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.63</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -881,6 +881,7 @@ let askLog = {};    // id -> {q,a,at,by} Ask-AI conversation history (cellar/ask
 let view = 'all';
 let sortMode = 'rating';   // 'rating' | 'newest' | 'az' — sort chips on All Bottles / Buy-Again
 let varietalFilter = '';   // 🍇 filter — e.g. 'grenache'; list orders by that grape's share
+let flavorFilter = '';     // 🏷 flavor-tag filter — e.g. 'tqcaramel'
 // ── COLLECTIONS: every item carries a kind (missing = wine, so all existing data just works)
 const KINDS = [['wine','🍷 Wine'],['bourbon','🥃 Bourbon'],['tequila','🌵 Tequila'],['vodka','🍸 Vodka'],['cigar','🚬 Cigars'],['mixer','🧉 Mixers']];
 let kindFilter = 'wine';   // default collection — the homepage opens on Wine; ✦ All is one tap away
@@ -1518,19 +1519,38 @@ function typesOf(w){
 // Share of a grape/style in a bottle: stated % — 50 for an unquantified mention — -1 (absent).
 function pctOf(w, fam){ const v = typesOf(w).find(x=>x.fam===fam); return v ? (v.pct!=null ? v.pct : 50) : -1; }
 function vMatch(w){ return !varietalFilter || pctOf(w, varietalFilter) >= 0; }
+function fMatch(w){ return !flavorFilter || bottleTags(w).includes(flavorFilter); }
 window.setVarietal = function(v){ varietalFilter = v; render(); };
+window.setFlavor = function(v){ flavorFilter = v; render(); };
 // Custom dark dropdown — Android renders native <select> as a bright system
 // sheet that ignores page CSS, so we draw our own panel.
-function varietalSelectHTML(){
+// `list` scopes the options/counts (defaults to the visible collection), so a
+// Bourbon rack offers bourbon styles — not Cabernet/Merlot.
+function varietalSelectHTML(list, emoji){
+  const src = list || activeArr().filter(kindMatch);
+  const em = emoji || '🍇';
   const counts = {};
-  activeArr().forEach(w=>typesOf(w).forEach(v=>{ counts[v.fam]=(counts[v.fam]||0)+1; }));
+  src.forEach(w=>typesOf(w).forEach(v=>{ counts[v.fam]=(counts[v.fam]||0)+1; }));
   const fams = Object.keys(counts).sort((a,b)=>a.localeCompare(b));
   if(!fams.length) return '';
   const cap = (t)=>t.replace(/\b\w/g,c=>c.toUpperCase());
-  const label = varietalFilter ? ('🍇 ' + cap(varietalFilter)) : '🍇 Type…';
+  const label = varietalFilter ? (em + ' ' + cap(varietalFilter)) : (em + ' Type…');
   return `<span class="dd"><button class="sortchip ${varietalFilter?'on':''}" onclick="ddToggle(event,this)">${esc(label)} ▾</button><span class="dd-panel">` +
     `<button class="dd-opt ${!varietalFilter?'on':''}" onclick="setVarietal('')">All types</button>` +
     fams.map(f=>`<button class="dd-opt ${varietalFilter===f?'on':''}" onclick="setVarietal('${esc(f)}')">${esc(cap(f))} <em>(${counts[f]})</em></button>`).join('') + `</span></span>`;
+}
+// Flavor-tag dropdown — same dark panel, options are the tags actually used
+// by the bottles in scope (Caramel, Smoky, Jammy…), with counts.
+function flavorSelectHTML(list){
+  const src = list || activeArr().filter(kindMatch);
+  const counts = {};
+  src.forEach(w=>bottleTags(w).forEach(k=>{ counts[k]=(counts[k]||0)+1; }));
+  const keys = Object.keys(counts).sort((a,b)=>tagInfo(a).t.localeCompare(tagInfo(b).t));
+  if(!keys.length) return '';
+  const label = flavorFilter ? ('🏷 ' + tagInfo(flavorFilter).t) : '🏷 Flavor…';
+  return `<span class="dd"><button class="sortchip ${flavorFilter?'on':''}" onclick="ddToggle(event,this)">${esc(label)} ▾</button><span class="dd-panel">` +
+    `<button class="dd-opt ${!flavorFilter?'on':''}" onclick="setFlavor('')">All flavors</button>` +
+    keys.map(k=>`<button class="dd-opt ${flavorFilter===k?'on':''}" onclick="setFlavor('${esc(k)}')">${esc(tagInfo(k).t)} <em>(${counts[k]})</em></button>`).join('') + `</span></span>`;
 }
 window.ddToggle = function(e, btn){
   e.stopPropagation();
@@ -1542,8 +1562,9 @@ window.ddToggle = function(e, btn){
 document.addEventListener('click', ()=>document.querySelectorAll('.dd-panel.open').forEach(p=>p.classList.remove('open')));
 function chipRowHTML(){
   const chips = [['rating','Rating'],['newest','Newest'],['az','A–Z']];
-  return '<div class="chiprow">' + chips.map(c=>`<button class="sortchip ${sortMode===c[0]?'on':''}" onclick="setSort('${c[0]}')">${c[1]}</button>`).join('') + varietalSelectHTML() +
-    (varietalFilter?`<button class="sortchip on" title="Clear varietal filter" onclick="setVarietal('')">✕ ${esc(varietalFilter.replace(/\b\w/g,c=>c.toUpperCase()))}</button>`:'') + '</div>';
+  return '<div class="chiprow">' + chips.map(c=>`<button class="sortchip ${sortMode===c[0]?'on':''}" onclick="setSort('${c[0]}')">${c[1]}</button>`).join('') + varietalSelectHTML() + flavorSelectHTML() +
+    (varietalFilter?`<button class="sortchip on" title="Clear varietal filter" onclick="setVarietal('')">✕ ${esc(varietalFilter.replace(/\b\w/g,c=>c.toUpperCase()))}</button>`:'') +
+    (flavorFilter?`<button class="sortchip on" title="Clear flavor filter" onclick="setFlavor('')">✕ ${esc(tagInfo(flavorFilter).t)}</button>`:'') + '</div>';
 }
 function sortValRating(w){ return w.score!=null ? Number(w.score) : (w.predHigh!=null ? Number(w.predHigh)-100 : -1000); }
 function applySort(list){
@@ -2444,7 +2465,7 @@ function render(){
   if(view==='wishlist'){ c.innerHTML = wishlistHTML(); return; }
 
   if(view==='buy'){
-    const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch).filter(vMatch).filter(kindMatch));
+    const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch).filter(vMatch).filter(fMatch).filter(kindMatch));
     let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers.</p></div>';
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>' + esc(emptyForKind('No buy-again bottles yet. Flag the keepers as you log them.')) + '</p></div>'; return; }
     c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${tagChipsHTML(w)}</div></div>`; }).join('') + '</div>';
@@ -2454,7 +2475,7 @@ function render(){
   if(view==='cellar'){ c.innerHTML = rackHTML(); return; }
 
   if(view==='logged'){
-    const list = applySort(opened.filter(matchSearch).filter(vMatch).filter(kindMatch));
+    const list = applySort(opened.filter(matchSearch).filter(vMatch).filter(fMatch).filter(kindMatch));
     const avg = opened.length ? (opened.reduce((s,w)=>s+Number(w.score||0),0)/opened.length).toFixed(1) : '—';
     let html = `<div class="shead"><p>Every wine you've logged &amp; scored — ${opened.length} total, avg ${avg}.</p></div>`;
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>' + esc(emptyForKind('No scored wines yet. Tap “Log a pour” above.')) + '</p></div>'; return; }
@@ -2463,7 +2484,7 @@ function render(){
   }
 
   // all
-  const list = applySort(all.filter(matchSearch).filter(vMatch).filter(kindMatch));
+  const list = applySort(all.filter(matchSearch).filter(vMatch).filter(fMatch).filter(kindMatch));
   let html = '';
   if(!list.length){ c.innerHTML = html + '<div class="empty"><p>' + esc(emptyForKind('Nothing logged yet. Tap “Log a pour” above.')) + '</p></div>'; return; }
   c.innerHTML = html + renderCollection(list);
@@ -2846,10 +2867,20 @@ async function placeBottle(id, col, row){
 }
 
 // ── RACK MAP RENDER ──
+// A rack's collection, inferred from its name ("Bourbon", "Tequila Shelf"…).
+// null = mixed/overflow (the Wine Wall keeps showing everything unplaced).
+function rackKind(rid){
+  if(rid==='main') return null;
+  const n = deacc(rackDef(rid).name);
+  for(const k of ['bourbon','tequila','vodka','cigar','mixer']){ if(n.includes(k)) return k; }
+  if(n.includes('wine')) return 'wine';
+  return null;
+}
 function rackHTML(){
   const d = curDef();
+  const rkind = rackKind(curRack);
   const cellared = activeArr().filter(w=>w.status==='cellared');
-  const placed = {}, unplaced = [];
+  const placed = {}; let unplaced = [];
   cellared.forEach(w=>{
     const rid = bRack(w), rd = rackDef(rid);
     const col = Number(w.rackCol), row = Number(w.rackRow);
@@ -2859,6 +2890,10 @@ function rackHTML(){
     // valid on ANOTHER rack → shown there, not here
   });
   unplaced.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  // A kind-specific rack (Bourbon shelf, Tequila shelf) only trays its own
+  // bottles; the Wine Wall stays the mixed overflow home and shows everything.
+  const tray_all = unplaced.length;
+  if(rkind) unplaced = unplaced.filter(w=>kindOf(w)===rkind);
   const admin = isAdmin();
 
   // Rack switcher + admin rack management
@@ -2873,13 +2908,18 @@ function rackHTML(){
   const adminBar = admin ? `<div class="rack-tools" style="margin-top:12px"><button class="rt-btn rk-chip" onclick="openRackModal('edit')" title="Rename / resize this rack">⚙ Rack settings</button><button class="rt-btn rk-chip" onclick="openRackModal('new')" title="Add another rack">＋ New rack</button></div>` : '';
 
   // Toolbar — zoom · column jump · edit labels
+  // Type/Flavor dropdowns scope to what's actually on THIS rack (+ its tray),
+  // so the Bourbon shelf offers bourbon styles, not Cabernet/Merlot.
+  const rackScope = Object.values(placed).concat(unplaced);
+  const rkEmoji = { bourbon:'🥃', tequila:'🌵', vodka:'🍸', cigar:'🚬', mixer:'🥤' }[rkind] || '🍇';
   const jumpOpts = Array.from({length:d.cols},(_,i)=>{ const c=i+1; return `<option value="${c}">Col ${c} · ${esc(colHeaderLabel(c))}</option>`; }).join('');
   const tools = `<div class="rack-tools">
     <div class="rt-group"><span class="rt-lbl">Find</span><div class="rs-wrap"><input id="rackSearch" class="rt-find" type="search" placeholder="Search a bottle…" autocomplete="off" oninput="rackSearchInput(this.value)" onkeydown="rackSearchKey(event)" onblur="rackSearchBlur()"><div class="rs-res" id="rackSearchRes"></div></div></div>
     <div class="rt-group"><span class="rt-lbl">Zoom</span><button class="rt-btn ${rackZoom===1?'on':''}" onclick="rackZoomSet(1)">S</button><button class="rt-btn ${rackZoom===2?'on':''}" onclick="rackZoomSet(2)">M</button><button class="rt-btn ${rackZoom===3?'on':''}" onclick="rackZoomSet(3)">L</button></div>
     <div class="rt-group"><span class="rt-lbl">Column</span><select class="rt-jump" onchange="rackFocusColumn(this.value)"><option value="">View a column…</option>${jumpOpts}</select></div>
     ${admin?`<button class="rt-btn ${rackEdit?'on':''}" onclick="rackToggleEdit()">${rackEdit?'✓ Done editing':'Edit labels'}</button>`:''}
-    <div class="rt-group"><span class="rt-lbl">🍇</span>${varietalSelectHTML()}${varietalFilter?`<button class="rt-btn on" title="Clear varietal highlight" onclick="setVarietal('')">✕</button>`:''}</div>
+    <div class="rt-group">${varietalSelectHTML(rackScope, rkEmoji)}${varietalFilter?`<button class="rt-btn on" title="Clear type highlight" onclick="setVarietal('')">✕</button>`:''}</div>
+    <div class="rt-group">${flavorSelectHTML(rackScope)}${flavorFilter?`<button class="rt-btn on" title="Clear flavor highlight" onclick="setFlavor('')">✕</button>`:''}</div>
   </div>`;
 
   // Action / status bar
@@ -2899,7 +2939,7 @@ function rackHTML(){
   // Tray of unplaced bottles (draggable). Identical bottles (same wine) collapse into
   // one chip with a ×N count; placing/dragging acts on one bottle, so N ticks down.
   // The whole zone is a drop target — drag a PLACED bottle here to pull it off the rack.
-  let tray = `<div class="rack-tray-zone" ondragover="rackTrayOver(event)" ondragleave="rackTrayLeave(event)" ondrop="rackDropTray(event)"><div class="rack-tray-head"><span>Unplaced — ${unplaced.length}</span><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>`;
+  let tray = `<div class="rack-tray-zone" ondragover="rackTrayOver(event)" ondragleave="rackTrayLeave(event)" ondrop="rackDropTray(event)"><div class="rack-tray-head"><span>Unplaced — ${unplaced.length}${(rkind && tray_all>unplaced.length)?` <em style="opacity:.55;font-style:normal">(+${tray_all-unplaced.length} other bottles in the Wine Wall tray)</em>`:''}</span><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>`;
   if(unplaced.length){
     tray += '<div class="rack-tray">' + groupBrowse(unplaced).map(g=>{
       const rep = g[0];
@@ -2958,7 +2998,7 @@ function rackHTML(){
         const short = esc(w.name || w.producer || '');
         const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ') + ' · ' + slotCode(c,r);
         const thumb = w.photoUrl ? `<img class="slot-thumb" src="${esc(w.photoUrl)}" alt="">` : '';
-        const vdim = (varietalFilter && pctOf(w, varietalFilter) < 0) ? ' vdim' : '';
+        const vdim = ((varietalFilter && pctOf(w, varietalFilter) < 0) || (flavorFilter && !fMatch(w))) ? ' vdim' : '';
         grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}${flash}${vdim}" data-cell="${c}_${r}" draggable="${rackEdit?'false':'true'}" ondragstart="rackDragStart(event,'${w.id}')" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(title)}" onclick="rackTapSlot(${c},${r})">${thumb}<span class="slot-name">${short}${vv}</span></div>`;
       }else{
         // Empty slot: faint outline + its coordinate only (category lives solely in the header).
@@ -3073,7 +3113,7 @@ window.rackEditCell = async function(col, row){
 };
 
 // ── RACK MANAGEMENT: switch · settings (rename/resize) · add · delete ────────
-window.rackSwitch = function(id){ curRack = id; placing=null; inspect=null; rackEdit=false; rackFocusCol=null; render(); };
+window.rackSwitch = function(id){ curRack = id; placing=null; inspect=null; rackEdit=false; rackFocusCol=null; varietalFilter=''; flavorFilter=''; render(); };
 // Rack settings / new-rack modal — one page for name + size (+ delete).
 let rmMode = 'edit';   // 'edit' the current rack | 'new' create one
 window.openRackModal = function(mode){
