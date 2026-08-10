@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.9</title>
+<title>The Cellar Ledger — Rev 3.10</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -590,7 +590,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.9</div>
+    <div class="auth-rev">Rev 3.10</div>
   </div>
 </div>
 
@@ -707,7 +707,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.9</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.10</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -1531,7 +1531,7 @@ window.wsScan = async function(){
   document.getElementById('wsResults').innerHTML = '';
   try{
     const images = shots.map(p=>({ base64:p.dataUrl.split(',')[1], mediaType:(p.dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg' }));
-    const res = await scanMenuFn({ images, collectionSummary: collectionSummary(), palate: livePalateText() });
+    const res = await scanMenuFn({ images, collectionSummary: collectionSummary(), palate: palatePayload('scanMenu') });
     const r = res && res.data;
     if(!r || !r.ok){ setScanStatus('ws', (r && r.error) || 'Couldn’t read that one — try a closer, straighter shot.', 'err'); return; }
     setScanStatus('ws', '', '');
@@ -1600,7 +1600,7 @@ window.askAIGo = async function(){
   const out = document.getElementById('askAnswer');
   out.className='askanswer show thinking'; out.textContent='Consulting the cellar…';
   try{
-    const res = await askAIFn({ question:q, collectionSummary: collectionSummary(), attachedPhotos: piStore.ai.length, palate: livePalateText() });
+    const res = await askAIFn({ question:q, collectionSummary: collectionSummary(), attachedPhotos: piStore.ai.length, palate: palatePayload('askAI') });
     const r = res && res.data;
     if(r && r.ok){ const ans = await handleAIAnswer(r.answer || ''); out.className='askanswer show'; out.textContent = ans; saveAsk(q, ans); }
     else { out.className='askanswer show thinking'; out.textContent = (r && r.error) || 'Couldn’t get an answer — try again.'; }
@@ -2434,7 +2434,7 @@ function setScanStatus(which, msg, kind){
 async function scanAndFill(dataUrl, which){
   setScanStatus(which, 'Reading the label…', '');
   try{
-    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:(dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg', palate: livePalateText() });
+    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:(dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg', palate: palatePayload('scanLabel') });
     const r = res && res.data;
     if(!r || !r.ok){ setScanStatus(which, (r && r.error) || 'Couldn’t read that one — type it in.', 'err'); return; }
     fillScanFields(which, r.data);
@@ -3006,6 +3006,14 @@ function livePalateText(){
     parts.push(s);
   });
   return parts.join('\n').slice(0,3500);
+}
+// Verification aid: compute the palate once and log its size + fingerprint so you
+// can confirm in DevTools that the SAME text reaches all three AI calls. `flow` is
+// scanLabel | scanMenu | askAI. Returns the palate text to send in the payload.
+function palatePayload(flow){
+  const p = livePalateText();
+  try{ console.log(`[palate → ${flow}] ${p.length} chars · «${p.slice(0,60).replace(/\n/g,' ')}…»`); }catch(_){}
+  return p;
 }
 // Slot badge text: just the slot code ("8-2") — the rack name is only prefixed
 // when the bottle sits on a rack that ISN'T its kind's home (e.g. a bourbon
@@ -4181,7 +4189,7 @@ async function wlModalScanFill(dataUrl){
   const st = document.getElementById('wlStatus');
   if(st) st.textContent = '⏳ Reading the label…';
   try{
-    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:(dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg', palate: livePalateText() });
+    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:(dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg', palate: palatePayload('scanLabel') });
     const r = res && res.data;
     if(!r || !r.ok){ if(st) st.textContent = (r && r.error) || 'Couldn’t read that one — type it in.'; return; }
     const d = r.data;
@@ -4210,7 +4218,7 @@ async function wlScanFromFile(f){
     // Cut the bottle out of white backdrops NOW, while the image is local
     // (CORS blocks reprocessing after upload). Scan reads the untouched original.
     try{ wlDraft.photo = (await scrapeLocal(raw)) || raw; }catch(_){ wlDraft.photo = raw; }
-    const res = await scanLabelFn({ imageBase64: raw.split(',')[1], mediaType:'image/jpeg', palate: livePalateText() });
+    const res = await scanLabelFn({ imageBase64: raw.split(',')[1], mediaType:'image/jpeg', palate: palatePayload('scanLabel') });
     const r = res && res.data;
     if(!r || !r.ok){ wlScanMsg = (r && r.error) || 'Couldn’t read that — type it in.'; render(); return; }
     const d = r.data;
