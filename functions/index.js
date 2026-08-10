@@ -98,6 +98,25 @@ function buildPrompt(livePalate) {
   return PROMPT + '\n' + tail;
 }
 
+// Palate block for cellarScanMenu / cellarAskAI. The palate is passed in the
+// REQUEST each call (livePalateText() the client computes from real ratings), so
+// it always reflects the latest scores — never a frozen paragraph. Returns '' when
+// the client sent nothing (thin data): callers then reason from the collection JSON.
+function livePalateBlock(livePalate) {
+  if (!livePalate) return '';
+  return [
+    "The taster's palate below is derived LIVE from their own ratings, split by",
+    "collection (WINE / BOURBON / TEQUILA / …). Weight your picks and predicted",
+    "scores TOWARD the flavors and styles they rate HIGH and AWAY from their",
+    "low-scored styles / turn-offs, using the section matching each item's kind.",
+    "A collection with no section means thin data — judge those on general quality,",
+    "typicity, age/proof, and reputation instead.",
+    "",
+    "The taster's palate, by collection:",
+    livePalate
+  ].join('\n');
+}
+
 function parseModelJson(message) {
   const text = (message.content || [])
     .filter((b) => b.type === 'text')
@@ -138,16 +157,17 @@ exports.cellarScanMenu = onCall(
     if (!Array.isArray(summary)) summary = [];
     let summaryJson = JSON.stringify(summary.slice(0, 500));
     if (summaryJson.length > 40000) summaryJson = summaryJson.slice(0, 40000);
+    const livePalate = String((request.data && request.data.palate) || '').slice(0, 4000);
 
     const prompt = [
       "These photo(s) show a RESTAURANT MENU/DRINKS LIST or a STORE SHELF — usually",
       "wine, but possibly bourbon/whiskey, tequila, vodka, or cocktails/mixers.",
       "Identify every bottle/pour you can read (name, vintage and price if shown),",
-      "then rank them for THIS taster — best first. For WINE use the palate below",
-      "plus their real rating history (collection JSON: 'opened' items have actual",
-      "1-10 ratings) — prefer wines like their proven wins, downrank known misses.",
-      "For SPIRITS judge on quality, typicity, proof/age statements and reputation",
-      "(they enjoy full-flavored, well-made spirits; no strong biases known yet).",
+      "then rank them for THIS taster — best first, using the palate below (when",
+      "present) plus their real rating history (collection JSON: 'opened' items have",
+      "actual 1-10 ratings) — prefer styles like their proven wins, downrank known",
+      "misses. For a collection with no palate section, judge on quality, typicity,",
+      "proof/age statements and reputation.",
       "Respond with ONLY a JSON object (no markdown, no backticks):",
       '{"context":"menu" or "shelf",',
       ' "summary": one sentence naming the single top pick and why it fits,',
@@ -156,11 +176,11 @@ exports.cellarScanMenu = onCall(
       "Include at most 12 wines (the most relevant), best first. predLow/predHigh are",
       "predicted scores 1-10 (.5 steps ok). Use empty strings for unreadable fields.",
       "",
-      "The taster's palate: " + PALATE,
+      livePalateBlock(livePalate),
       "",
       "Their collection & ratings (JSON):",
       summaryJson
-    ].join('\n');
+    ].filter(Boolean).join('\n');
 
     const content = images.map((i) => ({
       type: 'image',
@@ -221,6 +241,7 @@ exports.cellarAskAI = onCall(
     // Keep the prompt bounded even if the client sends a huge cellar.
     let summaryJson = JSON.stringify(summary.slice(0, 500));
     if (summaryJson.length > 60000) summaryJson = summaryJson.slice(0, 60000);
+    const livePalate = String((request.data && request.data.palate) || '').slice(0, 4000);
 
     const attachedPhotos = Number(request.data && request.data.attachedPhotos) || 0;
     const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
@@ -258,7 +279,7 @@ exports.cellarAskAI = onCall(
             (attachedPhotos > 0 ? "The owner attached " + attachedPhotos + " photo(s) which the app will save onto the new bottle automatically." : ""),
             "For ordinary questions, do NOT output any JSON — plain text only.",
             "",
-            "The owner's palate: " + PALATE,
+            livePalateBlock(livePalate),
             "",
             "Collection (JSON; status 'cellared' = unopened on hand, 'opened' = already",
             "tasted & rated; rating is out of 10; buyAgain = flagged to reorder):",
