@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.80</title>
+<title>The Cellar Ledger — Rev 2.81</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -327,11 +327,11 @@
   .slot-thumb{width:100%;max-width:44px;height:auto;max-height:44px;object-fit:cover;border-radius:2px;pointer-events:none;margin-bottom:1px}
   .rack-grid.z1 .slot-name,.rack-grid.z1 .slot-coord,.rack-grid.z1 .slot-thumb{display:none}
   .rack-grid.z2 .slot-thumb{display:none}
-  /* 🖼 photo view — big label pictures, no text on the slots */
-  .rack-grid.z4{--cw:84px;--rh:30px;--ch:96px}
+  /* 🖼 photo view — full bottle shots, gallery-sized cells (scrolling expected) */
+  .rack-grid.z4{--cw:190px;--rh:34px;--ch:240px}
   .rack-grid.z4 .slot-name{display:none}
-  .rack-grid.z4 .slot-thumb{max-width:76px;max-height:88px;object-fit:contain;margin-bottom:0}
-  .rack-grid.z4 .rack-slot.filled{padding:2px}
+  .rack-grid.z4 .slot-thumb{max-width:178px;max-height:228px;width:auto;height:auto;object-fit:contain;margin-bottom:0}
+  .rack-grid.z4 .rack-slot.filled{padding:4px}
   .rack-grid.z4 .rack-slot.filled:not(:has(.slot-thumb)) .slot-name{display:block}
   .ca-suggest{display:none;border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin:4px 0 12px;background:rgba(201,163,92,0.07)}
   .ca-suggest.show{display:block}
@@ -511,7 +511,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.80</div>
+    <div class="auth-rev">Rev 2.81</div>
   </div>
 </div>
 
@@ -628,7 +628,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.80</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.81</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
