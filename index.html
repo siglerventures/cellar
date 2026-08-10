@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.92</title>
+<title>The Cellar Ledger — Rev 2.93</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -544,7 +544,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.92</div>
+    <div class="auth-rev">Rev 2.93</div>
   </div>
 </div>
 
@@ -661,7 +661,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.92</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.93</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2108,7 +2108,7 @@ function setScanStatus(which, msg, kind){
 async function scanAndFill(dataUrl, which){
   setScanStatus(which, 'Reading the label…', '');
   try{
-    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:(dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg' });
+    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:(dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg', palate: livePalateText() });
     const r = res && res.data;
     if(!r || !r.ok){ setScanStatus(which, (r && r.error) || 'Couldn’t read that one — type it in.', 'err'); return; }
     fillScanFields(which, r.data);
@@ -2652,6 +2652,31 @@ function cellaredScoreHTML(w){
   if(w.score!=null && w.score!=='') return `<div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>`;
   const pn=predNum(w);
   return pn!=null ? `<div class="score s-pred"><b>${fmt(pn)}</b><s>est</s></div>` : `<div class="score s-pred"></div>`;
+}
+// ── LIVE PALATE: a compact per-collection taste summary computed from YOUR
+// ratings (archived pours included — drunk bottles are still data). Sent with
+// every label scan so predictions learn as you log.
+function livePalateText(){
+  const rated = asArr(bottles).filter(w=>w.score!=null && w.score!=='' && isFinite(Number(w.score)));
+  const parts=[];
+  ['wine','bourbon','tequila','vodka','cigar','mixer'].forEach(k=>{
+    const l = rated.filter(w=>kindOf(w)===k);
+    if(l.length<2) return;   // too little data to claim a palate
+    const avg=(l.reduce((s,w)=>s+Number(w.score),0)/l.length).toFixed(1);
+    const by=l.slice().sort((a,b)=>Number(b.score)-Number(a.score));
+    const label=(w)=>[w.name,w.vintage].filter(Boolean).join(' ')+' '+fmt(w.score);
+    const hi=by.slice(0,6).map(label).join('; ');
+    const lo=by.filter(w=>Number(w.score)<=6).slice(-4).map(label).join('; ');
+    const tagN={}, tagL={};
+    l.forEach(w=>bottleTags(w).forEach(t=>{ const nm=tagInfo(t).t; if(Number(w.score)>=8) tagN[nm]=(tagN[nm]||0)+1; else if(Number(w.score)<=6) tagL[nm]=(tagL[nm]||0)+1; }));
+    const top=(m)=>Object.keys(m).sort((a,b)=>m[b]-m[a]).slice(0,5).join(', ');
+    let s=`${k.toUpperCase()} — ${l.length} rated, avg ${avg}. High scores: ${hi}.`;
+    if(top(tagN)) s+=` Flavors they love: ${top(tagN)}.`;
+    if(lo) s+=` Low scores: ${lo}.`;
+    if(top(tagL)) s+=` Turn-offs: ${top(tagL)}.`;
+    parts.push(s);
+  });
+  return parts.join('\n').slice(0,3500);
 }
 // Slot badge text: just the slot code ("8-2") — the rack name is only prefixed
 // when the bottle sits on a rack that ISN'T its kind's home (e.g. a bourbon
@@ -3750,7 +3775,7 @@ async function wlModalScanFill(dataUrl){
   const st = document.getElementById('wlStatus');
   if(st) st.textContent = '⏳ Reading the label…';
   try{
-    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:(dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg' });
+    const res = await scanLabelFn({ imageBase64: dataUrl.split(',')[1], mediaType:(dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg', palate: livePalateText() });
     const r = res && res.data;
     if(!r || !r.ok){ if(st) st.textContent = (r && r.error) || 'Couldn’t read that one — type it in.'; return; }
     const d = r.data;
@@ -3777,7 +3802,7 @@ async function wlScanFromFile(f){
   try{
     const raw = await compressImage(f);
     wlDraft.photo = raw;
-    const res = await scanLabelFn({ imageBase64: raw.split(',')[1], mediaType:'image/jpeg' });
+    const res = await scanLabelFn({ imageBase64: raw.split(',')[1], mediaType:'image/jpeg', palate: livePalateText() });
     const r = res && res.data;
     if(!r || !r.ok){ wlScanMsg = (r && r.error) || 'Couldn’t read that — type it in.'; render(); return; }
     const d = r.data;
