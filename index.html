@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.89</title>
+<title>The Cellar Ledger — Rev 2.90</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -410,13 +410,24 @@
   /* Wine cards only: one FIXED, uniform box (no flavor tags/notes on the card) so
      every wine tile is the same compact size — no wasted space, no ragged heights.
      Bourbon/other kinds are untouched (they never get the .w-wine class). */
-  .w-wine{align-items:center;height:176px;overflow:hidden}
-  .w-wine .cardphoto{height:120px}
-  .w-wine .cardphoto.ph{height:110px}
-  #content.cs-s .w-wine{height:132px}
-  #content.cs-s .w-wine .cardphoto{height:84px}
-  #content.cs-l .w-wine{height:250px}
-  #content.cs-l .w-wine .cardphoto{height:186px}
+  .w-wine{align-items:center;height:168px;overflow:hidden}
+  /* Framed "lit shelf" photo so the bottle sits on a panel instead of floating in
+     the dark with empty space around it. Score badge floats in the top-left. */
+  .w-wine .cardphoto{width:104px;height:140px;border-radius:8px;position:relative;
+    background:radial-gradient(120% 78% at 50% 22%, #37191f 0%, #1c0f12 72%);
+    border:1px solid rgba(201,163,92,0.20);box-shadow:inset 0 1px 0 rgba(255,255,255,0.03)}
+  .w-wine .cardphoto img{padding:7px;object-fit:contain}
+  .w-wine .cardphoto.ph{background:radial-gradient(120% 78% at 50% 22%, #37191f 0%, #1c0f12 72%)}
+  .cp-score{position:absolute;top:6px;left:6px;z-index:2;font-family:'Cormorant Garamond',serif;
+    font-weight:600;font-size:19px;line-height:.9;color:var(--gold);background:rgba(15,7,8,0.74);
+    border:1px solid var(--line);border-radius:7px;padding:3px 8px;display:flex;flex-direction:column;align-items:center}
+  .cp-score.s-pred{color:var(--parch-dim);font-size:16px}
+  .cp-score i{font-style:normal;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+  #content.cs-s .w-wine{height:126px}
+  #content.cs-s .w-wine .cardphoto{width:74px;height:100px}
+  #content.cs-s .cp-score{font-size:15px;padding:2px 6px}
+  #content.cs-l .w-wine{height:236px}
+  #content.cs-l .w-wine .cardphoto{width:150px;height:200px}
   /* Grouped-wine card badges */
   .gbadge{display:inline-flex;align-items:center;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;border-radius:20px;padding:2px 9px;border:1px solid var(--line)}
   .gb-rated{color:var(--gold);border-color:var(--gold-dim)}
@@ -537,7 +548,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.89</div>
+    <div class="auth-rev">Rev 2.90</div>
   </div>
 </div>
 
@@ -654,7 +665,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.89</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.90</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2762,16 +2773,22 @@ function groupedCardHTML(recs){
   const slots = cellared.filter(r=>r.rackCol&&r.rackRow).map(r=>slotOf(r));
   const tagset=[]; recs.forEach(r=>bottleTags(r).forEach(k=>{ if(tagset.indexOf(k)<0) tagset.push(k); }));
   const buyAgain = recs.some(r=>r.buyAgain);
+  const row2=[vintage,grape,region,abv?abv+'%':'',fmtPrice(price)].filter(Boolean).join(' · ');
+  // Wine: score badge floated on the photo; clean name/producer/meta (no ×N/slot/tag
+  // badges — those were clipping the fixed-height card). Bourbon/etc keep the badges.
+  if(kindOf(recs[0])==='wine'){
+    const inner = latest ? `${fmt(latest.score)}`
+      : (()=>{ const pn=predNum({predLow:pick(r=>r.predLow),predHigh:pick(r=>r.predHigh)}); return pn!=null?`${fmt(pn)}<i>est</i>`:''; })();
+    const badge = wineScoreBadge(latest?scoreClass(latest.score):'s-pred', inner);
+    return `<div class="wine wine-group w-wine" onclick="openWineGroup('${id0}')"><div class="wine-left">${cardPhotoHTML(photoRec, badge)}</div><div class="meta"><div class="name">${esc(nm)}</div>${producer?`<div class="producer">${esc(producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
+  }
   const scoreBlock = latest
     ? `<div class="score ${scoreClass(latest.score)}"><b>${fmt(latest.score)}</b></div>`
     : cellaredScoreHTML({ kind:kindOf(recs[0]), predLow:pick(r=>r.predLow), predHigh:pick(r=>r.predHigh) });
-  const row2=[vintage,grape,region,abv?abv+'%':'',fmtPrice(price)].filter(Boolean).join(' · ');
-  // Keep the combined card lean: just a compact ×N/slot badge — the score column
-  // already carries the rating, and buy-again lives on its own tab.
   const badges=[];
   if(qty) badges.push(`<span class="gbadge gb-cellar">×${qty}${slots.length?(' · '+esc(slots.join(', '))):''}</span>`);
   const chips = tagset.map(k=>{ const ti=tagInfo(k); return `<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`; }).join('');
-  return `<div class="wine wine-group${kindOf(recs[0])==='wine'?' w-wine':''}" onclick="openWineGroup('${id0}')"><div class="wine-left">${scoreBlock}${cardPhotoHTML(photoRec)}</div><div class="meta"><div class="name">${esc(nm)}</div>${producer?`<div class="producer">${esc(producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${badges.join('')}${kindOf(recs[0])==='wine'?'':chips}</div></div></div>`;
+  return `<div class="wine wine-group" onclick="openWineGroup('${id0}')"><div class="wine-left">${scoreBlock}${cardPhotoHTML(photoRec)}</div><div class="meta"><div class="name">${esc(nm)}</div>${producer?`<div class="producer">${esc(producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${badges.join('')}${chips}</div></div></div>`;
 }
 // Tap a grouped card → open the richest record's FULL detail (photos, score, notes).
 // The detail modal itself shows "Same wine" chips to hop to the other record(s).
@@ -2787,20 +2804,31 @@ window.openWineGroup = function(id){
 // Browse card — cellared bottles show a predicted band, scored bottles the openedCard.
 function collectionCardHTML(w){
   if(w.status==='cellared'){
-    // No predicted numbers on the home cards — the score column shows a rating
-    // when one exists, otherwise just the quiet "cellared" label.
     const row2=[w.vintage,w.grape,w.region,fmtPrice(w.price)].filter(Boolean).join(' · ');
+    // Wine: clean uniform card — bottle photo on the left with the score badge
+    // floated on it, name/producer/meta on the right. No slot/qty/tag clutter.
+    if(kindOf(w)==='wine'){
+      const pn = predNum(w);
+      const badge = wineScoreBadge('s-pred', pn!=null ? `${fmt(pn)}<i>est</i>` : '');
+      return `<div class="wine w-wine" onclick="openDetail('${w.id}')"><div class="wine-left">${cardPhotoHTML(w, badge)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
+    }
+    // Non-wine (bourbon/tequila): unchanged.
     const qty = Number(w.qty)||1;
     const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${esc(slotOf(w))}</span>` : '';
-    return `<div class="wine${kindOf(w)==='wine'?' w-wine':''}" onclick="openDetail('${w.id}')"><div class="wine-left">${cellaredScoreHTML(w)}${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(kindOf(w)!=='wine' && !w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${kindOf(w)==='wine'?'':tagChipsHTML(w)}</div></div></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left">${cellaredScoreHTML(w)}${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(!w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
   }
   return openedCardHTML(w);
 }
 // Photo band at the top of every browse card: label photo, or a placeholder inviting one.
-function cardPhotoHTML(w){
-  if(w.photoUrl){ schedScrape(); return `<div class="cardphoto"><img src="${esc(w.photoUrl)}" data-scrape="${esc(w.photoUrl)}" alt="label" loading="lazy" onclick="event.stopPropagation();viewImage('${esc(w.photoUrl)}')"></div>`; }
-  return `<div class="cardphoto ph" title="Tap the card to add a photo"><span class="ph-glass">🍷</span></div>`;
+// `overlay` (optional) is injected inside the photo frame — used by wine cards to
+// float the score badge on the photo. Non-wine callers pass nothing (unchanged).
+function cardPhotoHTML(w, overlay){
+  const ov = overlay || '';
+  if(w.photoUrl){ schedScrape(); return `<div class="cardphoto">${ov}<img src="${esc(w.photoUrl)}" data-scrape="${esc(w.photoUrl)}" alt="label" loading="lazy" onclick="event.stopPropagation();viewImage('${esc(w.photoUrl)}')"></div>`; }
+  return `<div class="cardphoto ph" title="Tap the card to add a photo">${ov}<span class="ph-glass">🍷</span></div>`;
 }
+// The score badge floated on a wine card's photo. `inner` is the rating markup.
+function wineScoreBadge(cls, inner){ return inner ? `<span class="cp-score ${cls||''}">${inner}</span>` : ''; }
 // ── WHITE-SCRAPE: cut the bottle out of a white-background photo ─────────────
 // Card thumbnails load the original, then swap in a version where near-white
 // pixels are made transparent (canvas, cached per URL). Zoom keeps the original.
@@ -2987,7 +3015,12 @@ function kanbanCardHTML(w){
 function openedCardHTML(w){
   const ti=tagInfo(w.tag);
   const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':'',fmtPrice(w.price)].filter(Boolean).join(' · ');
-  return `<div class="wine${kindOf(w)==='wine'?' w-wine':''}" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(kindOf(w)!=='wine' && !w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${kindOf(w)==='wine'?'':tagChipsHTML(w)}</div>${(kindOf(w)==='wine'||!w.notes)?'':`<div class="notes">${esc(w.notes)}</div>`}</div></div>`;
+  // Wine: score badge floated on the photo; clean name/producer/meta, no tags/notes.
+  if(kindOf(w)==='wine'){
+    const badge = wineScoreBadge(scoreClass(w.score), `${fmt(w.score)}`);
+    return `<div class="wine w-wine" onclick="openDetail('${w.id}')"><div class="wine-left">${cardPhotoHTML(w, badge)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
+  }
+  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(!w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${tagChipsHTML(w)}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div></div>`;
 }
 
 // ── RACK MAP: labels, matching, placement ──
