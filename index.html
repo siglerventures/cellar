@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.96</title>
+<title>The Cellar Ledger — Rev 2.97</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -556,7 +556,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.96</div>
+    <div class="auth-rev">Rev 2.97</div>
   </div>
 </div>
 
@@ -673,7 +673,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.96</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.97</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -755,6 +755,23 @@
       <button class="mbtn" onclick="addCellarBottle()">Add bottle</button>
     </div>
     <div class="mstatus" id="cellarAddStatus"></div>
+  </div>
+</div>
+
+<!-- ── TYPE DETAIL MODAL (grape / spirit style knowledge + your notes) ── -->
+<div class="modal" id="typeModal">
+  <div class="modal-card">
+    <h3 id="ty-name">Type</h3>
+    <div class="msub" id="ty-desc">—</div>
+    <div class="qlabel" style="margin-top:12px">Your extended description</div>
+    <textarea id="ty-mine" placeholder="Your own notes on this grape / style — producers you chase, vintages, stories…"></textarea>
+    <input id="ty-region" placeholder="Region — e.g. Piedmont, Italy" style="margin-top:8px">
+    <a id="ty-map" href="#" target="_blank" rel="noopener" style="display:none;font-size:12px;color:var(--gold);text-decoration:underline">🗺 View region on Google Maps</a>
+    <div class="mrow" style="margin-top:12px;justify-content:flex-end">
+      <button class="mbtn ghost" onclick="document.getElementById('typeModal').classList.remove('open')">Close</button>
+      <button class="mbtn" onclick="saveTypeNotes()">Save</button>
+    </div>
+    <div class="mstatus" id="tyStatus"></div>
   </div>
 </div>
 
@@ -1326,6 +1343,7 @@ function subscribe(){
   onValue(ref(db, 'cellar/ask_history'), snap => { askLog = snap.val() || {}; const el=document.getElementById('askHist'); if(el && el.style.display!=='none') renderAskHistory(); });
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
   onValue(ref(db, 'cellar/racks'), snap => { racks = snap.val() || {}; if(!racks[curRack] && Object.keys(racks).length) curRack = rackIds()[0]; if(view==='cellar') render(); });
+  onValue(ref(db, 'cellar/type_notes'), snap => { typeNotes = snap.val() || {}; });
   onValue(ref(db, 'cellar/custom_tags'), snap => {
     customTags = snap.val() || {};
     Object.keys(TAG_PADS).forEach(id=>{ const p=TAG_PADS[id]; if(p.kind) rebuildTagPad(id, p.kind); });
@@ -1668,6 +1686,111 @@ window.setFlavor = function(v){ flavorFilter = v; render(); };
 // sheet that ignores page CSS, so we draw our own panel.
 // `list` scopes the options/counts (defaults to the visible collection), so a
 // Bourbon rack offers bourbon styles — not Cabernet/Merlot.
+// ── TYPE KNOWLEDGE: built-in notes on grapes & spirit styles ─────────────────
+// Shown on hover in the Type dropdown; right-click opens the editor where your
+// own extended description/region (cellar/type_notes/{key}) is stored.
+const TYPE_INFO = {
+  barbera:{d:'High-acid, low-tannin Piedmont red — tart cherry, juicy, everyday-friendly.',r:'Piedmont, Italy'},
+  cabernet:{d:'Cabernet Sauvignon — blackcurrant, cedar, firm tannin; ages beautifully.',r:'Bordeaux · Napa Valley'},
+  'cabernet franc':{d:'Lighter, herbal cousin of Cab Sauv — raspberry, bell pepper, graphite.',r:'Loire · Bordeaux'},
+  corvina:{d:'The Amarone/Valpolicella grape — sour cherry; dried (appassimento) it turns rich, raisined, powerful.',r:'Veneto, Italy'},
+  graciano:{d:'Rioja blending grape — dark fruit, floral, high acid; adds backbone to Tempranillo.',r:'Rioja, Spain'},
+  grenache:{d:'Warm-climate red — strawberry, white pepper, plush alcohol; the heart of Châteauneuf-du-Pape.',r:'S. Rhône · Spain (Garnacha)'},
+  gsm:{d:'Grenache-Syrah-Mourvèdre blend — plush fruit + pepper + meaty depth.',r:'S. Rhône · Australia'},
+  syrah:{d:'Dark, peppery, smoky-meaty red; firm but velvety.',r:'N. Rhône · Australia (Shiraz)'},
+  mourvedre:{d:'Brooding, gamey, tannic — needs warmth; key in GSM and Bandol.',r:'Bandol · Spain (Monastrell)'},
+  listan:{d:'Listán Negro — volcanic-island red; crunchy red fruit, smoky mineral edge.',r:'Canary Islands, Spain'},
+  mencia:{d:'Aromatic, floral, blue-fruited red with slate minerality.',r:'Bierzo · Ribeira Sacra, Spain'},
+  merlot:{d:'Plummy, soft, round — Bordeaux’s smoother half; velvet over Cab’s structure.',r:'Bordeaux (Right Bank)'},
+  nebbiolo:{d:'Barolo/Barbaresco grape — pale color, huge tannin & acid; tar and roses, built to age.',r:'Piedmont, Italy'},
+  sangiovese:{d:'Chianti/Brunello grape — sour cherry, leather, earth, bright acidity.',r:'Tuscany, Italy'},
+  tempranillo:{d:'Rioja’s grape — red fruit, tobacco, vanilla from American oak; earthy with age.',r:'Rioja · Ribera del Duero'},
+  zinfandel:{d:'Jammy blackberry, brambly spice, high alcohol; bold and sunny.',r:'California · Puglia (Primitivo)'},
+  malbec:{d:'Inky, plush, violet-scented; softer tannin than Cab.',r:'Mendoza, Argentina · Cahors'},
+  'pinot noir':{d:'Light-bodied, silky, red-fruited and earthy; the world’s most delicate great red.',r:'Burgundy · Oregon · NZ'},
+  'petite sirah':{d:'Dense, dark, chewy tannin — inky and rustic.',r:'California'},
+  chardonnay:{d:'Chameleon white — steely mineral in Chablis, rich buttery oak in California.',r:'Burgundy · California'},
+  riesling:{d:'High-acid aromatic white — lime, peach, petrol with age; bone-dry to lusciously sweet.',r:'Mosel · Alsace'},
+  'sauvignon blanc':{d:'Zesty grassy-citrus white — gooseberry, grapefruit, cut grass.',r:'Loire · Marlborough, NZ'},
+  viognier:{d:'Perfumed full white — apricot, honeysuckle, oily texture.',r:'Condrieu, N. Rhône'},
+  // Tequila / agave classes
+  blanco:{d:'Unaged (0–2 months) — pure agave expression: bright, peppery, vegetal.',r:'Jalisco, Mexico'},
+  joven:{d:'"Young" — blanco blended with a touch of aged tequila; gold hue, still agave-forward.',r:'Jalisco, Mexico'},
+  reposado:{d:'"Rested" 2–12 months in oak — agave softened with vanilla and light caramel.',r:'Jalisco, Mexico'},
+  anejo:{d:'Aged 1–3 years in oak — caramel, dried fruit, whiskey-like depth.',r:'Jalisco, Mexico'},
+  'extra anejo':{d:'Ultra-aged 3+ years — dark, silky, cognac-territory tequila.',r:'Jalisco, Mexico'},
+  cristalino:{d:'Aged tequila charcoal-filtered clear — añejo depth with blanco brightness.',r:'Jalisco, Mexico'},
+  mezcal:{d:'Agave spirit (often espadín) from roasted piñas — smoky, earthy, wilder than tequila.',r:'Oaxaca · Durango, Mexico'},
+  // Whiskey styles
+  bourbon:{d:'≥51% corn, new charred oak — sweet caramel-vanilla backbone.',r:'Kentucky, USA'},
+  rye:{d:'≥51% rye grain — spicier, drier, peppery edge over bourbon’s sweetness.',r:'Kentucky · Indiana · Canada'},
+  wheated:{d:'Wheat replaces rye in the mash — softer, rounder, sweeter (Weller/Pappy style).',r:'Kentucky, USA'},
+  'single barrel':{d:'Bottled from ONE barrel — no batch blending; each barrel unique.',r:'—'},
+  'small batch':{d:'Blended from a small selection of barrels for a house profile.',r:'—'},
+  'cask strength':{d:'Bottled at barrel proof, undiluted — intense; add water to taste.',r:'—'},
+  'barrel proof':{d:'Same as cask strength — straight from the barrel, no dilution.',r:'—'},
+  'bottled in bond':{d:'US legal standard: one distillery, one season, 4+ years, exactly 100 proof.',r:'USA'},
+  scotch:{d:'Malted barley, used oak, often peat smoke — leaner and drier than bourbon.',r:'Scotland'},
+  irish:{d:'Triple-distilled smoothness — light, fruity, approachable.',r:'Ireland'},
+  japanese:{d:'Scotch-inspired precision — elegant, balanced, subtle.',r:'Japan'}
+};
+let typeNotes = {};   // cellar/type_notes/{key} = {desc, region} — your own additions
+function typeKey(f){ return deacc(f).replace(/[^a-z0-9 ]/g,'').trim(); }
+function typeInfoFor(f){
+  const k = typeKey(f);
+  const base = TYPE_INFO[k] || {};
+  const mine = typeNotes[k.split(' ').join('_')] || {};
+  return { d: base.d||'', r: mine.region || base.r || '', mine: mine.desc||'' };
+}
+// Hover a Type option → floating info card; right-click → the full editor.
+const typeTip = document.createElement('div');
+typeTip.className = 'rack-peek';
+document.body.appendChild(typeTip);
+document.addEventListener('mouseover', (e)=>{
+  const t = e.target.closest ? e.target.closest('[data-tinfo]') : null;
+  if(!t){ typeTip.classList.remove('show'); return; }
+  const f = t.dataset.tinfo, info = typeInfoFor(f);
+  const cap = f.replace(/\b\w/g,c=>c.toUpperCase());
+  if(!info.d && !info.mine && !info.r){ typeTip.classList.remove('show'); return; }
+  typeTip.innerHTML = `<div><div class="pk-name">${esc(cap)}</div>${info.d?`<div class="pk-meta">${esc(info.d)}</div>`:''}${info.mine?`<div class="pk-desc">${esc(info.mine)}</div>`:''}${info.r?`<div class="pk-score">📍 ${esc(info.r)}</div>`:''}<div class="pk-meta" style="opacity:.55;margin-top:6px">right-click for details</div></div>`;
+  typeTip.classList.add('show');
+  const r = typeTip.getBoundingClientRect(), b = t.getBoundingClientRect();
+  let x = b.right + 10, y = b.top;
+  if(x + r.width > window.innerWidth - 8) x = b.left - r.width - 10;
+  if(y + r.height > window.innerHeight - 8) y = window.innerHeight - r.height - 8;
+  typeTip.style.left = Math.max(8,x)+'px'; typeTip.style.top = Math.max(8,y)+'px';
+});
+document.addEventListener('scroll', ()=>typeTip.classList.remove('show'), true);
+let tyKey = null;
+document.addEventListener('contextmenu', (e)=>{
+  const t = e.target.closest ? e.target.closest('[data-tinfo]') : null;
+  if(!t) return;
+  e.preventDefault(); e.stopPropagation();
+  typeTip.classList.remove('show');
+  openTypeModal(t.dataset.tinfo);
+}, true);
+window.openTypeModal = function(f){
+  tyKey = typeKey(f).split(' ').join('_');
+  const info = typeInfoFor(f);
+  document.getElementById('ty-name').textContent = f.replace(/\b\w/g,c=>c.toUpperCase());
+  document.getElementById('ty-desc').textContent = info.d || 'No built-in notes for this one — add your own below.';
+  document.getElementById('ty-mine').value = info.mine || '';
+  document.getElementById('ty-region').value = info.r || '';
+  const a = document.getElementById('ty-map');
+  if(info.r){ a.href = 'https://www.google.com/maps/search/' + encodeURIComponent(info.r); a.style.display='inline-block'; } else a.style.display='none';
+  document.getElementById('tyStatus').textContent='';
+  document.getElementById('typeModal').classList.add('open');
+};
+window.saveTypeNotes = async function(){
+  if(!tyKey) return;
+  const desc = document.getElementById('ty-mine').value.trim();
+  const region = document.getElementById('ty-region').value.trim();
+  try{
+    await dbSet('cellar/type_notes/' + tyKey, (desc||region) ? { desc, region } : null);
+    document.getElementById('typeModal').classList.remove('open');
+    showToast('Saved');
+  }catch(e){ document.getElementById('tyStatus').textContent='❌ ' + (e.message||e); }
+};
 function varietalSelectHTML(list, emoji){
   const src = list || activeArr().filter(kindMatch);
   const em = emoji || '🍇';
@@ -1679,7 +1802,7 @@ function varietalSelectHTML(list, emoji){
   const label = varietalFilter ? (em + ' ' + cap(varietalFilter)) : (em + ' Type…');
   return `<span class="dd"><button class="sortchip ${varietalFilter?'on':''}" onclick="ddToggle(event,this)">${esc(label)} ▾</button><span class="dd-panel">` +
     `<button class="dd-opt ${!varietalFilter?'on':''}" onclick="setVarietal('')">All types</button>` +
-    fams.map(f=>`<button class="dd-opt ${varietalFilter===f?'on':''}" onclick="setVarietal('${esc(f)}')">${esc(cap(f))} <em>(${counts[f]})</em></button>`).join('') + `</span></span>`;
+    fams.map(f=>`<button class="dd-opt ${varietalFilter===f?'on':''}" data-tinfo="${esc(f)}" onclick="setVarietal('${esc(f)}')">${esc(cap(f))} <em>(${counts[f]})</em></button>`).join('') + `</span></span>`;
 }
 // Flavor-tag dropdown — same dark panel, options are the tags actually used
 // by the bottles in scope (Caramel, Smoky, Jammy…), with counts.
