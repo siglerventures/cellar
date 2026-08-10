@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.63</title>
+<title>The Cellar Ledger — Rev 2.64</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.63</div>
+    <div class="auth-rev">Rev 2.64</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.63</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.64</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -1072,8 +1072,30 @@ const TAGSETS = {
   ]
 };
 const ALLTAGS = Object.values(TAGSETS).flat();
-const tagInfo = k => ALLTAGS.find(t=>t.k===k) || {t:k,c:'#a89f8c'};
-function tagsFor(kind){ return TAGSETS[kind] || TAGS; }
+// User-defined tags live at cellar/custom_tags/{kind}/{key} = {t,c} (synced live).
+let customTags = {};
+const CUSTOM_TAG_COLORS = ['#c9853c','#8a5a8f','#7a9a6a','#6f8a9c','#a8556a','#9c7b46','#c9a35c','#9a5a55'];
+function customTagList(kind){
+  return Object.entries(customTags[kind]||{}).map(([k,v])=>({k, t:(v&&v.t)||k, c:(v&&v.c)||'#a89f8c'}));
+}
+const tagInfo = k => ALLTAGS.find(t=>t.k===k)
+  || Object.keys(customTags).map(kd=>customTagList(kd).find(t=>t.k===k)).find(Boolean)
+  || {t:k,c:'#a89f8c'};
+function tagsFor(kind){ return (TAGSETS[kind] || TAGS).concat(customTagList(kind)); }
+window.addCustomTag = async function(kind, padId){
+  const name = (prompt('New flavor tag for your ' + kind + ' collection:')||'').trim();
+  if(!name) return;
+  if(tagsFor(kind).some(t=>t.t.toLowerCase()===name.toLowerCase())){ showToast('That tag already exists'); return; }
+  const key = 'c_' + (deacc(name).replace(/[^a-z0-9]/g,'').slice(0,24) || Date.now().toString(36));
+  const c = CUSTOM_TAG_COLORS[customTagList(kind).length % CUSTOM_TAG_COLORS.length];
+  try{
+    await dbSet('cellar/custom_tags/' + kind + '/' + key, { t:name, c });
+    // Select it right away on the pad the + was tapped in (onValue also rebuilds).
+    const pad = TAG_PADS[padId];
+    if(pad && pad.sel.indexOf(key)<0) pad.sel.push(key);
+    showToast('Added tag — ' + name);
+  }catch(e){ showToast('Could not save the tag: ' + (e.message||e)); }
+};
 // Bottles now carry `tags` (array); fall back to the legacy single `tag` for older records.
 function bottleTags(w){ return (Array.isArray(w.tags) && w.tags.length) ? w.tags : (w.tag ? [w.tag] : []); }
 function tagChipsHTML(w){ return bottleTags(w).map(k=>{ const ti=tagInfo(k); return `<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`; }).join(''); }
@@ -1196,6 +1218,10 @@ function subscribe(){
   onValue(ref(db, 'cellar/ask_history'), snap => { askLog = snap.val() || {}; const el=document.getElementById('askHist'); if(el && el.style.display!=='none') renderAskHistory(); });
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
   onValue(ref(db, 'cellar/racks'), snap => { racks = snap.val() || {}; if(!racks[curRack] && Object.keys(racks).length) curRack = rackIds()[0]; if(view==='cellar') render(); });
+  onValue(ref(db, 'cellar/custom_tags'), snap => {
+    customTags = snap.val() || {};
+    Object.keys(TAG_PADS).forEach(id=>{ const p=TAG_PADS[id]; if(p.kind) rebuildTagPad(id, p.kind); });
+  });
 }
 
 // ── BUILD SCORE PADS + TAGS ──
@@ -1209,13 +1235,20 @@ function buildScorepad(el, onPick){
   }
 }
 function buildTags(el, onPick, kind){
+  kind = kind || 'wine';
   el.innerHTML = '';
-  tagsFor(kind||'wine').forEach(t=>{
+  tagsFor(kind).forEach(t=>{
     const b=document.createElement('button');
     b.className='tag'; b.textContent=t.t; b.style.borderColor=t.c+'55'; b.dataset.k=t.k;
     b.onclick=()=>onPick(t.k,b,t.c,el);
     el.appendChild(b);
   });
+  // "+" — add your own flavor tag to this collection (saved for everyone).
+  const plus=document.createElement('button');
+  plus.className='tag'; plus.textContent='＋'; plus.title='Add your own flavor tag';
+  plus.style.borderStyle='dashed';
+  plus.onclick=()=>addCustomTag(kind, el.id);
+  el.appendChild(plus);
 }
 function paintScore(el, v){ el.querySelectorAll('.sbtn').forEach(b=>b.classList.toggle('on', +b.dataset.v===v)); }
 // Paint every selected tag (multi-select). arr = list of selected tag keys.
@@ -1236,6 +1269,7 @@ const TAG_PADS = {
 };
 function rebuildTagPad(elId, kind){
   const pad = TAG_PADS[elId]; const el = document.getElementById(elId); if(!pad || !el) return;
+  pad.kind = kind;   // remembered so a custom-tag sync can rebuild with the right set
   buildTags(el, (k)=>{ toggleTagKey(pad.sel, k); pad.paint(); }, kind);
   pad.paint();
 }
@@ -1825,6 +1859,7 @@ async function piAddFiles(ctx, files){
       const cut = await scrapeLocal(raw);
       piStore[ctx].push({ dataUrl: cut || raw });
       piRender(ctx);
+      draftQueue(ctx);
       // Scan from the untouched original — the model reads it more reliably.
       if((ctx==='q'||ctx==='ca') && !piScanned[ctx]){ piScanned[ctx]=true; scanAndFill(raw, ctx); }
     }catch(e){ showToast('Could not read that photo — try again.'); }
@@ -1835,8 +1870,9 @@ window.piRemove = function(ctx,i){
   if(ctx==='dt' && p && p.path) dtRemoved.push(p.path);
   piStore[ctx].splice(i,1);
   piRender(ctx);
+  draftQueue(ctx);
 };
-window.piSetMain = function(ctx,i){ const l=piStore[ctx]; const [p]=l.splice(i,1); l.unshift(p); piRender(ctx); };
+window.piSetMain = function(ctx,i){ const l=piStore[ctx]; const [p]=l.splice(i,1); l.unshift(p); piRender(ctx); draftQueue(ctx); };
 window.piDragOver = function(e,ctx){ e.preventDefault(); document.getElementById(ctx+'-intake').classList.add('drag'); };
 window.piDragLeave = function(e,ctx){ document.getElementById(ctx+'-intake').classList.remove('drag'); };
 window.piDrop = function(e,ctx){
@@ -2063,6 +2099,67 @@ function piReset(ctx){
   piRender(ctx);
   if(ctx==='q'||ctx==='ca') setScanStatus(ctx, '', '');
 }
+// ── FORM DRAFTS (survive the mobile camera reload) ───────────────────────────
+// On phones, tapping "📷 Take photo" hands off to the camera app; Android/iOS
+// often kill the browser tab for memory and the page RELOADS on return, losing
+// everything typed. So the Log-a-pour and Add-Bottle forms autosave a draft to
+// RTDB (cellar/drafts/{uid}/{ctx}) and restore it after sign-in.
+const DRAFT_FIELDS = {
+  q:  ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-price','q-vendor','q-notes','q-kind'],
+  ca: ['ca-name','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-url','ca-predlow','ca-predhigh','ca-qty','ca-kind']
+};
+const DRAFT_MAX_AGE = 6*60*60*1000;   // restore drafts younger than 6 h
+let draftTimers = {};
+function draftPath(ctx){ const uid=auth.currentUser&&auth.currentUser.uid; return uid ? ('cellar/drafts/'+uid+'/'+ctx) : null; }
+window.draftQueue = function(ctx){
+  if(ctx!=='q' && ctx!=='ca') return;
+  clearTimeout(draftTimers[ctx]);
+  draftTimers[ctx] = setTimeout(()=>draftWrite(ctx), 700);
+};
+function draftWrite(ctx){
+  const p = draftPath(ctx); if(!p) return;
+  const fields = {};
+  let hasText = false;
+  DRAFT_FIELDS[ctx].forEach(id=>{ const el=document.getElementById(id); if(el){ fields[id]=el.value; if(el.value && !id.endsWith('-kind') && !id.endsWith('-qty')) hasText=true; } });
+  // Photos already taken ride along (capped so the draft stays a sane size).
+  const photos = [];
+  let budget = 4_000_000;
+  for(const ph of piStore[ctx]){
+    const d = ph.dataUrl; if(!d) continue;
+    if(d.length > budget) break;
+    budget -= d.length; photos.push(d);
+    if(photos.length>=6) break;
+  }
+  if(!hasText && !photos.length){ dbRemove(p).catch(()=>{}); return; }
+  dbSet(p, { at:Date.now(), fields, photos }).catch(e=>console.warn('[Cellar] draft save failed:', e));
+}
+function draftClear(ctx){
+  clearTimeout(draftTimers[ctx]);
+  const p = draftPath(ctx); if(p) dbRemove(p).catch(()=>{});
+}
+async function restoreDrafts(){
+  const uid = auth.currentUser && auth.currentUser.uid; if(!uid) return;
+  let d; try{ d = (await dbGet('cellar/drafts/'+uid)).val(); }catch(_){ return; }
+  if(!d) return;
+  const pick = ['ca','q'].find(c=>d[c] && (Date.now()-(d[c].at||0)) < DRAFT_MAX_AGE);
+  ['ca','q'].forEach(c=>{ if(d[c] && c!==pick) dbRemove('cellar/drafts/'+uid+'/'+c).catch(()=>{}); });
+  if(!pick) return;
+  const saved = d[pick];
+  if(pick==='ca') openCellarAdd(); else openLogPanel();
+  Object.entries(saved.fields||{}).forEach(([id,v])=>{ const el=document.getElementById(id); if(el && v!=null) el.value=v; });
+  applyKindFields(pick);
+  if(pick==='q') rebuildTagPad('tags', (document.getElementById('q-kind')||{value:'wine'}).value);
+  piStore[pick] = (saved.photos||[]).map(u=>({ dataUrl:u }));
+  piScanned[pick] = piStore[pick].length>0;   // don't re-run the label scan on restore
+  piRender(pick);
+  showToast('📋 Restored your unsaved ' + (pick==='ca'?'Add Bottle':'Log a pour') + ' draft — the phone reloaded the app mid-photo');
+}
+// Autosave on typing in either form.
+Object.entries(DRAFT_FIELDS).forEach(([ctx,ids])=>ids.forEach(id=>{
+  const el=document.getElementById(id); if(!el) return;
+  el.addEventListener('input', ()=>draftQueue(ctx));
+  el.addEventListener('change', ()=>draftQueue(ctx));
+}));
 // Upload compressed label to Storage under the bottle id; return {path,url}.
 async function uploadLabel(bottleId, dataUrl){
   // Storage path MUST stay under cellar/ — that's the folder the published
@@ -2118,6 +2215,7 @@ function resetQuickLog(){
   ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-price','q-vendor','q-notes'].forEach(id=>document.getElementById(id).value='');
   { const ke=document.getElementById('q-kind'); if(ke) ke.value = (kindFilter==='all') ? 'wine' : kindFilter; } applyKindFields('q');
   piReset('q');
+  draftClear('q');
   dismissScout();
   draft={score:null,half:false,tags:[],buy:false};
   paintScore(document.getElementById('scorepad'), -1);
@@ -2305,7 +2403,7 @@ window.openCellarAdd = ()=>{
   document.getElementById('cellarAddStatus').textContent='';
   document.getElementById('cellarAddModal').classList.add('open');
 };
-window.closeCellarAddModal = ()=>document.getElementById('cellarAddModal').classList.remove('open');
+window.closeCellarAddModal = ()=>{ document.getElementById('cellarAddModal').classList.remove('open'); draftClear('ca'); };
 window.addCellarBottle = async function(){
   const name = document.getElementById('ca-name').value.trim();
   if(!name){ document.getElementById('cellarAddStatus').textContent='⚠ Wine name is required.'; return; }
@@ -3420,6 +3518,7 @@ onAuthStateChanged(auth, async (user)=>{
     await ensureRackLayout();
     subscribe();
     setView('all');
+    restoreDrafts();
   }
 });
 
