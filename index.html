@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.86</title>
+<title>The Cellar Ledger — Rev 2.87</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -493,7 +493,7 @@
     .wrap{max-width:1100px}
     .quick,.narrow{max-width:760px;margin-left:auto;margin-right:auto}
     /* Tile lists into a fluid grid; same cards, just bordered tiles side by side. */
-    .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:stretch}
+    .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start}
     .card-grid>.wine,.card-grid>.lb-row,.card-grid>.wl-row{border-bottom:none;border:1px solid var(--line);border-radius:5px;padding:14px 16px;background:var(--glass)}
   }
   @media(min-width:1200px){
@@ -527,7 +527,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.86</div>
+    <div class="auth-rev">Rev 2.87</div>
   </div>
 </div>
 
@@ -644,7 +644,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.86</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.87</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2620,6 +2620,19 @@ function matchSearch(w){
 }
 function scoreClass(r){ return r>=7?'s-hi':r>=5?'s-mid':'s-lo'; }
 function fmt(n){ return Number(n).toFixed(1).replace(/\.0$/,''); }
+// Predicted rating for an un-tasted (cellared) bottle: midpoint of the pred band,
+// snapped to the nearest half-point. null when no prediction was recorded.
+function predNum(w){
+  const vals=[Number(w&&w.predLow),Number(w&&w.predHigh)].filter(v=>!isNaN(v)&&v>0);
+  if(!vals.length) return null;
+  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*2)/2;
+}
+// Score column for a cellared bottle: its predicted rating (marked "est"), or an
+// empty column when there's no prediction — never the bare word "cellared".
+function cellaredScoreHTML(w){
+  const pn=predNum(w);
+  return pn!=null ? `<div class="score s-pred"><b>${fmt(pn)}</b><s>est</s></div>` : `<div class="score s-pred"></div>`;
+}
 function fmtPrice(p){ if(p==null||p==='') return ''; const n=Number(p); if(!isFinite(n)) return ''; return '$' + (n%1 ? n.toFixed(2) : n.toFixed(0)); }
 function parsePriceInput(id){ const el=document.getElementById(id); const v=((el&&el.value)||'').replace(/[^0-9.]/g,'').trim(); if(v==='') return null; const n=Number(v); return isFinite(n)?n:null; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -2739,7 +2752,7 @@ function groupedCardHTML(recs){
   const buyAgain = recs.some(r=>r.buyAgain);
   const scoreBlock = latest
     ? `<div class="score ${scoreClass(latest.score)}"><b>${fmt(latest.score)}</b></div>`
-    : `<div class="score s-pred"><s>cellared</s></div>`;
+    : cellaredScoreHTML({ predLow:pick(r=>r.predLow), predHigh:pick(r=>r.predHigh) });
   const row2=[vintage,grape,region,abv?abv+'%':'',fmtPrice(price)].filter(Boolean).join(' · ');
   // Keep the combined card lean: just a compact ×N/slot badge — the score column
   // already carries the rating, and buy-again lives on its own tab.
@@ -2767,7 +2780,7 @@ function collectionCardHTML(w){
     const row2=[w.vintage,w.grape,w.region,fmtPrice(w.price)].filter(Boolean).join(' · ');
     const qty = Number(w.qty)||1;
     const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${esc(slotOf(w))}</span>` : '';
-    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(kindOf(w)!=='wine' && !w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left">${cellaredScoreHTML(w)}${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(kindOf(w)!=='wine' && !w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
   }
   return openedCardHTML(w);
 }
