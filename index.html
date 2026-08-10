@@ -334,7 +334,9 @@
   .rack-grid.z4{--cw:190px;--rh:34px;--ch:240px}
   .rack-grid.z4 .slot-name{display:none}
   .rack-grid.z4 .slot-thumb{max-width:178px;max-height:228px;width:auto;height:auto;object-fit:contain;margin-bottom:0}
-  .rack-grid.z4 .rack-slot.filled{padding:4px}
+  /* Photo view: drop the garnet fill so bottle photos sit on the page's black. */
+  .rack-grid.z4 .rack-slot.filled{padding:4px;background:transparent;border-color:var(--line)}
+  .rack-grid.z4 .rack-slot.filled:hover{border-color:var(--gold-dim)}
   .rack-grid.z4 .rack-slot.filled:not(:has(.slot-thumb)) .slot-name{display:block}
   .ca-suggest{display:none;border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin:4px 0 12px;background:rgba(201,163,92,0.07)}
   .ca-suggest.show{display:block}
