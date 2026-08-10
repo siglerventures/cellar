@@ -410,24 +410,20 @@
   /* Wine cards only: one FIXED, uniform box (no flavor tags/notes on the card) so
      every wine tile is the same compact size — no wasted space, no ragged heights.
      Bourbon/other kinds are untouched (they never get the .w-wine class). */
-  .w-wine{align-items:center;height:168px;overflow:hidden}
-  /* Framed "lit shelf" photo so the bottle sits on a panel instead of floating in
-     the dark with empty space around it. Score badge floats in the top-left. */
-  .w-wine .cardphoto{width:104px;height:140px;border-radius:8px;position:relative;
-    background:radial-gradient(120% 78% at 50% 22%, #37191f 0%, #1c0f12 72%);
-    border:1px solid rgba(201,163,92,0.20);box-shadow:inset 0 1px 0 rgba(255,255,255,0.03)}
-  .w-wine .cardphoto img{padding:7px;object-fit:contain}
-  .w-wine .cardphoto.ph{background:radial-gradient(120% 78% at 50% 22%, #37191f 0%, #1c0f12 72%)}
-  .cp-score{position:absolute;top:6px;left:6px;z-index:2;font-family:'Cormorant Garamond',serif;
-    font-weight:600;font-size:19px;line-height:.9;color:var(--gold);background:rgba(15,7,8,0.74);
-    border:1px solid var(--line);border-radius:7px;padding:3px 8px;display:flex;flex-direction:column;align-items:center}
-  .cp-score.s-pred{color:var(--parch-dim);font-size:16px}
-  .cp-score i{font-style:normal;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+  .w-wine{align-items:center;height:168px;overflow:hidden;position:relative}
+  /* Bottle photo FILLS the frame (no backdrop, no side gaps) — cover-crop. */
+  .w-wine .cardphoto{width:104px;height:150px;border-radius:6px;overflow:hidden;background:none}
+  .w-wine .cardphoto img{width:100%;height:100%;object-fit:cover;padding:0}
+  /* Score badge lives in the top-right corner of the whole card. */
+  .w-wine .meta{padding-right:44px}
+  .w-wine .cp-score{position:absolute;top:10px;right:10px;z-index:3;font-family:'Cormorant Garamond',serif;
+    font-weight:600;font-size:20px;line-height:.9;color:var(--gold);display:flex;flex-direction:column;align-items:center}
+  .w-wine .cp-score.s-pred{color:var(--parch-dim);font-size:17px}
+  .w-wine .cp-score i{font-style:normal;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
   #content.cs-s .w-wine{height:126px}
-  #content.cs-s .w-wine .cardphoto{width:74px;height:100px}
-  #content.cs-s .cp-score{font-size:15px;padding:2px 6px}
+  #content.cs-s .w-wine .cardphoto{width:74px;height:104px}
   #content.cs-l .w-wine{height:236px}
-  #content.cs-l .w-wine .cardphoto{width:150px;height:200px}
+  #content.cs-l .w-wine .cardphoto{width:150px;height:210px}
   /* Grouped-wine card badges */
   .gbadge{display:inline-flex;align-items:center;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;border-radius:20px;padding:2px 9px;border:1px solid var(--line)}
   .gb-rated{color:var(--gold);border-color:var(--gold-dim)}
@@ -2791,7 +2787,7 @@ function groupedCardHTML(recs){
     const inner = latest ? `${fmt(latest.score)}`
       : (()=>{ const pn=predNum({predLow:pick(r=>r.predLow),predHigh:pick(r=>r.predHigh)}); return pn!=null?`${fmt(pn)}<i>est</i>`:''; })();
     const badge = wineScoreBadge(latest?scoreClass(latest.score):'s-pred', inner);
-    return `<div class="wine wine-group w-wine" onclick="openWineGroup('${id0}')"><div class="wine-left">${cardPhotoHTML(photoRec, badge)}</div><div class="meta"><div class="name">${esc(nm)}</div>${producer?`<div class="producer">${esc(producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
+    return `<div class="wine wine-group w-wine" onclick="openWineGroup('${id0}')">${badge}<div class="wine-left">${cardPhotoHTML(photoRec)}</div><div class="meta"><div class="name">${esc(nm)}</div>${producer?`<div class="producer">${esc(producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
   }
   const scoreBlock = latest
     ? `<div class="score ${scoreClass(latest.score)}"><b>${fmt(latest.score)}</b></div>`
@@ -2821,7 +2817,7 @@ function collectionCardHTML(w){
     if(kindOf(w)==='wine'){
       const pn = predNum(w);
       const badge = wineScoreBadge('s-pred', pn!=null ? `${fmt(pn)}<i>est</i>` : '');
-      return `<div class="wine w-wine" onclick="openDetail('${w.id}')"><div class="wine-left">${cardPhotoHTML(w, badge)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
+      return `<div class="wine w-wine" onclick="openDetail('${w.id}')">${badge}<div class="wine-left">${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
     }
     // Non-wine (bourbon/tequila): unchanged.
     const qty = Number(w.qty)||1;
@@ -3029,7 +3025,7 @@ function openedCardHTML(w){
   // Wine: score badge floated on the photo; clean name/producer/meta, no tags/notes.
   if(kindOf(w)==='wine'){
     const badge = wineScoreBadge(scoreClass(w.score), `${fmt(w.score)}`);
-    return `<div class="wine w-wine" onclick="openDetail('${w.id}')"><div class="wine-left">${cardPhotoHTML(w, badge)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
+    return `<div class="wine w-wine" onclick="openDetail('${w.id}')">${badge}<div class="wine-left">${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
   }
   return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(!w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${tagChipsHTML(w)}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div></div>`;
 }
