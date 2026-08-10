@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.65</title>
+<title>The Cellar Ledger — Rev 2.66</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.65</div>
+    <div class="auth-rev">Rev 2.66</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.65</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.66</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -918,6 +918,10 @@ function emptyForKind(fallback){
   return 'Your ' + kindLabel(kindFilter) + ' collection starts here — tap “Log a pour” for one you\'re enjoying, or “＋ Add to cellar” (Cellar tab) for one you\'re keeping. The scanner recognizes ' + kindLabel(kindFilter).replace(/^\S+ /,'').toLowerCase() + ' labels too.';
 }
 function kindMatch(w){ return kindFilter==='all' || kindOf(w)===kindFilter; }
+// Still physically on a shelf? Opened WINE is drunk that night and leaves the
+// rack; an opened bourbon/tequila/etc lives on the bar for months, so it keeps
+// (or can be given) a slot until it's archived.
+function onShelf(w){ return w.status==='cellared' || (w.status==='opened' && kindOf(w)!=='wine'); }
 window.setKind = function(k){ kindFilter = k; renderKindRow(); render(); };
 // Vendor / rep type-ahead: every previously used value becomes a dropdown option.
 function refreshDatalists(){
@@ -1628,10 +1632,11 @@ window.openDetail = function(id){
   // 📍 Where is it? A dedicated location line for anything cellared — tap to jump to the rack.
   (function(){
     const el = document.getElementById('dt-loc'); if(!el) return;
-    if(w.status!=='cellared'){ el.style.display='none'; el.innerHTML=''; return; }
+    if(!onShelf(w)){ el.style.display='none'; el.innerHTML=''; return; }
     let txt;
     if(w.rackCol && w.rackRow) txt = '📍 ' + esc(rackDef(bRack(w)).name) + ' · slot ' + slotCode(Number(w.rackCol),Number(w.rackRow));
     else txt = '🧺 Unplaced — in the ' + esc(rackDef(rackForKind(kindOf(w)) || 'main').name) + ' tray';
+    if(w.status==='opened') txt += ' · ◐ open bottle';
     el.innerHTML = `<button class="dt-sib" onclick="dtGoRack('${id}')">${txt} <b>→ show me</b></button>`;
     el.style.display='';
   })();
@@ -2393,9 +2398,11 @@ window.confirmOpen = async function(){
         addedBy:uid, addedAt:(w.addedAt||now), openedAt:now
       });
     }else{
-      await dbUpdate('cellar/bottles/' + openDraft.id, {
+      // Opened WINE frees its slot (the bottle's gone); spirits stay put on the shelf.
+      const freeSlot = kindOf(w)==='wine' ? { rackCol:null, rackRow:null, rackId:null } : {};
+      await dbUpdate('cellar/bottles/' + openDraft.id, Object.assign({
         status:'opened', qty:0, score:finalScore, tags:openDraft.tags.slice(), tag:(openDraft.tags[0]||null), buyAgain:openDraft.buy, openedAt:now
-      });
+      }, freeSlot));
     }
     logEvent('opened', { bottleId:openDraft.id, name:w.name, vintage:w.vintage||'', price:(w.price==null?null:w.price) });
     closeOpenModal();
@@ -2901,7 +2908,7 @@ function colLabels(col){                                                 // dist
 // Header label = the whole column's range (reflects live edits), e.g. "Sauv Blanc → Chardonnay → Pinot Gris"
 function colHeaderLabel(col){ const ls = colLabels(col); return ls.length ? ls.join(' → ') : ('Col ' + col); }
 function repLabel(col){ return cellLabel(col, 1); }
-function placedAt(col,row){ return activeArr().find(w=>w.status==='cellared' && bRack(w)===curRack && Number(w.rackCol)===col && Number(w.rackRow)===row) || null; }
+function placedAt(col,row){ return activeArr().find(w=>onShelf(w) && bRack(w)===curRack && Number(w.rackCol)===col && Number(w.rackRow)===row) || null; }
 function firstOpenRow(col){ const R=curDef().rows; for(let r=1;r<=R;r++){ if(!placedAt(col,r)) return r; } return null; }
 function nearestOpenColumn(pref){
   const C=curDef().cols;
@@ -3004,7 +3011,7 @@ window.dtGoRack = function(id){
 function rackHTML(){
   const d = curDef();
   const rkind = rackKind(curRack);
-  const cellared = activeArr().filter(w=>w.status==='cellared');
+  const cellared = activeArr().filter(onShelf);
   const placed = {}; let unplaced = [];
   cellared.forEach(w=>{
     const rid = bRack(w), rd = rackDef(rid);
@@ -3018,7 +3025,9 @@ function rackHTML(){
   // A kind-specific rack (Bourbon shelf, Tequila shelf) only trays its own
   // bottles; the Wine Wall stays the mixed overflow home and shows everything.
   const tray_all = unplaced.length;
-  if(rkind) unplaced = unplaced.filter(w=>kindOf(w)===rkind);
+  // Kind racks tray their own bottles (incl. opened spirits still on the bar);
+  // the mixed Wine Wall tray sticks to unopened stock so old pours don't pile up.
+  unplaced = unplaced.filter(w=> rkind ? kindOf(w)===rkind : w.status==='cellared');
   const admin = isAdmin();
 
   // Rack switcher + admin rack management
@@ -3056,7 +3065,7 @@ function rackHTML(){
   }else if(inspect && bottles[inspect]){
     const w = bottles[inspect];
     const loc = (w.rackCol && w.rackRow) ? slotCode(w.rackCol,w.rackRow) + ' · ' + esc(cellLabel(w.rackCol,w.rackRow)) : 'unplaced';
-    bar = `<div class="rack-bar"><span class="rb-msg"><b>${esc(w.name)}</b> — ${loc}</span><span class="rb-actions"><button class="scout-btn" onclick="rackMove('${inspect}')">Move</button><button class="scout-btn" onclick="rackUnplace('${inspect}')">Unplace</button><button class="scout-btn" onclick="rackMarkOpened('${inspect}')">Mark opened</button><button class="scout-btn ghost" onclick="rackCancel()">Close</button></span></div>`;
+    bar = `<div class="rack-bar"><span class="rb-msg"><b>${esc(w.name)}</b> — ${loc}</span><span class="rb-actions"><button class="scout-btn" onclick="rackMove('${inspect}')">Move</button><button class="scout-btn" onclick="rackUnplace('${inspect}')">Unplace</button>${w.status==='cellared'?`<button class="scout-btn" onclick="rackMarkOpened('${inspect}')">Mark opened</button>`:''}<button class="scout-btn ghost" onclick="rackCancel()">Close</button></span></div>`;
   }else{
     bar = '';
   }
@@ -3072,7 +3081,7 @@ function rackHTML(){
       const cnt = g.length>1 ? ` <b class="tray-x">×${g.length}</b>` : '';
       const on = g.some(r=>placing===r.id) ? 'on' : '';
       const ttl = esc([rep.name,rep.producer,rep.vintage].filter(Boolean).join(' · ')) + (g.length>1?(' — '+g.length+' bottles'):'');
-      return `<button class="tray-chip ${on}" draggable="true" ondragstart="rackDragStart(event,'${rep.id}')" onclick="rackTapBottle('${rep.id}')" title="${ttl}">${esc(rep.name)}${vin}${cnt}</button>`;
+      return `<button class="tray-chip ${on}" draggable="true" ondragstart="rackDragStart(event,'${rep.id}')" onclick="rackTapBottle('${rep.id}')" title="${ttl}">${esc(rep.name)}${vin}${rep.status==='opened'?' ◐':''}${cnt}</button>`;
     }).join('') + '</div>';
   }else{
     tray += '<div class="rack-tray-empty">Drag a bottle here to pull it off the rack.</div>';
@@ -3093,7 +3102,7 @@ function rackHTML(){
         const scoreTxt = isScore ? fmt(w.score) : ((w.predLow!=null&&w.predHigh!=null)?fmt(w.predLow)+'–'+fmt(w.predHigh):'');
         const thumb = w.photoUrl ? `<img class="cf-thumb" src="${esc(w.photoUrl)}" alt="">` : `<span class="cf-thumb">🍷</span>`;
         const tags = tagChipsHTML(w);
-        rowsHtml += `<button class="cf-row filled" onclick="openDetail('${w.id}')"><span class="cf-slot">${slot}</span>${thumb}<span class="cf-meta"><span class="cf-nm">${esc(w.name||'')}${vin}</span>${sub?`<span class="cf-sub">${esc(sub)}</span>`:''}${tags?`<span class="cf-tags">${tags}</span>`:''}</span>${scoreTxt?`<span class="cf-score${isScore?'':' band'}">${esc(scoreTxt)}</span>`:''}</button>`;
+        rowsHtml += `<button class="cf-row filled" onclick="openDetail('${w.id}')"><span class="cf-slot">${slot}</span>${thumb}<span class="cf-meta"><span class="cf-nm">${esc(w.name||'')}${vin}${w.status==='opened'?' ◐':''}</span>${sub?`<span class="cf-sub">${esc(sub)}</span>`:''}${tags?`<span class="cf-tags">${tags}</span>`:''}</span>${scoreTxt?`<span class="cf-score${isScore?'':' band'}">${esc(scoreTxt)}</span>`:''}</button>`;
       }else{
         rowsHtml += `<button class="cf-row cf-empty" onclick="rackTapSlot(${col},${r})"><span class="cf-slot">${slot}</span><span class="cf-empty-lbl">empty · ${esc(cellLabel(col,r))}</span></button>`;
       }
@@ -3120,8 +3129,9 @@ function rackHTML(){
       if(w){
         // Filled slot shows the BOTTLE (photo thumb → fallback short name + vintage). Never the category.
         const vv = w.vintage ? ` ’${esc(String(w.vintage).replace(/[^0-9]/g,'').slice(-2))}` : '';
-        const short = esc(w.name || w.producer || '');
-        const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ') + ' · ' + slotCode(c,r);
+        const op = w.status==='opened' ? ' ◐' : '';
+        const short = esc(w.name || w.producer || '') + op;
+        const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ') + (op?' · opened':'') + ' · ' + slotCode(c,r);
         const thumb = w.photoUrl ? `<img class="slot-thumb" src="${esc(w.photoUrl)}" alt="">` : '';
         const vdim = ((varietalFilter && pctOf(w, varietalFilter) < 0) || (flavorFilter && !fMatch(w))) ? ' vdim' : '';
         grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}${flash}${vdim}" data-cell="${c}_${r}" draggable="${rackEdit?'false':'true'}" ondragstart="rackDragStart(event,'${w.id}')" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(title)}" onclick="rackTapSlot(${c},${r})">${thumb}<span class="slot-name">${short}${vv}</span></div>`;
@@ -3186,7 +3196,7 @@ window.rackSearchInput = function(term){
   const box = document.getElementById('rackSearchRes'); if(!box) return;
   const q = deburr(String(term||'').toLowerCase()).trim();
   if(!q){ box.style.display='none'; box.innerHTML=''; return; }
-  const hits = activeArr().filter(w=>w.status==='cellared').filter(w=>
+  const hits = activeArr().filter(onShelf).filter(w=>
     deburr([w.name,w.producer,w.vintage,w.region,w.grape].filter(Boolean).join(' ').toLowerCase()).indexOf(q) >= 0
   ).slice(0,8);
   box.style.display = 'block';
@@ -3272,7 +3282,7 @@ function rmDims(){
   };
 }
 function rmOutside(C,R){
-  return activeArr().filter(w=>w.status==='cellared' && bRack(w)===curRack && w.rackCol && w.rackRow && (Number(w.rackCol)>C || Number(w.rackRow)>R));
+  return activeArr().filter(w=>onShelf(w) && bRack(w)===curRack && w.rackCol && w.rackRow && (Number(w.rackCol)>C || Number(w.rackRow)>R));
 }
 // Live warning while resizing: how many bottles would fall outside.
 window.rmNote = function(){
@@ -3312,7 +3322,7 @@ window.rmSave = async function(){
 };
 window.rmDelete = async function(){
   if(curRack==='main'){ showToast('The main wall can’t be deleted'); return; }
-  const occupied = activeArr().some(w=>w.status==='cellared' && bRack(w)===curRack && w.rackCol && w.rackRow);
+  const occupied = activeArr().some(w=>onShelf(w) && bRack(w)===curRack && w.rackCol && w.rackRow);
   if(occupied){ document.getElementById('rm-status').textContent='⚠ Move its bottles off first.'; return; }
   const d = curDef();
   if(!confirm('Delete rack "' + d.name + '"?')) return;
