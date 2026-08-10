@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.69</title>
+<title>The Cellar Ledger — Rev 2.70</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.69</div>
+    <div class="auth-rev">Rev 2.70</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.69</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.70</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2717,7 +2717,7 @@ function collectionCardHTML(w){
     const row2=[w.vintage,w.grape,w.region,fmtPrice(w.price)].filter(Boolean).join(' · ');
     const qty = Number(w.qty)||1;
     const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${esc(slotOf(w))}</span>` : '';
-    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${kindOf(w)!=='wine'?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(kindOf(w)!=='wine' && !w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
   }
   return openedCardHTML(w);
 }
@@ -2912,7 +2912,7 @@ function kanbanCardHTML(w){
 function openedCardHTML(w){
   const ti=tagInfo(w.tag);
   const row2=[w.vintage,w.grape,w.region,w.abv?w.abv+'%':'',fmtPrice(w.price)].filter(Boolean).join(' · ');
-  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${kindOf(w)!=='wine'?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${tagChipsHTML(w)}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div></div>`;
+  return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(kindOf(w)!=='wine' && !w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${tagChipsHTML(w)}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div></div>`;
 }
 
 // ── RACK MAP: labels, matching, placement ──
@@ -3485,7 +3485,7 @@ function wishlistHTML(){
   // Cards look like the bottle cards — photo left, details right; tap for the full editor.
   return html + '<div class="card-grid">' + list.map(w=>{
     const meta = [w.producer, w.region, w.vintage, w.abv?w.abv+'%':'', (w.price!=null&&w.price!=='')?fmtPrice(w.price):''].filter(Boolean).join(' · ');
-    return `<div class="wine" onclick="openWlDetail('${w.id}')"><div class="wine-left">${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${kindOf(w)!=='wine'?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.desc?`<div class="producer">${esc(w.desc)}</div>`:''}${meta?`<div class="row2"><span>${esc(meta)}</span></div>`:''}${w.note?`<div class="wl-note">${esc(w.note)}</div>`:''}<div style="margin-top:8px"><button class="pi-btn" onclick="event.stopPropagation();wlBought('${w.id}')">🛒 Bought it</button> <button class="pi-btn" onclick="event.stopPropagation();removeBuylistItem('${w.id}')">✕ Remove</button></div></div></div>`;
+    return `<div class="wine" onclick="openWlDetail('${w.id}')"><div class="wine-left">${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(kindOf(w)!=='wine' && !w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.desc?`<div class="producer">${esc(w.desc)}</div>`:''}${meta?`<div class="row2"><span>${esc(meta)}</span></div>`:''}${w.note?`<div class="wl-note">${esc(w.note)}</div>`:''}<div style="margin-top:8px"><button class="pi-btn" onclick="event.stopPropagation();wlBought('${w.id}')">🛒 Bought it</button> <button class="pi-btn" onclick="event.stopPropagation();removeBuylistItem('${w.id}')">✕ Remove</button></div></div></div>`;
   }).join('') + '</div>';
 }
 // ── WISHLIST ITEM DETAIL — tap a card: photos, notes, every field editable ──
