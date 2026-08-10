@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.1</title>
+<title>The Cellar Ledger — Rev 3.2</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -566,7 +566,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.1</div>
+    <div class="auth-rev">Rev 3.2</div>
   </div>
 </div>
 
@@ -683,7 +683,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.1</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.2</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -844,6 +844,7 @@
       <button class="mbtn ghost dt-open" id="dtOpenBtn" style="display:none" onclick="dtMarkOpened()">Opened</button>
     </div>
     <div class="dt-grid">
+      <input id="dt-qty" placeholder="Qty on hand" title="Bottles on hand — bump it when you buy more" type="number" min="0" step="1">
       <input id="dt-price" placeholder="Price $" type="number" step="0.01" min="0">
       <input id="dt-abv" placeholder="ABV %">
       <input id="dt-vendor" placeholder="Vendor / store" list="vendorList">
@@ -1914,6 +1915,7 @@ window.openDetail = function(id){
   document.getElementById('dt-notes').value = w.notes || '';
   document.getElementById('dt-vintage').value = w.vintage||'';
   document.getElementById('dt-price').value = (w.price==null?'':w.price);
+  { const q=document.getElementById('dt-qty'); if(q){ q.style.display = (w.status==='cellared')?'':'none'; q.value = (w.status==='cellared') ? (Number(w.qty)||1) : ''; } }
   document.getElementById('dt-abv').value = w.abv||'';
   document.getElementById('dt-vendor').value = w.vendor||'';
   document.getElementById('dt-grape').value = w.grape||'';
@@ -2038,6 +2040,10 @@ window.saveDetail = async function(){
   const w = bottles[dtDraft.id]; if(!w){ closeDetail(); return; }
   const score = dtDraft.score==null ? null : dtDraft.score + (dtDraft.half?0.5:0);
   const price = parsePriceInput('dt-price');
+  // Qty editable for cellared stock; opened records keep their qty untouched.
+  const qtyEl = document.getElementById('dt-qty');
+  const qty = (w.status==='cellared' && qtyEl && qtyEl.value!=='' && isFinite(Number(qtyEl.value)))
+    ? Math.max(0, Math.floor(Number(qtyEl.value))) : (Number(w.qty)||( w.status==='cellared'?1:0));
   const vendor = document.getElementById('dt-vendor').value.trim();
   const grape = document.getElementById('dt-grape').value.trim();
   const vintage = document.getElementById('dt-vintage').value.trim();
@@ -2057,10 +2063,10 @@ window.saveDetail = async function(){
     // Snapshot before/after so a real edit gets recorded in Activity.
     const nn = v => (v==null?'':String(v)).trim();
     const photoCount = (a)=> Array.isArray(a) ? a.length : 0;
-    const before = [nn(w.producer),nn(w.region),nn(w.name),nn(w.desc),nn(w.score),nn(w.price),nn(w.notes),nn(w.vendor),nn(w.grape),nn(w.vintage),nn(w.abv),nn(w.rep),(w.buyAgain?'1':''),bottleTags(w).join(','),photoCount(w.photos)||(w.photoUrl?1:0)].join('¦');
-    const after  = [nn(producer),nn(region),nn(name),nn(desc),nn(score),nn(price),nn(notes),nn(vendor),nn(grape),nn(vintage),nn(abv),nn(rep),(dtDraft.buy?'1':''),dtDraft.tags.join(','),ups.length].join('¦');
+    const before = [nn(w.qty),nn(w.producer),nn(w.region),nn(w.name),nn(w.desc),nn(w.score),nn(w.price),nn(w.notes),nn(w.vendor),nn(w.grape),nn(w.vintage),nn(w.abv),nn(w.rep),(w.buyAgain?'1':''),bottleTags(w).join(','),photoCount(w.photos)||(w.photoUrl?1:0)].join('¦');
+    const after  = [nn(qty),nn(producer),nn(region),nn(name),nn(desc),nn(score),nn(price),nn(notes),nn(vendor),nn(grape),nn(vintage),nn(abv),nn(rep),(dtDraft.buy?'1':''),dtDraft.tags.join(','),ups.length].join('¦');
     await dbUpdate('cellar/bottles/' + dtDraft.id, {
-      name, producer, region, score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
+      name, producer, region, qty, score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
       vintage, abv, rep, url, desc, notes, kind:(document.getElementById('dt-kind')||{value:kindOf(w)}).value,
       photos: ups.length?ups:null,
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
