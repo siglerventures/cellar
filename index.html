@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.94</title>
+<title>The Cellar Ledger — Rev 2.95</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -556,7 +556,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.94</div>
+    <div class="auth-rev">Rev 2.95</div>
   </div>
 </div>
 
@@ -673,7 +673,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.94</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.95</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -750,9 +750,9 @@
       <div class="cs-msg" id="cs-msg"></div>
       <div class="cs-actions"><button class="cs-btn" id="cs-accept" onclick="acceptSuggestedSlot()">Use this slot</button><button class="cs-btn ghost" onclick="clearSuggestedSlot()">Add unplaced</button></div>
     </div>
-    <div class="mrow" style="margin-top:8px">
-      <button class="mbtn" onclick="addCellarBottle()">Add bottle</button>
+    <div class="mrow" style="margin-top:8px;justify-content:flex-end">
       <button class="mbtn ghost" onclick="closeCellarAddModal()">Cancel</button>
+      <button class="mbtn" onclick="addCellarBottle()">Add bottle</button>
     </div>
     <div class="mstatus" id="cellarAddStatus"></div>
   </div>
