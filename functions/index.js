@@ -36,10 +36,16 @@ const PALATE = [
 
 const PROMPT = [
   "This is a label photo from a home bar/cellar collection — usually WINE, but",
-  "possibly bourbon/whiskey, tequila, vodka, a mixer/liqueur, or a cigar band.",
+  "possibly bourbon, other whiskey/Scotch, tequila, vodka, gin, rum,",
+  "brandy/cognac, a liqueur/aperitivo, Champagne/sparkling, a mixer, or a cigar band.",
   "Respond with ONLY a JSON object (no markdown, no backticks, no preamble)",
   "with exactly these keys:",
-  '- "kind": one of "wine", "bourbon", "tequila", "vodka", "mixer", "cigar"',
+  '- "kind": one of "wine", "bourbon", "tequila", "vodka", "gin", "rum",',
+  '  "whiskey" (non-bourbon whisky: Scotch/Irish/Japanese/Canadian), "brandy"',
+  '  (incl. Cognac/Armagnac), "liqueur" (aperitivi, amari, Campari/Aperol,',
+  '  Cointreau, amaretto, coffee/cream liqueurs), "sparkling" (Champagne, Prosecco,',
+  '  Cava), "mixer" (non-alcoholic), "cigar". Pick the TRUE category — NEVER',
+  '  force a bottle into a category it is not (a gin is "gin", not tequila).',
   '- "name": what a buyer would CALL this bottle — brand + expression, short.',
   '  e.g. "Woodford Reserve Rye", "Clase Azul Reposado", "Beatus". For wine: the',
   '  wine\'s name or cuvée (NOT the producer). NEVER the long descriptive text',
@@ -56,7 +62,7 @@ const PROMPT = [
   '  Otherwise the variety or blend name alone (e.g. "Grenache blend").',
   '- "vintage": for wine, the year as a string — EMPTY STRING if no year is shown',
   '  (never write "NV"). For tequila: the class (Blanco/Reposado/Añejo/Extra',
-  '  Añejo/Cristalino). For whiskey: the age statement or bottling year if shown.',
+  '  Añejo/Cristalino). For whiskey/rum/brandy: the age statement, class (VSOP/XO),\n  or bottling year if shown. For gin: the style (London Dry / Old Tom / Sloe).',
   '- "abv": alcohol percentage as a number-only string (no % sign)',
   '- "price": the price if one is visible (a shelf tag, receipt, or product-page',
   '  screenshot), number-only string like "169.99" — empty string if none shown',
@@ -161,7 +167,8 @@ exports.cellarScanMenu = onCall(
 
     const prompt = [
       "These photo(s) show a RESTAURANT MENU/DRINKS LIST or a STORE SHELF — usually",
-      "wine, but possibly bourbon/whiskey, tequila, vodka, or cocktails/mixers.",
+      "wine, but possibly bourbon/whiskey/scotch, tequila, vodka, gin, rum,",
+      "brandy/cognac, liqueurs/aperitivi, Champagne/sparkling, or cocktails/mixers.",
       "Identify every bottle/pour you can read (name, vintage and price if shown),",
       "then rank them for THIS taster — best first, using the palate below (when",
       "present) plus their real rating history (collection JSON: 'opened' items have",
@@ -171,7 +178,7 @@ exports.cellarScanMenu = onCall(
       "Respond with ONLY a JSON object (no markdown, no backticks):",
       '{"context":"menu" or "shelf",',
       ' "summary": one sentence naming the single top pick and why it fits,',
-      ' "wines":[{"name":"","kind":"wine"|"bourbon"|"tequila"|"vodka"|"mixer","vintage":"","price":"","predLow":n,"predHigh":n,',
+      ' "wines":[{"name":"","kind":"wine"|"bourbon"|"tequila"|"vodka"|"gin"|"rum"|"whiskey"|"brandy"|"liqueur"|"sparkling"|"mixer","vintage":"","price":"","predLow":n,"predHigh":n,',
       '  "fit":"love"|"like"|"maybe"|"pass","verdict":"max ~18 words why"}]}',
       "Include at most 12 wines (the most relevant), best first. predLow/predHigh are",
       "predicted scores 1-10 (.5 steps ok). Use empty strings for unreadable fields.",
@@ -198,7 +205,7 @@ exports.cellarScanMenu = onCall(
       const parsed = parseModelJson(message);
       const wines = (Array.isArray(parsed.wines) ? parsed.wines : []).slice(0, 12).map((w) => ({
         name: String(w.name || '').trim(),
-        kind: ['wine','bourbon','tequila','vodka','mixer','cigar'].includes(w.kind) ? w.kind : 'wine',
+        kind: ['wine','bourbon','tequila','vodka','gin','rum','whiskey','brandy','liqueur','sparkling','mixer','cigar'].includes(w.kind) ? w.kind : 'wine',
         vintage: String(w.vintage || '').trim(),
         price: String(w.price || '').trim(),
         predLow: coerceScore(w.predLow),
@@ -335,7 +342,7 @@ exports.scanLabel = onCall(
       const w = parseModelJson(message);
       const fit = ['love', 'like', 'maybe', 'pass'].includes(w.fit) ? w.fit : 'maybe';
       const data = {
-        kind: ['wine','bourbon','tequila','vodka','mixer','cigar'].includes(w.kind) ? w.kind : 'wine',
+        kind: ['wine','bourbon','tequila','vodka','gin','rum','whiskey','brandy','liqueur','sparkling','mixer','cigar'].includes(w.kind) ? w.kind : 'wine',
         name: String(w.name || '').trim(),
         description: String(w.description || '').trim(),
         producer: String(w.producer || '').trim(),

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.11</title>
+<title>The Cellar Ledger — Rev 3.12</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -590,7 +590,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.11</div>
+    <div class="auth-rev">Rev 3.12</div>
   </div>
 </div>
 
@@ -624,7 +624,7 @@
   <div class="quick" id="quickPanel">
     <div class="qhead"><h3>Log a pour</h3><button class="qclose" title="Close" onclick="closeLogPanel()">✕</button></div>
     <input class="qname" id="q-name" placeholder="Name">
-    <select id="q-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('q')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
+    <select id="q-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('q')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="gin">🫒 Gin</option><option value="rum">🍹 Rum</option><option value="whiskey">🥂 Whiskey/Scotch</option><option value="brandy">🍯 Brandy/Cognac</option><option value="liqueur">🍅 Liqueur/Aperitivo</option><option value="sparkling">🍾 Champagne/Sparkling</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
     <div class="qlabel">Photos — the first is scanned for details &amp; used as the card image</div>
     <div class="pintake" id="q-intake" ondragover="piDragOver(event,'q')" ondragleave="piDragLeave(event,'q')" ondrop="piDrop(event,'q')"></div>
     <div class="scanstatus" id="q-scanstatus"></div>
@@ -707,7 +707,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.11</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.12</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -761,7 +761,7 @@
     <input id="ca-name" placeholder="Name">
     <input id="ca-desc" placeholder="Description — e.g. Distiller’s Select Kentucky Straight Rye Whiskey">
     <select id="ca-rack" class="rt-jump" style="width:100%;margin-bottom:12px"></select>
-    <select id="ca-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('ca')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
+    <select id="ca-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('ca')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="gin">🫒 Gin</option><option value="rum">🍹 Rum</option><option value="whiskey">🥂 Whiskey/Scotch</option><option value="brandy">🍯 Brandy/Cognac</option><option value="liqueur">🍅 Liqueur/Aperitivo</option><option value="sparkling">🍾 Champagne/Sparkling</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
     <div class="mgrid">
       <input id="ca-prod" placeholder="Producer">
       <input id="ca-region" placeholder="Region">
@@ -816,7 +816,7 @@
     <div class="msub">Everything you know so far — photos, notes, where you saw it.</div>
     <input id="wl-d-name" placeholder="Name">
     <input id="wl-d-desc" placeholder="Description — e.g. Tequila Añejo, limited edition">
-    <select id="wl-d-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('wl-d')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
+    <select id="wl-d-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('wl-d')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="gin">🫒 Gin</option><option value="rum">🍹 Rum</option><option value="whiskey">🥂 Whiskey/Scotch</option><option value="brandy">🍯 Brandy/Cognac</option><option value="liqueur">🍅 Liqueur/Aperitivo</option><option value="sparkling">🍾 Champagne/Sparkling</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
     <div class="mgrid">
       <input id="wl-d-prod" placeholder="Producer">
       <input id="wl-d-region" placeholder="Region">
@@ -873,7 +873,7 @@
       <input id="dt-abv" placeholder="ABV %">
       <input id="dt-vendor" placeholder="Vendor / store" list="vendorList">
       <input id="dt-grape" placeholder="Grape(s) — e.g. 65% Grenache, 15% Syrah">
-      <select id="dt-kind" class="rt-jump" style="width:100%" onchange="applyKindFields('dt')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
+      <select id="dt-kind" class="rt-jump" style="width:100%" onchange="applyKindFields('dt')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="gin">🫒 Gin</option><option value="rum">🍹 Rum</option><option value="whiskey">🥂 Whiskey/Scotch</option><option value="brandy">🍯 Brandy/Cognac</option><option value="liqueur">🍅 Liqueur/Aperitivo</option><option value="sparkling">🍾 Champagne/Sparkling</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
       <input id="dt-rep" placeholder="Representative" list="repList">
       <input id="dt-url" placeholder="Product URL (https://…)" style="grid-column:1/-1">
       <input id="dt-desc" placeholder="Description — e.g. Kentucky Straight Rye Whiskey" style="grid-column:1/-1">
@@ -1036,7 +1036,9 @@ let sortMode = 'newest';   // 'rating' | 'newest' | 'az' — sort chips on All B
 let varietalFilter = '';   // 🍇 filter — e.g. 'grenache'; list orders by that grape's share
 let flavorFilter = '';     // 🏷 flavor-tag filter — e.g. 'tqcaramel'
 // ── COLLECTIONS: every item carries a kind (missing = wine, so all existing data just works)
-const KINDS = [['wine','🍷 Wine'],['bourbon','🥃 Bourbon'],['tequila','🌵 Tequila'],['vodka','🍸 Vodka'],['cigar','🚬 Cigars'],['mixer','🧉 Mixers']];
+const KINDS = [['wine','🍷 Wine'],['bourbon','🥃 Bourbon'],['tequila','🌵 Tequila'],['vodka','🍸 Vodka'],
+  ['gin','🫒 Gin'],['rum','🍹 Rum'],['whiskey','🥂 Whiskey/Scotch'],['brandy','🍯 Brandy/Cognac'],
+  ['liqueur','🍅 Liqueur/Aperitivo'],['sparkling','🍾 Champagne/Sparkling'],['cigar','🚬 Cigars'],['mixer','🧉 Mixers']];
 let kindFilter = 'wine';   // default collection — the homepage opens on Wine; ✦ All is one tap away
 // Admin-set overrides for the category chips (order + renamed labels), synced via
 // cellar/kind_prefs — right-click a chip to Edit / Move left / Move right.
@@ -1048,7 +1050,7 @@ function kindKeysOrdered(){
 }
 function kindsOrdered(){ const L=kindPrefs.labels||{}; return kindKeysOrdered().map(k=>{ const b=KINDS.find(x=>x[0]===k); return [k, L[k]||b[1]]; }); }
 function kindOf(w){ return w.kind || 'wine'; }
-function kindEmoji(k){ const e={wine:'🍷',bourbon:'🥃',tequila:'🌵',vodka:'🍸',cigar:'🚬',mixer:'🧉'}; return e[k]||'🍷'; }
+function kindEmoji(k){ const e={wine:'🍷',bourbon:'🥃',tequila:'🌵',vodka:'🍸',gin:'🫒',rum:'🍹',whiskey:'🥂',brandy:'🍯',liqueur:'🍅',sparkling:'🍾',cigar:'🚬',mixer:'🧉'}; return e[k]||'🍷'; }
 function kindLabel(k){ const L=kindPrefs.labels||{}; const f=KINDS.find(x=>x[0]===k); return f?(L[k]||f[1]):'🍷 Wine'; }
 // Per-kind form shaping: which fields make sense, and what to call them.
 const KIND_FIELDS = {
@@ -1057,7 +1059,13 @@ const KIND_FIELDS = {
   tequila: { grape:false, abv:true,  vintagePH:'Blanco / reposado / añejo',     abvPH:'ABV %',        descPH:'Description — e.g. Tequila Añejo, 100% de agave' },
   vodka:   { grape:false, abv:true,  vintagePH:'Year (optional)',               abvPH:'ABV %',        descPH:'Description — e.g. Small-batch wheat vodka' },
   cigar:   { grape:false, abv:false, vintagePH:'Vitola / size',                 abvPH:'',             descPH:'Description — e.g. Maduro toro, Nicaraguan filler' },
-  mixer:   { grape:false, abv:true,  vintagePH:'Year (optional)',               abvPH:'ABV %',        descPH:'Description — e.g. Italian bitter aperitivo' }
+  mixer:   { grape:false, abv:true,  vintagePH:'Year (optional)',               abvPH:'ABV %',        descPH:'Description — e.g. Non-alcoholic tonic / syrup / bitters' },
+  gin:     { grape:false, abv:true,  vintagePH:'Style — London Dry / Old Tom…', abvPH:'ABV %',        descPH:'Description — e.g. Small-batch London Dry Gin' },
+  rum:     { grape:false, abv:true,  vintagePH:'Age / style',                   abvPH:'Proof or ABV', descPH:'Description — e.g. 12-year Caribbean dark rum' },
+  whiskey: { grape:false, abv:true,  vintagePH:'Age statement / year',          abvPH:'Proof or ABV', descPH:'Description — e.g. Islay Single Malt Scotch Whisky' },
+  brandy:  { grape:false, abv:true,  vintagePH:'VS / VSOP / XO',                abvPH:'ABV %',        descPH:'Description — e.g. Fine Champagne Cognac XO' },
+  liqueur: { grape:false, abv:true,  vintagePH:'Year (optional)',               abvPH:'ABV %',        descPH:'Description — e.g. Italian bitter aperitivo' },
+  sparkling:{grape:true,  abv:true,  vintagePH:'Vintage (blank for NV)',        abvPH:'ABV %',        descPH:'Description — e.g. Brut Champagne, Grand Cru' }
 };
 window.applyKindFields = function(pfx){
   const sel = document.getElementById(pfx+'-kind'); if(!sel) return;
@@ -1285,6 +1293,52 @@ const TAGSETS = {
     {k:'bitterh',t:'Bitter / Herbal',c:'#7a9a6a'},
     {k:'citrus',t:'Citrus / Bright',c:'#6f8a9c'},
     {k:'ryespice',t:'Spiced',c:'#a8556a'}
+  ],
+  gin: [
+    {k:'gjuniper',t:'Juniper',c:'#7a9a6a'},
+    {k:'gcitrus',t:'Citrus',c:'#c9a35c'},
+    {k:'gfloral',t:'Floral',c:'#8a5a8f'},
+    {k:'gherbal',t:'Herbal / Botanical',c:'#6f9a7a'},
+    {k:'gdry',t:'Dry',c:'#6f8a9c'},
+    {k:'gspicy',t:'Spicy',c:'#a8556a'}
+  ],
+  rum: [
+    {k:'rfunky',t:'Funky',c:'#8a5a8f'},
+    {k:'rgrassy',t:'Grassy',c:'#7a9a6a'},
+    {k:'rcaramel',t:'Caramel',c:'#c9853c'},
+    {k:'rspiced',t:'Spiced',c:'#a8556a'},
+    {k:'rtropical',t:'Tropical',c:'#c9a35c'},
+    {k:'rsmooth',t:'Smooth',c:'#6f8a9c'}
+  ],
+  whiskey: [
+    {k:'wpeaty',t:'Smoky / Peaty',c:'#b5793f'},
+    {k:'wmalty',t:'Malty',c:'#9c7b46'},
+    {k:'woak',t:'Oak',c:'#8a6a46'},
+    {k:'whoney',t:'Honey',c:'#c9a35c'},
+    {k:'wspicy',t:'Spicy',c:'#a8556a'},
+    {k:'wsmooth',t:'Smooth',c:'#6f8a9c'}
+  ],
+  brandy: [
+    {k:'bfruity',t:'Fruity',c:'#8a5a8f'},
+    {k:'boak',t:'Oak',c:'#8a6a46'},
+    {k:'bcaramel',t:'Caramel',c:'#c9853c'},
+    {k:'bfloral',t:'Floral',c:'#c9a35c'},
+    {k:'brich',t:'Rich',c:'#a8556a'},
+    {k:'bsmooth',t:'Smooth',c:'#6f8a9c'}
+  ],
+  liqueur: [
+    {k:'lbitter',t:'Bitter',c:'#a8556a'},
+    {k:'lsweet',t:'Sweet',c:'#c9853c'},
+    {k:'lherbal',t:'Herbal',c:'#7a9a6a'},
+    {k:'lcitrus',t:'Citrus',c:'#c9a35c'},
+    {k:'lspiced',t:'Spiced',c:'#9c7b46'}
+  ],
+  sparkling: [
+    {k:'scrisp',t:'Crisp',c:'#6f8a9c'},
+    {k:'stoasty',t:'Toasty',c:'#9c7b46'},
+    {k:'sfruity',t:'Fruity',c:'#8a5a8f'},
+    {k:'sdry',t:'Dry',c:'#7a9a6a'},
+    {k:'screamy',t:'Creamy',c:'#c9a35c'}
   ]
 };
 const ALLTAGS = Object.values(TAGSETS).flat();
@@ -1757,6 +1811,12 @@ function parseVarietals(text){
 const SPIRIT_STYLES = {
   tequila: ['extra anejo','anejo','reposado','blanco','cristalino','joven','mezcal'],
   bourbon: ['bottled in bond','single barrel','small batch','cask strength','barrel proof','wheated','rye','scotch','irish','japanese','bourbon'],
+  gin:     ['london dry','navy strength','old tom','sloe','barrel aged','contemporary'],
+  rum:     ['overproof','spiced','white','dark','gold','agricole','rhum','anejo','aged'],
+  whiskey: ['single malt','blended','peated','islay','speyside','highland','scotch','irish','japanese','canadian','rye'],
+  brandy:  ['xo','vsop','armagnac','calvados','cognac','pisco','grappa'],
+  liqueur: ['amaro','aperitivo','triple sec','amaretto','coffee','cream','elderflower','orange'],
+  sparkling:['champagne','prosecco','cava','cremant','brut','extra brut','demi-sec','rose','pet-nat'],
   vodka:   [], cigar: [], mixer: []
 };
 function typesOf(w){
@@ -1886,7 +1946,7 @@ window.saveTypeNotes = async function(){
 function varietalSelectHTML(list, emoji){
   const src = list || activeArr().filter(kindMatch);
   // Chip icon follows the selected collection — 🥃 on Bourbon, 🌵 on Tequila…
-  const em = emoji || ({bourbon:'🥃',tequila:'🌵',vodka:'🍸',cigar:'🚬',mixer:'🥤'}[kindFilter] || '🍇');
+  const em = emoji || ({bourbon:'🥃',tequila:'🌵',vodka:'🍸',gin:'🫒',rum:'🍹',whiskey:'🥂',brandy:'🍯',liqueur:'🍅',sparkling:'🍾',cigar:'🚬',mixer:'🧉'}[kindFilter] || '🍇');
   const counts = {};
   src.forEach(w=>typesOf(w).forEach(v=>{ counts[v.fam]=(counts[v.fam]||0)+1; }));
   const fams = Object.keys(counts).sort((a,b)=>a.localeCompare(b));
@@ -2988,7 +3048,7 @@ function cellaredScoreHTML(w){
 function livePalateText(){
   const rated = asArr(bottles).filter(w=>w.score!=null && w.score!=='' && isFinite(Number(w.score)));
   const parts=[];
-  ['wine','bourbon','tequila','vodka','cigar','mixer'].forEach(k=>{
+  KINDS.map(x=>x[0]).forEach(k=>{
     const l = rated.filter(w=>kindOf(w)===k);
     if(l.length<2) return;   // too little data to claim a palate
     const avg=(l.reduce((s,w)=>s+Number(w.score),0)/l.length).toFixed(1);
@@ -3569,7 +3629,9 @@ async function placeBottle(id, col, row){
 function rackKind(rid){
   if(rid==='main') return null;
   const n = deacc(rackDef(rid).name);
-  for(const k of ['bourbon','tequila','vodka','cigar','mixer']){ if(n.includes(k)) return k; }
+  for(const k of ['bourbon','tequila','vodka','cigar','mixer','gin','rum','whiskey','brandy','liqueur','sparkling']){ if(n.includes(k)) return k; }
+  const syn={ whisky:'whiskey', scotch:'whiskey', cognac:'brandy', armagnac:'brandy', aperitivo:'liqueur', amaro:'liqueur', champagne:'sparkling', humidor:'cigar' };
+  for(const [w,k] of Object.entries(syn)){ if(n.includes(w)) return k; }
   if(n.includes('wine')) return 'wine';
   return null;
 }
@@ -3620,7 +3682,7 @@ function rackHTML(){
   // Type/Flavor dropdowns scope to what's actually on THIS rack (+ its tray),
   // so the Bourbon shelf offers bourbon styles, not Cabernet/Merlot.
   const rackScope = Object.values(placed).concat(unplaced);
-  const rkEmoji = { bourbon:'🥃', tequila:'🌵', vodka:'🍸', cigar:'🚬', mixer:'🥤' }[rkind] || '🍇';
+  const rkEmoji = { bourbon:'🥃', tequila:'🌵', vodka:'🍸', gin:'🫒',rum:'🍹',whiskey:'🥂',brandy:'🍯',liqueur:'🍅',sparkling:'🍾', cigar:'🚬', mixer:'🧉' }[rkind] || '🍇';
   const jumpOpts = Array.from({length:d.cols},(_,i)=>{ const c=i+1; return `<option value="${c}">Col ${c} · ${esc(colHeaderLabel(c))}</option>`; }).join('');
   const tools = `<div class="rack-tools">
     <div class="rt-group"><span class="rt-lbl">Find</span><div class="rs-wrap"><input id="rackSearch" class="rt-find" type="search" placeholder="Search a bottle…" autocomplete="off" oninput="rackSearchInput(this.value)" onkeydown="rackSearchKey(event)" onblur="rackSearchBlur()"><div class="rs-res" id="rackSearchRes"></div></div></div>
