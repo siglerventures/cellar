@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.71</title>
+<title>The Cellar Ledger — Rev 2.72</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.71</div>
+    <div class="auth-rev">Rev 2.72</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.71</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.72</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -684,6 +684,8 @@
     <div class="qlabel" style="margin-top:12px">Photos — the first is scanned for details &amp; used as the card image</div>
     <div class="pintake" id="ca-intake" ondragover="piDragOver(event,'ca')" ondragleave="piDragLeave(event,'ca')" ondrop="piDrop(event,'ca')"></div>
     <div class="scanstatus" id="ca-scanstatus"></div>
+    <div class="qlabel" style="margin-top:12px">Notes / comments</div>
+    <textarea id="ca-notes" placeholder="Who gave it to you, the occasion, what the shop said about it…"></textarea>
     <div class="ca-suggest" id="ca-suggest">
       <div class="cs-msg" id="cs-msg"></div>
       <div class="cs-actions"><button class="cs-btn" id="cs-accept" onclick="acceptSuggestedSlot()">Use this slot</button><button class="cs-btn ghost" onclick="clearSuggestedSlot()">Add unplaced</button></div>
@@ -2164,7 +2166,7 @@ function piReset(ctx){
 // RTDB (cellar/drafts/{uid}/{ctx}) and restore it after sign-in.
 const DRAFT_FIELDS = {
   q:  ['q-name','q-prod','q-region','q-grape','q-vintage','q-abv','q-price','q-vendor','q-notes','q-kind'],
-  ca: ['ca-name','ca-desc','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-url','ca-predlow','ca-predhigh','ca-qty','ca-kind']
+  ca: ['ca-name','ca-desc','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-url','ca-notes','ca-predlow','ca-predhigh','ca-qty','ca-kind']
 };
 const DRAFT_MAX_AGE = 6*60*60*1000;   // restore drafts younger than 6 h
 let draftTimers = {};
@@ -2450,7 +2452,7 @@ window.confirmOpen = async function(){
 // ── ADD TO CELLAR ──
 window.openCellarAdd = ()=>{
   pendingWishlistBuy = null;
-  ['ca-name','ca-desc','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-url','ca-predlow','ca-predhigh'].forEach(id=>document.getElementById(id).value='');
+  ['ca-name','ca-desc','ca-prod','ca-region','ca-grape','ca-vintage','ca-abv','ca-price','ca-vendor','ca-url','ca-notes','ca-predlow','ca-predhigh'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('ca-qty').value = '1';
   // Rack / shelf destination: auto (scan suggestion) · a specific rack's first open slot · the tray
   document.getElementById('ca-rack').innerHTML =
@@ -2530,7 +2532,7 @@ window.addCellarBottle = async function(){
       desc:document.getElementById('ca-desc').value.trim(),
       status:'cellared', qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1), url:document.getElementById('ca-url').value.trim(),
       predLow: pl===''?null:Number(pl), predHigh: ph===''?null:Number(ph), price:parsePriceInput('ca-price'), vendor:document.getElementById('ca-vendor').value.trim(), kind:(document.getElementById('ca-kind')||{value:'wine'}).value,
-      score:null, tag:null, buyAgain:false, notes:'',
+      score:null, tag:null, buyAgain:false, notes:(document.getElementById('ca-notes')||{value:''}).value.trim(),
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null,
       photos: ups.length?ups:null,
       rackCol:placeCol, rackRow:placeRow, rackId:placeCol?placeRack:null,
@@ -3009,6 +3011,24 @@ async function placeBottle(id, col, row){
   if(!onShelf(mover)){ showToast('Only bottles still on hand go on the rack'); return; }
   const occupant = placedAt(col,row);
   if(occupant && occupant.id===id){ inspect=null; render(); return; }
+  // ×N record → placing SPLITS one bottle off into its own record + slot, so
+  // each physical bottle gets its own spot (merge in the detail view rejoins them).
+  if(mover.status==='cellared' && Number(mover.qty)>1){
+    if(occupant){ showToast('Pick an empty slot — placing splits one bottle off the ×' + mover.qty); return; }
+    inspect = null;
+    try{
+      const clone = Object.assign({}, mover);
+      delete clone.id;
+      clone.qty = 1; clone.rackCol = col; clone.rackRow = row; clone.rackId = curRack;
+      const r = push(ref(db, 'cellar/bottles'));
+      await set(r, clone);
+      await dbUpdate('cellar/bottles/' + id, { qty: Number(mover.qty) - 1 });
+      logEvent('placed', { bottleId:r.key, name:mover.name, slot:(rackIds().length>1?(curDef().name+' '):'')+slotCode(col,row), withName:null });
+      const rest = Number(mover.qty) - 1;
+      showToast('Placed 1 of ' + mover.qty + ' at ' + slotCode(col,row) + ' — ' + rest + ' still ' + ((mover.rackCol&&mover.rackRow)?('at '+slotCode(Number(mover.rackCol),Number(mover.rackRow))):'in the tray'));
+    }catch(e){ showToast('Could not place bottle'); }
+    return;
+  }
   const updates = {};
   updates['cellar/bottles/'+id+'/rackCol'] = col;
   updates['cellar/bottles/'+id+'/rackRow'] = row;
@@ -3118,9 +3138,10 @@ function rackHTML(){
     tray += '<div class="rack-tray">' + groupBrowse(unplaced).map(g=>{
       const rep = g[0];
       const vin = rep.vintage ? ` <em>’${esc(String(rep.vintage).replace(/[^0-9]/g,'').slice(-2))}</em>` : '';
-      const cnt = g.length>1 ? ` <b class="tray-x">×${g.length}</b>` : '';
+      const tot = g.reduce((s,r)=>s+((r.status==='cellared')?Math.max(1,Number(r.qty)||1):1),0);
+      const cnt = tot>1 ? ` <b class="tray-x">×${tot}</b>` : '';
       const on = g.some(r=>placing===r.id) ? 'on' : '';
-      const ttl = esc([rep.name,rep.producer,rep.vintage].filter(Boolean).join(' · ')) + (g.length>1?(' — '+g.length+' bottles'):'');
+      const ttl = esc([rep.name,rep.producer,rep.vintage].filter(Boolean).join(' · ')) + (tot>1?(' — '+tot+' bottles'):'');
       return `<button class="tray-chip ${on}" draggable="true" ondragstart="rackDragStart(event,'${rep.id}')" onclick="rackTapBottle('${rep.id}')" title="${ttl}">${esc(rep.name)}${vin}${rep.status==='opened'?' ◐':''}${cnt}</button>`;
     }).join('') + '</div>';
   }else{
@@ -3170,8 +3191,9 @@ function rackHTML(){
         // Filled slot shows the BOTTLE (photo thumb → fallback short name + vintage). Never the category.
         const vv = w.vintage ? ` ’${esc(String(w.vintage).replace(/[^0-9]/g,'').slice(-2))}` : '';
         const op = w.status==='opened' ? ' ◐' : '';
-        const short = esc(w.name || w.producer || '') + op;
-        const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ') + (op?' · opened':'') + ' · ' + slotCode(c,r);
+        const xq = (w.status==='cellared' && Number(w.qty)>1) ? ' ×'+w.qty : '';
+        const short = esc(w.name || w.producer || '') + op + xq;
+        const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ') + (op?' · opened':'') + (xq?(' ·'+xq+' bottles here'):'') + ' · ' + slotCode(c,r);
         const thumb = w.photoUrl ? `<img class="slot-thumb" src="${esc(w.photoUrl)}" alt="">` : '';
         const vdim = ((varietalFilter && pctOf(w, varietalFilter) < 0) || (flavorFilter && !fMatch(w))) ? ' vdim' : '';
         grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}${flash}${vdim}" data-cell="${c}_${r}" draggable="${rackEdit?'false':'true'}" ondragstart="rackDragStart(event,'${w.id}')" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(title)}" onclick="rackTapSlot(${c},${r})">${thumb}<span class="slot-name">${short}${vv}</span></div>`;
@@ -3608,7 +3630,7 @@ window.wlBought = function(id){
   const set=(el,v)=>{ const e=document.getElementById(el); if(e && v!=null && v!=='') e.value=v; };
   set('ca-name', w.name); set('ca-desc', w.desc); set('ca-prod', w.producer); set('ca-region', w.region);
   set('ca-grape', w.grape); set('ca-vintage', w.vintage); set('ca-abv', w.abv);
-  set('ca-vendor', w.vendor); set('ca-url', w.url);
+  set('ca-vendor', w.vendor); set('ca-url', w.url); set('ca-notes', w.note);
   if(w.price!=null && w.price!=='') set('ca-price', w.price);
   { const ke=document.getElementById('ca-kind'); if(ke && w.kind) ke.value=w.kind; } applyKindFields('ca');
   const ph = (Array.isArray(w.photos) && w.photos.length)
