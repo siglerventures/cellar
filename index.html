@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.73</title>
+<title>The Cellar Ledger — Rev 2.74</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.73</div>
+    <div class="auth-rev">Rev 2.74</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.73</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.74</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2630,10 +2630,16 @@ function render(){
   if(view==='wishlist'){ c.innerHTML = wishlistHTML(); return; }
 
   if(view==='buy'){
-    const list = applySort(opened.filter(w=>w.buyAgain).filter(matchSearch).filter(vMatch).filter(fMatch).filter(kindMatch));
+    // Any bottle flagged buy-again counts — scored pours AND cellared/open ones
+    // flagged from the detail page (spirits usually get flagged while cellared).
+    const list = applySort(all.filter(w=>w.buyAgain).filter(matchSearch).filter(vMatch).filter(fMatch).filter(kindMatch));
     let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers.</p></div>';
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>' + esc(emptyForKind('No buy-again bottles yet. Flag the keepers as you log them.')) + '</p></div>'; return; }
-    c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{ const ti=tagInfo(w.tag); return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${fmt(w.score)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}</div>${tagChipsHTML(w)}</div></div>`; }).join('') + '</div>';
+    c.innerHTML = html + '<div class="card-grid">' + list.map((w,i)=>{
+      const sc = w.score!=null ? fmt(w.score) : ((w.predLow!=null&&w.predHigh!=null)?fmt(w.predLow)+'–'+fmt(w.predHigh):'—');
+      const state = w.status==='cellared' ? ' · on hand' + (Number(w.qty)>1?' ×'+w.qty:'') : '';
+      return `<div class="lb-row ${i===0?'top':''}" onclick="openDetail('${w.id}')"><div class="rank">${i+1}</div><div class="lscore">${esc(sc)}</div><div><div class="lname">${esc(w.name)}</div><div class="lmeta">${[esc(w.producer),esc(w.vintage),esc(w.region)].filter(Boolean).join(' · ')}${esc(state)}</div>${tagChipsHTML(w)}</div></div>`;
+    }).join('') + '</div>';
     return;
   }
 
