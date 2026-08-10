@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.0</title>
+<title>The Cellar Ledger — Rev 3.1</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -529,6 +529,13 @@
   @media(min-width:1200px){
     .wrap{max-width:96vw}   /* use the whole monitor — no dead side margins on wide screens */
   }
+  /* Buy-Again: card wrapper carrying the 🛒 Bought-it button */
+  .wine-buywrap{position:relative}
+  .wine-buywrap .bought-btn{position:absolute;top:12px;right:12px;z-index:2}
+  @media(min-width:768px){
+    .card-grid>.wine-buywrap>.wine{border:1px solid var(--line);border-radius:5px;padding:14px 16px;background:var(--glass);height:100%;box-sizing:border-box}
+    .card-grid>.wine-buywrap{border-bottom:none}
+  }
   /* Browse-card size (S/M/L picker on the main page) — M is the classic look */
   #content.cs-s .cardphoto{width:64px;height:96px}
   #content.cs-s .cardphoto.ph{width:56px;height:72px}
@@ -557,7 +564,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.0</div>
+    <div class="auth-rev">Rev 3.1</div>
   </div>
 </div>
 
@@ -674,7 +681,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.0</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.1</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2006,6 +2013,23 @@ function dtStartMetaEdit(){
   m.addEventListener('touchstart', ()=>{ t=setTimeout(dtStartMetaEdit, 600); }, {passive:true});
   ['touchend','touchmove','touchcancel'].forEach(ev=>m.addEventListener(ev, ()=>{ if(t){clearTimeout(t); t=null;} }, {passive:true}));
 })();
+// Buy-Again → "🛒 Bought it": Add Bottle prefilled from the bottle's record.
+// Set the Qty there (buy 2 → qty 2); saving RESTOCKS the matching cellared
+// record instead of duplicating, or creates fresh stock for a pour-only entry.
+window.boughtAgain = function(id){
+  const w = bottles[id]; if(!w) return;
+  openCellarAdd();
+  const set=(el,v)=>{ const e=document.getElementById(el); if(e && v!=null && v!=='') e.value=v; };
+  set('ca-name', w.name); set('ca-desc', w.desc); set('ca-prod', w.producer); set('ca-region', w.region);
+  set('ca-grape', w.grape); set('ca-vintage', w.vintage); set('ca-abv', w.abv);
+  set('ca-price', w.price); set('ca-vendor', w.vendor); set('ca-url', w.url);
+  { const ke=document.getElementById('ca-kind'); if(ke) ke.value=kindOf(w); } applyKindFields('ca');
+  const ph = (Array.isArray(w.photos) && w.photos.length)
+    ? w.photos.filter(p=>p && p.url).map(p=>({ path:p.path||null, url:p.url }))
+    : (w.photoUrl ? [{ path:w.photoPath||null, url:w.photoUrl }] : []);
+  if(ph.length){ piStore.ca = ph; piScanned.ca = true; piRender('ca'); }
+  showToast('Set Qty & confirm price, then Add — it restocks your count');
+};
 window.dtToggleHalf = ()=>{ dtDraft.half=!dtDraft.half; document.getElementById('dtHalfbtn').classList.toggle('on',dtDraft.half); echo('dtScoreEcho',dtDraft); };
 window.dtToggleBuy = ()=>{ dtDraft.buy=!dtDraft.buy; document.getElementById('dtBuyflag').classList.toggle('on',dtDraft.buy); };
 window.saveDetail = async function(){
@@ -2899,8 +2923,11 @@ function render(){
     const list = applySort(all.filter(w=>w.buyAgain).filter(matchSearch).filter(vMatch).filter(fMatch).filter(kindMatch));
     let html = '<div class="shead"><p>Your reorder shortlist — flagged keepers.</p></div>';
     if(!list.length){ c.innerHTML = html + '<div class="empty"><p>' + esc(emptyForKind('No buy-again bottles yet. Flag the keepers as you log them.')) + '</p></div>'; return; }
-    // Same rich cards as All Bottles — photo, description, meta, tags.
-    c.innerHTML = html + '<div class="card-grid">' + list.map(collectionCardHTML).join('') + '</div>';
+    // Same rich cards as All Bottles, plus a 🛒 button that prefills Add Bottle
+    // (set Qty there — adding restocks the existing record's count).
+    c.innerHTML = html + '<div class="card-grid">' + list.map(w=>
+      `<div class="wine-buywrap">${collectionCardHTML(w)}<button class="pi-btn bought-btn" onclick="boughtAgain('${w.id}')">🛒 Bought it</button></div>`
+    ).join('') + '</div>';
     return;
   }
 
