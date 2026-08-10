@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.99</title>
+<title>The Cellar Ledger — Rev 3.0</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -557,7 +557,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.99</div>
+    <div class="auth-rev">Rev 3.0</div>
   </div>
 </div>
 
@@ -674,7 +674,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.99</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.0</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -3426,12 +3426,13 @@ function rackHTML(){
     // valid on ANOTHER rack → shown there, not here
   });
   unplaced.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-  // A kind-specific rack (Bourbon shelf, Tequila shelf) only trays its own
-  // bottles; the Wine Wall stays the mixed overflow home and shows everything.
-  const tray_all = unplaced.length;
-  // Kind racks tray their own bottles (incl. opened spirits still on the bar);
-  // the mixed Wine Wall tray sticks to unopened stock so old pours don't pile up.
-  unplaced = unplaced.filter(w=> rkind ? kindOf(w)===rkind : w.status==='cellared');
+  // Each wall trays only its own collection's unplaced bottles:
+  //  • a kind rack (Bourbon, Tequila…) trays that kind, incl. opened spirits.
+  //  • the Wine Wall trays unopened WINE, plus any kind that has no wall of its
+  //    own (so nothing gets orphaned) — but NOT bourbon/tequila, which have walls.
+  unplaced = unplaced.filter(w=> rkind
+    ? kindOf(w)===rkind
+    : (w.status==='cellared' && (kindOf(w)==='wine' || !rackForKind(kindOf(w)))));
   const admin = isAdmin();
 
   // Rack switcher is the Cellar view's top row (the action buttons + tabs hide
