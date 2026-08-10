@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.85</title>
+<title>The Cellar Ledger — Rev 2.86</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -269,7 +269,10 @@
   .rack-tray-zone{border-radius:8px;transition:.14s}
   .rack-tray-zone.tray-hi{background:rgba(201,161,84,0.08);outline:1px dashed var(--gold-dim);outline-offset:3px}
   /* Cellar/rack view breaks out of the app's centered column to full viewport width. */
-  .rack-view{padding:0 clamp(10px,2vw,24px)}
+  /* Full-bleed via pure CSS — spans the viewport no matter where the centered
+     column sits (the old JS measurement could misfire and strand the rack). */
+  .rack-view{width:100vw;margin-left:calc(50% - 50vw);box-sizing:border-box;padding:0 clamp(10px,2vw,24px)}
+  body{overflow-x:hidden}
   /* Horizontal scroll stays contained (narrow screens pan columns); vertically the
      box grows to fit all 29 rows so the PAGE scrolls — no inner vertical scrollbar. */
   .rack-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:4px;padding:10px;background:rgba(15,7,8,0.4);position:relative}
@@ -524,7 +527,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.85</div>
+    <div class="auth-rev">Rev 2.86</div>
   </div>
 </div>
 
@@ -641,7 +644,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.85</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.86</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -3268,10 +3271,9 @@ function rackHTML(){
 // Full-bleed: pull the rack view out of the app's centered column to span the viewport
 // exactly (documentElement.clientWidth excludes the scrollbar, so no page h-scroll).
 function applyRackFullBleed(el){
+  // CSS handles the full-bleed now (.rack-view width:100vw + negative margin);
+  // just clear any inline styles a previous JS run may have left behind.
   el.style.width = ''; el.style.marginLeft = '';
-  const left = el.getBoundingClientRect().left;
-  el.style.width = document.documentElement.clientWidth + 'px';
-  el.style.marginLeft = (-left) + 'px';
 }
 let rackResizeBound = false;
 function bindRackResize(){
