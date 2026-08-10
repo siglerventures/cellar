@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.83</title>
+<title>The Cellar Ledger — Rev 2.84</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -524,7 +524,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.83</div>
+    <div class="auth-rev">Rev 2.84</div>
   </div>
 </div>
 
@@ -641,7 +641,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.83</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.84</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2736,13 +2736,14 @@ function groupedCardHTML(recs){
   const buyAgain = recs.some(r=>r.buyAgain);
   const scoreBlock = latest
     ? `<div class="score ${scoreClass(latest.score)}"><b>${fmt(latest.score)}</b></div>`
-    : (()=>{ const c=cellared[0]; const band=(c&&c.predLow!=null&&c.predHigh!=null)?fmt(c.predLow)+'–'+fmt(c.predHigh):'—'; return `<div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>`; })();
+    : `<div class="score s-pred"><s>cellared</s></div>`;
   const row2=[vintage,grape,region,abv?abv+'%':'',fmtPrice(price)].filter(Boolean).join(' · ');
+  // Keep the combined card lean: just a compact ×N/slot badge — the score column
+  // already carries the rating, and buy-again lives on its own tab.
   const badges=[];
-  if(opened.length) badges.push(`<span class="gbadge gb-rated">★ ${fmt(latest.score)}${opened.length>1?` · had ${opened.length}×`:''}</span>`);
-  if(qty) badges.push(`<span class="gbadge gb-cellar">×${qty} cellared${slots.length?(' · '+esc(slots.join(', '))):''}</span>`);
+  if(qty) badges.push(`<span class="gbadge gb-cellar">×${qty}${slots.length?(' · '+esc(slots.join(', '))):''}</span>`);
   const chips = tagset.map(k=>{ const ti=tagInfo(k); return `<span class="ltag" style="background:${ti.c}22;color:${ti.c}">${esc(ti.t)}</span>`; }).join('');
-  return `<div class="wine wine-group" onclick="openWineGroup('${id0}')"><div class="wine-left">${scoreBlock}${cardPhotoHTML(photoRec)}</div><div class="meta"><div class="name">${esc(nm)}</div>${producer?`<div class="producer">${esc(producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${badges.join('')}${chips}${buyAgain?'<span class="buy-yes" style="opacity:1">✓ buy again</span>':''}</div></div></div>`;
+  return `<div class="wine wine-group" onclick="openWineGroup('${id0}')"><div class="wine-left">${scoreBlock}${cardPhotoHTML(photoRec)}</div><div class="meta"><div class="name">${esc(nm)}</div>${producer?`<div class="producer">${esc(producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${badges.join('')}${chips}</div></div></div>`;
 }
 // Tap a grouped card → open the richest record's FULL detail (photos, score, notes).
 // The detail modal itself shows "Same wine" chips to hop to the other record(s).
@@ -2758,11 +2759,12 @@ window.openWineGroup = function(id){
 // Browse card — cellared bottles show a predicted band, scored bottles the openedCard.
 function collectionCardHTML(w){
   if(w.status==='cellared'){
-    const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
+    // No predicted numbers on the home cards — the score column shows a rating
+    // when one exists, otherwise just the quiet "cellared" label.
     const row2=[w.vintage,w.grape,w.region,fmtPrice(w.price)].filter(Boolean).join(' · ');
     const qty = Number(w.qty)||1;
     const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${esc(slotOf(w))}</span>` : '';
-    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><b>${esc(band)}</b><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(kindOf(w)!=='wine' && !w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score s-pred"><s>cellared</s></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(kindOf(w)!=='wine' && !w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
   }
   return openedCardHTML(w);
 }
@@ -3180,7 +3182,7 @@ function rackHTML(){
   // Tray of unplaced bottles (draggable). Identical bottles (same wine) collapse into
   // one chip with a ×N count; placing/dragging acts on one bottle, so N ticks down.
   // The whole zone is a drop target — drag a PLACED bottle here to pull it off the rack.
-  let tray = `<div class="rack-tray-zone" ondragover="rackTrayOver(event)" ondragleave="rackTrayLeave(event)" ondrop="rackDropTray(event)"><div class="rack-tray-head"><span>${(rkind && tray_all>unplaced.length)?`<em style="opacity:.55;font-style:normal">+${tray_all-unplaced.length} other bottles in the Wine Wall tray</em>`:''}</span><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>`;
+  let tray = `<div class="rack-tray-zone" ondragover="rackTrayOver(event)" ondragleave="rackTrayLeave(event)" ondrop="rackDropTray(event)"><div class="rack-tray-head"><span>${(rkind && tray_all>unplaced.length)?`<em style="opacity:.55;font-style:normal">+${tray_all-unplaced.length} other bottles in the Wine Wall tray</em>`:''}</span></div>`;
   if(unplaced.length){
     tray += '<div class="rack-tray">' + groupBrowse(unplaced).map(g=>{
       const rep = g[0];
