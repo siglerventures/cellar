@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.68</title>
+<title>The Cellar Ledger — Rev 2.69</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.68</div>
+    <div class="auth-rev">Rev 2.69</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.68</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.69</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -693,6 +693,36 @@
       <button class="mbtn ghost" onclick="closeCellarAddModal()">Cancel</button>
     </div>
     <div class="mstatus" id="cellarAddStatus"></div>
+  </div>
+</div>
+
+<!-- ── WISHLIST ITEM DETAIL / EDIT MODAL ── -->
+<div class="modal" id="wlModal">
+  <div class="modal-card">
+    <h3 id="wl-d-title">Wishlist bottle</h3>
+    <div class="msub">Everything you know so far — photos, notes, where you saw it.</div>
+    <input id="wl-d-name" placeholder="Name">
+    <input id="wl-d-desc" placeholder="Description — e.g. Tequila Añejo, limited edition">
+    <select id="wl-d-kind" class="rt-jump" style="width:100%;margin-bottom:12px"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
+    <div class="mgrid">
+      <input id="wl-d-prod" placeholder="Producer">
+      <input id="wl-d-region" placeholder="Region">
+      <input id="wl-d-grape" placeholder="Grape(s) / style">
+      <input id="wl-d-vintage" placeholder="Vintage / class">
+      <input id="wl-d-abv" placeholder="ABV %">
+      <input id="wl-d-price" placeholder="Price seen $" type="number" step="0.01" min="0">
+    </div>
+    <div class="qlabel" style="margin-top:12px">Photos — first is the card image</div>
+    <div class="pintake" id="wl-intake" ondragover="piDragOver(event,'wl')" ondragleave="piDragLeave(event,'wl')" ondrop="piDrop(event,'wl')"></div>
+    <div class="qlabel">Notes — where you saw it, who recommended it…</div>
+    <textarea id="wl-d-note" placeholder="Idaho Liquor $169.99 · limited Year of the Horse release…"></textarea>
+    <div class="mrow" style="margin-top:8px">
+      <button class="mbtn ghost" onclick="wlDetailRemove()">Remove</button>
+      <button class="mbtn ghost" onclick="wlDetailBought()">🛒 Bought it</button>
+      <button class="mbtn ghost" onclick="closeWlModal()">Close</button>
+      <button class="mbtn" onclick="saveWlDetail()">Save</button>
+    </div>
+    <div class="mstatus" id="wlStatus"></div>
   </div>
 </div>
 
@@ -950,7 +980,7 @@ let draft = { score:null, half:false, tags:[], buy:false };
 let openDraft = { id:null, score:null, half:false, tags:[], buy:false };
 // Photo intake per context — q (log), ca (add-to-cellar), dt (detail modal), ai (Ask AI).
 // Each entry: {dataUrl} for new pics, {path,url} for already-uploaded ones. Index 0 = MAIN.
-let piStore = { q:[], ca:[], dt:[], ai:[], ws:[] };
+let piStore = { q:[], ca:[], dt:[], ai:[], ws:[], wl:[] };
 let piScanned = { q:false, ca:false };  // first photo per form triggers a scanLabel run
 let dtRemoved = [];                     // Storage paths to delete when the detail modal saves
 let search = '';      // current search filter
@@ -1290,7 +1320,7 @@ rebuildTagPad('openTags', 'wine');
 buildScorepad(document.getElementById('dtScorepad'), (v)=>{ dtDraft.score=v; paintScore(document.getElementById('dtScorepad'), v); echo('dtScoreEcho', dtDraft); });
 rebuildTagPad('dtTags', 'wine');
 // Photo intakes start empty (renders the buttons + file inputs into each surface)
-['q','ca','dt','ai','ws'].forEach(piRender);
+['q','ca','dt','ai','ws','wl'].forEach(piRender);
 
 // ── TOP ACTION ROW + COLLAPSIBLE LOG PANEL ──
 function openLogPanel(){ document.getElementById('quickPanel').classList.add('show'); }
@@ -1835,7 +1865,7 @@ function compressImage(file, maxEdge=1600, quality=0.8){
   });
 }
 // ── PHOTO INTAKE (Eats-style): camera · library · drag-drop · Ctrl+V paste · gallery ──
-const PI_MAX = { q:12, ca:12, dt:12, ai:4, ws:4 };
+const PI_MAX = { q:12, ca:12, dt:12, ai:4, ws:4, wl:8 };
 function piRender(ctx){
   const host = document.getElementById(ctx+'-intake'); if(!host) return;
   const cam=ctx+'-pi-cam', lib=ctx+'-pi-lib';
@@ -1973,6 +2003,7 @@ async function bcLookup(code){
 
 // Paste routes to whichever photo surface is open: detail modal > add-to-cellar > Ask AI panel > log form.
 function piPasteTarget(){
+  if(document.getElementById('wlModal').classList.contains('open')) return 'wl';
   if(document.getElementById('detailModal').classList.contains('open')) return 'dt';
   if(document.getElementById('cellarAddModal').classList.contains('open')) return 'ca';
   const aw=document.getElementById('ai-intake-wrap');
@@ -1982,11 +2013,14 @@ function piPasteTarget(){
   return null;
 }
 document.addEventListener('paste', (e)=>{
-  const ctx = piPasteTarget(); if(!ctx) return;
   const items = e.clipboardData && e.clipboardData.items; if(!items) return;
   const files=[];
   for(const it of items){ if(it.type && it.type.startsWith('image/')){ const f=it.getAsFile(); if(f) files.push(f); } }
-  if(files.length){ e.preventDefault(); piAddFiles(ctx, files); showToast('📋 Pasted'); }
+  if(!files.length) return;
+  const ctx = piPasteTarget();
+  if(ctx){ e.preventDefault(); piAddFiles(ctx, files); showToast('📋 Pasted'); }
+  // On the Wishlist tab itself, a pasted image goes straight through the scan flow.
+  else if(view==='wishlist'){ e.preventDefault(); showToast('📋 Pasted — scanning…'); wlScanFromFile(files[0]); }
 });
 // Upload any new dataUrl photos for a bottle; pass through already-uploaded ones. Returns [{path,url}].
 let lastUploadFailed = 0;   // uploads that errored in the most recent uploadPhotos() run
@@ -3441,24 +3475,65 @@ function wishlistHTML(){
   <div class="pi-btns" style="margin:-6px 0 14px">
     <button class="pi-btn" onclick="document.getElementById('wl-pi-cam').click()">📷 Scan a label / product page</button>
     <button class="pi-btn" onclick="document.getElementById('wl-pi-lib').click()">🖼 From library</button>
+    <span class="pi-btn dashed">📋 or Ctrl+V paste an image</span>
     ${wlDraft.photo?`<img src="${wlDraft.photo}" alt="" style="height:34px;border-radius:6px" onclick="viewImage(this.src)">`:''}
     <span class="scanstatus${wlScanMsg?' show':''}" id="wl-scanstatus" style="margin:0">${esc(wlScanMsg)}</span>
   </div>
   <input type="file" id="wl-pi-cam" accept="image/*" capture="environment" style="display:none" onchange="wlScanFile(this)">
   <input type="file" id="wl-pi-lib" accept="image/*" style="display:none" onchange="wlScanFile(this)">`;
   if(!list.length){ return html + '<div class="empty"><p>Nothing on the wishlist' + (kindFilter!=='all' ? ' for this collection' : '') + ' yet.</p></div>'; }
+  // Cards look like the bottle cards — photo left, details right; tap for the full editor.
   return html + '<div class="card-grid">' + list.map(w=>{
-    const meta = [w.region, w.vintage, w.abv?w.abv+'%':'', (w.price!=null&&w.price!=='')?fmtPrice(w.price):''].filter(Boolean).join(' · ');
-    const thumb = w.photoUrl ? `<img src="${esc(w.photoUrl)}" alt="" style="width:44px;height:56px;object-fit:cover;border-radius:6px;margin-right:10px;cursor:pointer" onclick="viewImage('${esc(w.photoUrl)}')">` : '';
-    return `<div class="wl-row">${thumb}<div style="flex:1"><div class="wl-name">${kindOf(w)!=='wine'?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.desc?`<div class="wl-meta">${esc(w.desc)}</div>`:''}${meta?`<div class="wl-meta">${esc(meta)}</div>`:''}${w.note?`<div class="wl-note">${esc(w.note)}</div>`:''}<button class="pi-btn" style="margin-top:8px" onclick="wlBought('${w.id}')">🛒 Bought it</button></div><button class="del" title="Remove" onclick="removeBuylistItem('${w.id}')">✕</button></div>`;
+    const meta = [w.producer, w.region, w.vintage, w.abv?w.abv+'%':'', (w.price!=null&&w.price!=='')?fmtPrice(w.price):''].filter(Boolean).join(' · ');
+    return `<div class="wine" onclick="openWlDetail('${w.id}')"><div class="wine-left">${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${kindOf(w)!=='wine'?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.desc?`<div class="producer">${esc(w.desc)}</div>`:''}${meta?`<div class="row2"><span>${esc(meta)}</span></div>`:''}${w.note?`<div class="wl-note">${esc(w.note)}</div>`:''}<div style="margin-top:8px"><button class="pi-btn" onclick="event.stopPropagation();wlBought('${w.id}')">🛒 Bought it</button> <button class="pi-btn" onclick="event.stopPropagation();removeBuylistItem('${w.id}')">✕ Remove</button></div></div></div>`;
   }).join('') + '</div>';
 }
+// ── WISHLIST ITEM DETAIL — tap a card: photos, notes, every field editable ──
+let wlDetailId = null;
+window.openWlDetail = function(id){
+  const w = buylist[id]; if(!w) return;
+  wlDetailId = id;
+  document.getElementById('wl-d-title').textContent = w.name || 'Wishlist bottle';
+  const set=(el,v)=>{ const e=document.getElementById(el); if(e) e.value=(v==null?'':v); };
+  set('wl-d-name', w.name); set('wl-d-desc', w.desc); set('wl-d-prod', w.producer);
+  set('wl-d-region', w.region); set('wl-d-grape', w.grape); set('wl-d-vintage', w.vintage);
+  set('wl-d-abv', w.abv); set('wl-d-price', w.price); set('wl-d-note', w.note);
+  { const ke=document.getElementById('wl-d-kind'); if(ke) ke.value = kindOf(w); }
+  piStore.wl = (Array.isArray(w.photos) && w.photos.length)
+    ? w.photos.filter(p=>p && p.url).map(p=>({ path:p.path||null, url:p.url }))
+    : (w.photoUrl ? [{ path:w.photoPath||null, url:w.photoUrl }] : []);
+  piRender('wl');
+  document.getElementById('wlStatus').textContent='';
+  document.getElementById('wlModal').classList.add('open');
+};
+window.closeWlModal = ()=>document.getElementById('wlModal').classList.remove('open');
+window.saveWlDetail = async function(){
+  const id = wlDetailId; if(!id || !buylist[id]){ closeWlModal(); return; }
+  const v=(el)=>{ const e=document.getElementById(el); return e ? e.value.trim() : ''; };
+  try{
+    document.getElementById('wlStatus').textContent='⏳ Saving…';
+    const ups = await uploadPhotos('wl_'+id, piStore.wl);
+    const price = v('wl-d-price');
+    await dbUpdate('cellar/buylist/'+id, {
+      name:v('wl-d-name')||buylist[id].name, desc:v('wl-d-desc'), producer:v('wl-d-prod'),
+      region:v('wl-d-region'), grape:v('wl-d-grape'), vintage:v('wl-d-vintage'),
+      abv:v('wl-d-abv').replace('%',''), price:(price===''?null:Number(price)), note:v('wl-d-note'),
+      kind:(document.getElementById('wl-d-kind')||{value:'wine'}).value,
+      photos: ups.length?ups:null,
+      photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
+    });
+    closeWlModal();
+    showToast('Saved — ' + (v('wl-d-name')||'wishlist item'));
+  }catch(e){ document.getElementById('wlStatus').textContent='❌ ' + (e.message||e); }
+};
+window.wlDetailRemove = function(){ const id=wlDetailId; closeWlModal(); if(id) removeBuylistItem(id); };
+window.wlDetailBought = function(){ const id=wlDetailId; closeWlModal(); if(id) wlBought(id); };
 // Wishlist scan: one photo → scanLabel → the add-row fills itself; the extras
 // (price/vintage/desc/photo) ride along on the saved item for the 🛒 flow.
 let wlDraft = { photo:null, data:null };
 let wlScanMsg = '';
-window.wlScanFile = async function(input){
-  const f = (input.files||[])[0]; input.value='';
+window.wlScanFile = function(input){ const f=(input.files||[])[0]; input.value=''; wlScanFromFile(f); };
+async function wlScanFromFile(f){
   if(!f || !f.type || !f.type.startsWith('image/')) return;
   wlScanMsg = 'Reading…'; render();
   try{
@@ -3509,7 +3584,10 @@ window.wlBought = function(id){
   set('ca-grape', w.grape); set('ca-vintage', w.vintage); set('ca-abv', w.abv);
   if(w.price!=null && w.price!=='') set('ca-price', w.price);
   { const ke=document.getElementById('ca-kind'); if(ke && w.kind) ke.value=w.kind; } applyKindFields('ca');
-  if(w.photoUrl){ piStore.ca=[{ path:w.photoPath||null, url:w.photoUrl }]; piScanned.ca=true; piRender('ca'); }
+  const ph = (Array.isArray(w.photos) && w.photos.length)
+    ? w.photos.filter(p=>p && p.url).map(p=>({ path:p.path||null, url:p.url }))
+    : (w.photoUrl ? [{ path:w.photoPath||null, url:w.photoUrl }] : []);
+  if(ph.length){ piStore.ca = ph; piScanned.ca = true; piRender('ca'); }
   pendingWishlistBuy = id;
   showToast('Fill in price/vendor and hit Add — it moves off the wishlist');
 };
@@ -3628,7 +3706,7 @@ onAuthStateChanged(auth, async (user)=>{
 // parallel PR while code still referenced it. This flags that loudly at load.
 (function integrityCheck(){
   const critical = ['quickPanel','wsPanel','askwrap','askInput','askAnswer','kindRow','searchrow','searchbar',
-    'detailModal','dtScorepad','dtTags','dtHalfbtn','dtBuyflag','dt-name','dt-name-input','dt-meta','dt-loc','dt-desc','ca-desc','dt-notes','dt-price',
+    'wlModal','wl-intake','wl-d-name','detailModal','dtScorepad','dtTags','dtHalfbtn','dtBuyflag','dt-name','dt-name-input','dt-meta','dt-loc','dt-desc','ca-desc','dt-notes','dt-price',
     'dt-vendor','dt-grape','dt-kind','dt-vintage','dt-abv','dtOpenBtn','dtMergeBtn','dtStatus',
     'q-name','q-kind','q-intake','ca-name','ca-kind','ca-intake','ws-intake','ai-intake-wrap',
     'openModal','cellarAddModal','accessModal','archiveModal','dataModal','rackModal','content','toast','auth-gate','authError'];
