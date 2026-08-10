@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.79</title>
+<title>The Cellar Ledger — Rev 2.81</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -327,6 +327,12 @@
   .slot-thumb{width:100%;max-width:44px;height:auto;max-height:44px;object-fit:cover;border-radius:2px;pointer-events:none;margin-bottom:1px}
   .rack-grid.z1 .slot-name,.rack-grid.z1 .slot-coord,.rack-grid.z1 .slot-thumb{display:none}
   .rack-grid.z2 .slot-thumb{display:none}
+  /* 🖼 photo view — full bottle shots, gallery-sized cells (scrolling expected) */
+  .rack-grid.z4{--cw:190px;--rh:34px;--ch:240px}
+  .rack-grid.z4 .slot-name{display:none}
+  .rack-grid.z4 .slot-thumb{max-width:178px;max-height:228px;width:auto;height:auto;object-fit:contain;margin-bottom:0}
+  .rack-grid.z4 .rack-slot.filled{padding:4px}
+  .rack-grid.z4 .rack-slot.filled:not(:has(.slot-thumb)) .slot-name{display:block}
   .ca-suggest{display:none;border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin:4px 0 12px;background:rgba(201,163,92,0.07)}
   .ca-suggest.show{display:block}
   .ca-suggest .cs-msg{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--parch)}
@@ -505,7 +511,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.79</div>
+    <div class="auth-rev">Rev 2.81</div>
   </div>
 </div>
 
@@ -622,7 +628,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.79</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.81</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -1004,7 +1010,7 @@ let curRack = 'main'; // rack currently shown in the Cellar view
 let placing = null;   // bottle id currently being placed / moved (tap flow)
 let inspect = null;   // placed bottle id currently inspected
 let dragId = null;    // bottle id currently being dragged (HTML5 DnD)
-let rackZoom = 2;     // 1 = small · 2 = medium · 3 = large
+let rackZoom = 3;     // 1 = small · 2 = medium · 3 = large (default) · 4 = 🖼 photos-only
 let rackEdit = false; // edit-labels mode (admin)
 let rackFocusCol = null; // when set, the Cellar view shows just this column as a readable list
 let flashSlot = null; // "col_row" to flash after a scan-to-place suggestion
@@ -3129,7 +3135,7 @@ function rackHTML(){
   const jumpOpts = Array.from({length:d.cols},(_,i)=>{ const c=i+1; return `<option value="${c}">Col ${c} · ${esc(colHeaderLabel(c))}</option>`; }).join('');
   const tools = `<div class="rack-tools">
     <div class="rt-group"><span class="rt-lbl">Find</span><div class="rs-wrap"><input id="rackSearch" class="rt-find" type="search" placeholder="Search a bottle…" autocomplete="off" oninput="rackSearchInput(this.value)" onkeydown="rackSearchKey(event)" onblur="rackSearchBlur()"><div class="rs-res" id="rackSearchRes"></div></div></div>
-    <div class="rt-group"><span class="rt-lbl">Zoom</span><button class="rt-btn ${rackZoom===1?'on':''}" onclick="rackZoomSet(1)">S</button><button class="rt-btn ${rackZoom===2?'on':''}" onclick="rackZoomSet(2)">M</button><button class="rt-btn ${rackZoom===3?'on':''}" onclick="rackZoomSet(3)">L</button></div>
+    <div class="rt-group"><span class="rt-lbl">Zoom</span><button class="rt-btn ${rackZoom===1?'on':''}" onclick="rackZoomSet(1)">S</button><button class="rt-btn ${rackZoom===2?'on':''}" onclick="rackZoomSet(2)">M</button><button class="rt-btn ${rackZoom===3?'on':''}" onclick="rackZoomSet(3)">L</button><button class="rt-btn ${rackZoom===4?'on':''}" title="Photo view — just the labels" onclick="rackZoomSet(4)">🖼</button></div>
     <div class="rt-group"><span class="rt-lbl">Column</span><select class="rt-jump" onchange="rackFocusColumn(this.value)"><option value="">View a column…</option>${jumpOpts}</select></div>
     ${admin?`<button class="rt-btn ${rackEdit?'on':''}" onclick="rackToggleEdit()">${rackEdit?'✓ Done editing':'Edit labels'}</button>`:''}
     <div class="rt-group">${varietalSelectHTML(rackScope, rkEmoji)}${varietalFilter?`<button class="rt-btn on" title="Clear type highlight" onclick="setVarietal('')">✕</button>`:''}</div>
@@ -3313,6 +3319,33 @@ document.addEventListener('touchstart', (e)=>{
 ['touchend','touchmove','touchcancel'].forEach(ev=>document.addEventListener(ev, ()=>{ if(lpTimer){ clearTimeout(lpTimer); lpTimer=null; } }, {passive:true}));
 // Swallow the tap that follows a long-press so it doesn't also select/place.
 document.addEventListener('click', (e)=>{ if(lpFired){ lpFired=false; e.stopPropagation(); e.preventDefault(); } }, true);
+// ── Right-click a slot / tray chip → quick menu: Details · Buy-again toggle ──
+const rcMenu = document.createElement('div');
+rcMenu.className = 'dd-panel';
+rcMenu.style.cssText = 'position:fixed;z-index:210;display:none';
+document.body.appendChild(rcMenu);
+function rcHide(){ rcMenu.style.display='none'; }
+document.addEventListener('contextmenu', (e)=>{
+  const t = e.target.closest ? e.target.closest('[data-peek]') : null;
+  const w = t && bottles[t.dataset.peek];
+  if(!w){ rcHide(); return; }
+  e.preventDefault();
+  peekEl.classList.remove('show');
+  const id = t.dataset.peek;
+  rcMenu.innerHTML = `<button class="dd-opt" onclick="rcDetails('${id}')">📄 Details</button>` +
+    `<button class="dd-opt ${w.buyAgain?'on':''}" onclick="rcBuy('${id}')">${w.buyAgain?'✓ Buy again — un-flag':'🔁 Flag Buy again'}</button>`;
+  rcMenu.style.display = 'block';
+  const r = rcMenu.getBoundingClientRect();
+  rcMenu.style.left = Math.min(e.clientX, window.innerWidth - r.width - 8) + 'px';
+  rcMenu.style.top  = Math.min(e.clientY, window.innerHeight - r.height - 8) + 'px';
+});
+document.addEventListener('click', rcHide);
+window.rcDetails = function(id){ rcHide(); placing=null; inspect=null; openDetail(id); };
+window.rcBuy = async function(id){
+  rcHide(); const w = bottles[id]; if(!w) return;
+  try{ await dbUpdate('cellar/bottles/'+id, { buyAgain: !w.buyAgain }); showToast((!w.buyAgain?'Flagged Buy again — ':'Removed Buy-again flag — ') + (w.name||'bottle')); }
+  catch(e){ showToast('Update failed'); }
+};
 window.rackDragOver = function(e){ if(rackEdit) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(_){} e.currentTarget.classList.add('drop-hi'); };
 window.rackDragLeave = function(e){ e.currentTarget.classList.remove('drop-hi'); };
 window.rackDrop = function(e, col, row){ e.preventDefault(); e.currentTarget.classList.remove('drop-hi'); const id = dragId || (e.dataTransfer && e.dataTransfer.getData('text/plain')); dragId = null; if(id) placeBottle(id, col, row); };
