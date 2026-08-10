@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.13</title>
+<title>The Cellar Ledger — Rev 3.14</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -577,23 +577,42 @@
   }
   /* ── COCKTAILS ── */
   .ck-chips{margin-bottom:16px}
-  .ck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-  .ck-card{text-align:left;font-family:inherit;color:var(--parch);background:var(--glass);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:6px;padding:13px 15px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:6px}
-  .ck-card:hover{border-color:var(--gold);background:rgba(201,163,92,0.06)}
-  .ck-card.ck-can{border-left-color:var(--green)}
-  .ck-card.ck-sub{border-left-color:#7fb06a}
-  .ck-card.ck-one{border-left-color:var(--gold)}
-  .ck-card.ck-cant{border-left-color:rgba(201,163,92,0.18);opacity:.62}
-  .ck-top{display:flex;align-items:baseline;gap:8px}
-  .ck-name{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;line-height:1.05}
-  .ck-iba{font-size:8.5px;letter-spacing:.14em;font-weight:700;color:var(--gold);border:1px solid var(--line);border-radius:3px;padding:1px 4px;margin-left:auto;flex-shrink:0}
-  .ck-badge{font-size:11px;font-weight:700;letter-spacing:.03em}
-  .ck-can .ck-badge,.ck-sub .ck-badge{color:var(--green)}
-  .ck-one .ck-badge{color:var(--gold)}
-  .ck-cant .ck-badge{color:var(--parch-dim)}
-  .ck-spirits{font-size:12px;color:var(--parch-dim);line-height:1.35}
-  .ck-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
-  .ck-fam{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--gold-dim);font-weight:600}
+  .ck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+  .ck-card{text-align:left;font-family:inherit;color:var(--parch);background:var(--glass);border:1px solid var(--line);border-radius:8px;padding:0;cursor:pointer;transition:.15s;overflow:hidden;display:flex;flex-direction:column}
+  .ck-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+  .ck-card.ck-cant{opacity:.66}
+  .ck-card.ck-cant:hover{opacity:1}
+  /* photo / placeholder area */
+  .ck-photo{position:relative;aspect-ratio:4/3;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .ck-img{width:100%;height:100%;object-fit:cover;display:block}
+  .ck-glass{font-size:52px;opacity:.9;filter:drop-shadow(0 3px 8px rgba(0,0,0,.4))}
+  /* spirit-family tints behind the placeholder glass */
+  .ck-fam-agave{background:radial-gradient(120% 120% at 50% 0,#2f4a2a,#141d12)}
+  .ck-fam-whiskey{background:radial-gradient(120% 120% at 50% 0,#5a3a1c,#231409)}
+  .ck-fam-vodka{background:radial-gradient(120% 120% at 50% 0,#2b3a46,#111820)}
+  .ck-fam-gin{background:radial-gradient(120% 120% at 50% 0,#274038,#101c18)}
+  .ck-fam-rum{background:radial-gradient(120% 120% at 50% 0,#6a4420,#26160a)}
+  .ck-fam-brandy{background:radial-gradient(120% 120% at 50% 0,#5c2f1e,#22110b)}
+  .ck-fam-other{background:radial-gradient(120% 120% at 50% 0,#5a1620,#1c0a0e)}
+  /* status pill + IBA badge float on the photo */
+  .ck-pill{position:absolute;left:8px;top:8px;font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:3px 8px;border-radius:20px;background:rgba(10,6,7,.72);backdrop-filter:blur(2px);border:1px solid rgba(255,255,255,.12)}
+  .ck-can .ck-pill,.ck-sub .ck-pill{color:#8fe08a}
+  .ck-one .ck-pill{color:var(--gold)}
+  .ck-cant .ck-pill{color:var(--parch-dim)}
+  .ck-iba{position:absolute;right:8px;top:8px;font-size:8.5px;letter-spacing:.12em;font-weight:700;color:var(--gold);background:rgba(10,6,7,.72);border:1px solid var(--line);border-radius:3px;padding:2px 5px}
+  /* hover peek: recipe slides up over the photo (desktop; tap opens full modal) */
+  .ck-hover{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,7,.86),rgba(10,6,7,.94));padding:11px 12px;opacity:0;transition:opacity .16s;overflow-y:auto;font-size:11.5px;line-height:1.5}
+  .ck-card:hover .ck-hover{opacity:1}
+  .pk-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--gold);margin-bottom:5px}
+  .pk-row{color:var(--parch)}.pk-row em{color:var(--parch-dim);font-style:italic}
+  .pk-y{color:var(--green)}.pk-n{color:#c96a6a}.pk-o{color:var(--parch-dim)}
+  .pk-method{margin-top:6px;padding-top:6px;border-top:1px solid rgba(201,163,92,.18);color:var(--parch-dim);font-style:italic}
+  @media(hover:none){.ck-hover{display:none}}
+  /* body under the photo */
+  .ck-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px}
+  .ck-name{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;line-height:1.05}
+  .ck-tags{display:flex;flex-wrap:wrap;gap:5px}
+  .ck-fam{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--gold-dim);font-weight:600;align-self:center}
   .ck-tag{font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--parch-dim);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:20px;padding:2px 8px}
   /* detail modal */
   .ck-d-status{font-size:13px;font-weight:600;border-radius:5px;padding:10px 12px;border:1px solid var(--line)}
@@ -628,7 +647,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.13</div>
+    <div class="auth-rev">Rev 3.14</div>
   </div>
 </div>
 
@@ -746,7 +765,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.13</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.14</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -940,9 +959,16 @@
     <div class="qlabel" style="margin-top:14px">Method</div>
     <div id="ck-d-steps" class="ck-d-steps"></div>
     <div class="ck-d-tags" id="ck-d-tags"></div>
-    <div class="mrow" style="margin-top:16px">
-      <button class="mbtn dt-close" onclick="closeCocktail()">Close</button>
+    <button class="mbtn ghost" id="ck-d-buybtn" style="display:none;margin-top:14px;width:100%"></button>
+    <div id="ck-d-photowrap" style="display:none">
+      <div class="qlabel" style="margin-top:16px">Your photos — first is the card image</div>
+      <div class="pintake" id="ck-intake" ondragover="piDragOver(event,'ck')" ondragleave="piDragLeave(event,'ck')" ondrop="piDrop(event,'ck')"></div>
     </div>
+    <div class="mrow" style="margin-top:16px">
+      <button class="mbtn ghost dt-close" onclick="closeCocktail()">Close</button>
+      <button class="mbtn dt-save" id="ck-d-savebtn" style="display:none" onclick="saveCocktailPhotos(cocktailDetailId)">Save photos</button>
+    </div>
+    <div class="mstatus" id="ckStatus"></div>
   </div>
 </div>
 
@@ -1090,6 +1116,9 @@ const dbRemove = (p) => remove(ref(db, p));
 // ── STATE ──
 let bottles = {};   // id -> bottle
 let cocktails = {};  // id -> recipe (cellar/cocktails) — static, imported once via console
+let cocktailPhotos = {};  // id -> [{path,url}] — user drink photos, kept SEPARATE from the
+                          // recipe set so re-importing recipes never wipes your photos
+let cocktailDetailId = null;
 let cocktailFilter = 'can';  // 'all' | 'can' | 'one' | family key ('agave'|'whiskey'|…)
 let buylist = {};   // id -> item
 let histLog = {};   // id -> activity event (cellar/history)
@@ -1239,7 +1268,7 @@ let draft = { score:null, half:false, tags:[], buy:false };
 let openDraft = { id:null, score:null, half:false, tags:[], buy:false };
 // Photo intake per context — q (log), ca (add-to-cellar), dt (detail modal), ai (Ask AI).
 // Each entry: {dataUrl} for new pics, {path,url} for already-uploaded ones. Index 0 = MAIN.
-let piStore = { q:[], ca:[], dt:[], ai:[], ws:[], wl:[] };
+let piStore = { q:[], ca:[], dt:[], ai:[], ws:[], wl:[], ck:[] };
 let piScanned = { q:false, ca:false, wl:false };  // first photo per form triggers a scanLabel run
 let dtRemoved = [];                     // Storage paths to delete when the detail modal saves
 let search = '';      // current search filter
@@ -1557,6 +1586,7 @@ function subscribe(){
   onValue(ref(db, 'cellar/bottles'), snap => { bottles = snap.val() || {}; render(); if(document.getElementById('archiveModal').classList.contains('open')) renderArchiveList(); });
   onValue(ref(db, 'cellar/buylist'), snap => { buylist = snap.val() || {}; render(); });
   onValue(ref(db, 'cellar/cocktails'), snap => { cocktails = snap.val() || {}; if(view==='cocktails') render(); });
+  onValue(ref(db, 'cellar/cocktail_photos'), snap => { cocktailPhotos = snap.val() || {}; if(view==='cocktails') render(); });
   onValue(ref(db, 'cellar/history'), snap => { histLog = snap.val() || {}; if(view==='history') render(); });
   onValue(ref(db, 'cellar/ask_history'), snap => { askLog = snap.val() || {}; const el=document.getElementById('askHist'); if(el && el.style.display!=='none') renderAskHistory(); });
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
@@ -2379,7 +2409,7 @@ function compressImage(file, maxEdge=1600, quality=0.8){
   });
 }
 // ── PHOTO INTAKE (Eats-style): camera · library · drag-drop · Ctrl+V paste · gallery ──
-const PI_MAX = { q:12, ca:12, dt:12, ai:4, ws:4, wl:8 };
+const PI_MAX = { q:12, ca:12, dt:12, ai:4, ws:4, wl:8, ck:6 };
 function piRender(ctx){
   const host = document.getElementById(ctx+'-intake'); if(!host) return;
   const cam=ctx+'-pi-cam', lib=ctx+'-pi-lib';
@@ -2420,7 +2450,8 @@ async function piAddFiles(ctx, files){
       const raw = await compressImage(f);
       // Cut the bottle out of white/gray backdrops NOW, while the image is
       // local (no CORS) — the transparent PNG is what gets stored & shown.
-      const cut = await scrapeLocal(raw);
+      // Cocktail photos ('ck') are full scenes, not bottles — keep them intact.
+      const cut = (ctx==='ck') ? null : await scrapeLocal(raw);
       piStore[ctx].push({ dataUrl: cut || raw });
       piRender(ctx);
       draftQueue(ctx);
@@ -2518,6 +2549,7 @@ async function bcLookup(code){
 
 // Paste routes to whichever photo surface is open: detail modal > add-to-cellar > Ask AI panel > log form.
 function piPasteTarget(){
+  if(document.getElementById('cocktailModal').classList.contains('open')) return 'ck';
   if(document.getElementById('wlModal').classList.contains('open')) return 'wl';
   if(document.getElementById('detailModal').classList.contains('open')) return 'dt';
   if(document.getElementById('cellarAddModal').classList.contains('open')) return 'ca';
@@ -4441,19 +4473,41 @@ function cocktailsHTML(){
     const c=r.c, st=r.st;
     let badge, cls;
     if(st.state==='can'){ badge='✓ Can make'; cls='ck-can'; }
-    else if(st.state==='sub'){ badge='✓ Can make · sub '+esc(st.subs[0].use); cls='ck-sub'; }
+    else if(st.state==='sub'){ badge='✓ sub '+esc(st.subs[0].use); cls='ck-sub'; }
     else if(st.state==='one'){ badge='● Need '+esc(st.missing[0]); cls='ck-one'; }
     else { badge='✕ '+st.missing.length+' missing'; cls='ck-cant'; }
-    const spirits = c.ingredients.filter(i=>i.role==='base_spirit'||i.role==='liqueur').map(i=>esc(i.item)).join(' · ');
     const tags = (c.tags||[]).slice(0,3).map(t=>`<span class="ck-tag">${esc(t)}</span>`).join('');
-    return `<button class="ck-card ${cls}" onclick="openCocktail('${c.id}')">
-      <div class="ck-top"><span class="ck-name">${esc(c.name)}</span>${c.iba?'<span class="ck-iba" title="IBA official">IBA</span>':''}</div>
-      <div class="ck-badge">${badge}</div>
-      <div class="ck-spirits">${spirits}</div>
-      <div class="ck-tags">${FAMILY_LABEL[r.fam]?`<span class="ck-fam">${esc(FAMILY_LABEL[r.fam])}</span>`:''}${tags}</div>
+    // Hover peek: the full ingredient line, in-stock ✓ / missing ✕, plus method.
+    const peek = c.ingredients.map(ing=>{
+      const own = have.has(ing.item), sub = !own && (COCKTAIL_SUBS[ing.item]||[]).some(x=>have.has(x));
+      const mk = own?'<span class="pk-y">✓</span>':(sub?'<span class="pk-y">↔</span>':(ingRequired(ing)?'<span class="pk-n">✕</span>':'<span class="pk-o">○</span>'));
+      return `<div class="pk-row">${mk} ${esc(ing.item)}${ing.optional?' <em>opt</em>':''}</div>`;
+    }).join('');
+    return `<button class="ck-card ${cls}" onclick="openCocktail('${c.id}')" title="${esc(c.name)} — tap for the recipe &amp; to add a photo">
+      <div class="ck-photo ck-fam-${r.fam}">${cocktailPhotoCard(c.id, r.fam)}
+        <span class="ck-pill">${badge}</span>${c.iba?'<span class="ck-iba" title="IBA official">IBA</span>':''}
+        <div class="ck-hover"><div class="pk-title">${esc(c.name)}</div>${peek}<div class="pk-method">${esc(c.instructions||'')}</div></div>
+      </div>
+      <div class="ck-body">
+        <div class="ck-name">${esc(c.name)}</div>
+        <div class="ck-tags">${FAMILY_LABEL[r.fam]?`<span class="ck-fam">${esc(FAMILY_LABEL[r.fam])}</span>`:''}${tags}</div>
+      </div>
     </button>`;
   }).join('');
   return head + '<div class="ck-grid">'+cards+'</div>';
+}
+// Card image: the user's first uploaded photo, or a spirit-tinted glass placeholder.
+const FAMILY_GLASS = { agave:'🍹', whiskey:'🥃', vodka:'🍸', gin:'🍸', rum:'🍹', brandy:'🥃', other:'🍷' };
+function cocktailPhotoMain(id){
+  const ph = cocktailPhotos[id];
+  const arr = Array.isArray(ph) ? ph : (ph ? Object.values(ph) : []);
+  const first = arr.find(p=>p && p.url);
+  return first ? first.url : '';
+}
+function cocktailPhotoCard(id, fam){
+  const url = cocktailPhotoMain(id);
+  if(url) return `<img class="ck-img" src="${esc(url)}" alt="" loading="lazy">`;
+  return `<span class="ck-glass">${FAMILY_GLASS[fam]||'🍸'}</span>`;
 }
 window.setCocktailFilter = function(k){ cocktailFilter=k; render(); };
 
@@ -4490,9 +4544,74 @@ window.openCocktail = function(id){
   document.getElementById('ck-d-ings').innerHTML = rows;
   document.getElementById('ck-d-steps').textContent = c.instructions || '';
   document.getElementById('ck-d-tags').innerHTML = (c.tags||[]).map(t=>`<span class="ck-tag">${esc(t)}</span>`).join('');
+
+  // ── "Add missing to Buy list" — only the spirits/liqueurs you're short, and
+  //    only when you're actually short one or more (subs don't count as missing).
+  cocktailDetailId = id;
+  const buyBtn = document.getElementById('ck-d-buybtn');
+  const gaps = st.missing;   // canonical tokens you don't own and can't sub
+  if(gaps.length && isAdmin()){
+    buyBtn.style.display='';
+    buyBtn.textContent = '🛒 Add missing to Buy list ('+gaps.length+')';
+    buyBtn.onclick = ()=>addMissingToBuy(id);
+  } else { buyBtn.style.display='none'; buyBtn.onclick=null; }
+
+  // ── Photos: load existing, wire the intake (camera / library / paste) ──
+  const ph = cocktailPhotos[id];
+  piStore.ck = (Array.isArray(ph) ? ph : (ph ? Object.values(ph) : [])).filter(p=>p&&p.url).map(p=>({path:p.path||null, url:p.url}));
+  piRender('ck');
+  const photoWrap = document.getElementById('ck-d-photowrap');
+  const saveBtn = document.getElementById('ck-d-savebtn');
+  if(isAdmin()){ photoWrap.style.display=''; saveBtn.style.display=''; saveBtn.onclick=()=>saveCocktailPhotos(id); }
+  else { photoWrap.style.display='none'; saveBtn.style.display='none'; }
+
+  document.getElementById('ckStatus').textContent='';
   document.getElementById('cocktailModal').classList.add('open');
 };
 window.closeCocktail = ()=>document.getElementById('cocktailModal').classList.remove('open');
+
+// Persist the drink's photos to cellar/cocktail_photos/{id} (separate from recipes).
+window.saveCocktailPhotos = async function(id){
+  const st = document.getElementById('ckStatus');
+  try{
+    st.textContent='⏳ Saving photos…';
+    const ups = await uploadPhotos('cocktail_'+id, piStore.ck);
+    await dbSet('cellar/cocktail_photos/'+id, ups.length ? ups : null);
+    st.textContent = ups.length ? '✅ Saved '+ups.length+' photo'+(ups.length>1?'s':'') : '✅ Photos cleared';
+  }catch(e){ st.textContent = '❌ '+(e.message||e); }
+};
+
+// Map a canonical ingredient token → a Buy-list item (name + best-fit collection).
+function tokenToBuyKind(tok){
+  if(['bourbon','rye whiskey','whiskey','scotch'].includes(tok)) return 'bourbon';
+  if(['tequila','mezcal'].includes(tok)) return 'tequila';
+  if(tok==='vodka') return 'vodka';
+  return 'mixer';   // gin, rums, liqueurs, sparkling — the app has no gin/rum kind
+}
+window.addMissingToBuy = async function(id){
+  const c = cocktails[id]; if(!c) return;
+  const st = document.getElementById('ckStatus');
+  const have = new Set(barTokenMap().keys());
+  const stt = cocktailStatus(c, have);
+  const gaps = stt.missing;
+  if(!gaps.length){ st.textContent='Nothing missing — you can make it.'; return; }
+  // Skip anything already on the Buy list (case-insensitive name match).
+  const existing = new Set(asArr(buylist).map(b=>deburr((b.name||'').toLowerCase())));
+  try{
+    st.textContent='⏳ Adding…';
+    let added=0;
+    for(const tok of gaps){
+      const name = tok.replace(/\b\w/g,m=>m.toUpperCase());
+      if(existing.has(deburr(name.toLowerCase()))) continue;
+      const r = push(ref(db,'cellar/buylist'));
+      await set(r, { name, region:'', note:'for '+c.name, kind:tokenToBuyKind(tok),
+        addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now(),
+        desc:'', vintage:'', abv:'', grape:'', producer:'', price:null });
+      existing.add(deburr(name.toLowerCase())); added++;
+    }
+    st.textContent = added ? ('✅ Added '+added+' to Buy list — check the Buy tab.') : 'Already on your Buy list.';
+  }catch(e){ st.textContent='❌ '+(e.message||e); }
+};
 
 // ── WISHLIST (buy list) ──
 function wishlistHTML(){
