@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.74</title>
+<title>The Cellar Ledger — Rev 2.75</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.74</div>
+    <div class="auth-rev">Rev 2.75</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.74</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.75</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2130,7 +2130,7 @@ function showCaSuggest(d){
   }
   box.classList.add('show');
 }
-window.acceptSuggestedSlot = function(){ if(caSuggest){ showToast('Will place at ' + slotCode(caSuggest.col, caSuggest.row) + ' on add'); } };
+window.acceptSuggestedSlot = function(){ if(caSuggest){ const r=document.getElementById('ca-rack'); if(r) r.value=''; showToast('Will place at ' + slotCode(caSuggest.col, caSuggest.row) + ' on add'); } };
 window.clearSuggestedSlot = function(){ caSuggest = null; document.getElementById('ca-suggest').classList.remove('show'); showToast('Will add unplaced'); };
 
 window.scoutToCellar = ()=>{
@@ -2999,11 +2999,18 @@ function suggestInRack(b){
   if(ov) return { kind:'overflow', col:ov.col, row:ov.row, score:top, label:cellLabel(ov.col,ov.row), fullCol:tied[0].col, fullLabel:tied[0].label };
   return { kind:'full', score:top, fullLabel:tied[0].label };
 }
-// Search EVERY rack for the best home; prefer a clean match, then overflow.
+// Search the COMPATIBLE racks for the best home; prefer a clean match, then
+// overflow. A bourbon only gets suggested onto the Bourbon shelf (etc.);
+// kindless racks like the Wine Wall take wine — and spirits only when no
+// dedicated shelf for that kind exists.
 function suggestPlacement(b){
+  const bk = (b && b.kind && KINDS.some(k=>k[0]===b.kind)) ? b.kind : 'wine';
+  const hasKindRack = rackIds().some(rid=>rackKind(rid)===bk);
   const prev = curRack; let best = null;
   const rankOf = (x)=> x.kind==='ok' ? 2 : (x.kind==='overflow' ? 1 : 0);
   for(const rid of rackIds()){
+    const rk = rackKind(rid);
+    if(rk ? rk!==bk : (bk!=='wine' && hasKindRack)) continue;
     curRack = rid;
     const sug = suggestInRack(b);
     if(sug.kind==='none') continue;
