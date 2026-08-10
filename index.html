@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.82</title>
+<title>The Cellar Ledger — Rev 2.83</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -524,7 +524,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.82</div>
+    <div class="auth-rev">Rev 2.83</div>
   </div>
 </div>
 
@@ -540,7 +540,7 @@
   </div>
 
   <!-- ── TOP ACTION ROW ── -->
-  <div class="actionrow">
+  <div class="actionrow" id="actionRow">
     <button class="act ghosty" onclick="toggleLogPanel()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
       Log a pour
@@ -629,7 +629,7 @@
   <!-- ── COLLECTION PICKER: wine · bourbon · tequila · vodka · cigars · mixers ── -->
   <div class="chiprow" id="kindRow" style="margin:0 0 10px"></div>
 
-  <div class="tabs">
+  <div class="tabs" id="tabsRow">
     <button class="vtab on" data-view="all" onclick="setView('all')">All Bottles</button>
     <button class="vtab" data-view="cellar" onclick="setView('cellar')">Cellar</button>
     <button class="vtab" data-view="palate" onclick="setView('palate')">The Palate</button>
@@ -641,7 +641,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.82</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.83</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2595,7 +2595,7 @@ window.goHome = function(){
   setView('all');
   window.scrollTo({ top:0, behavior:'smooth' });
 };
-window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; document.getElementById('kindRow').style.display = (v==='cellar') ? 'none' : ''; render(); };
+window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = hideSearch ? 'none' : ''; document.getElementById('kindRow').style.display = (v==='cellar') ? 'none' : ''; { const ar=document.getElementById('actionRow'); if(ar) ar.style.display = (v==='cellar')?'none':''; const tr=document.getElementById('tabsRow'); if(tr) tr.style.display = (v==='cellar')?'none':''; } render(); };
 // Strip accents/diacritics so "chateauneuf" matches "Châteauneuf", "rose" matches "rosé", etc.
 function deburr(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 window.onSearch = function(v){ search=deburr((v||'').trim().toLowerCase()); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
@@ -3137,14 +3137,13 @@ function rackHTML(){
   unplaced = unplaced.filter(w=> rkind ? kindOf(w)===rkind : w.status==='cellared');
   const admin = isAdmin();
 
-  // Rack switcher + admin rack management
+  // Rack switcher is the Cellar view's top row (the action buttons + tabs hide
+  // here), so it carries a ← back chip to leave the Cellar.
   const ids = rackIds();
-  let switcher = '';
-  if(ids.length>1){
-    switcher = `<div class="rack-tools">` +
-      ids.map(id=>`<button class="rt-btn rk-chip ${id===curRack?'on':''}" onclick="rackSwitch('${id}')">${esc(rackDef(id).name)}</button>`).join('') +
-      `</div>`;
-  }
+  const switcher = `<div class="rack-tools" style="margin-top:4px">` +
+    `<button class="rt-btn rk-chip" title="Back to All Bottles" onclick="setView('all')">← Back</button>` +
+    ids.map(id=>`<button class="rt-btn rk-chip ${id===curRack?'on':''}" onclick="rackSwitch('${id}')">${esc(rackDef(id).name)}</button>`).join('') +
+    `</div>`;
   // Admin rack management lives at the BOTTOM of the rack view.
   const adminBar = admin ? `<div class="rack-tools" style="margin-top:12px"><button class="rt-btn rk-chip" onclick="openRackModal('edit')" title="Rename / resize this rack">⚙ Rack settings</button><button class="rt-btn rk-chip" onclick="openRackModal('new')" title="Add another rack">＋ New rack</button></div>` : '';
 
@@ -3161,6 +3160,7 @@ function rackHTML(){
     ${admin?`<button class="rt-btn ${rackEdit?'on':''}" onclick="rackToggleEdit()">${rackEdit?'✓ Done editing':'Edit labels'}</button>`:''}
     <div class="rt-group">${varietalSelectHTML(rackScope, rkEmoji)}${varietalFilter?`<button class="rt-btn on" title="Clear type highlight" onclick="setVarietal('')">✕</button>`:''}</div>
     <div class="rt-group">${flavorSelectHTML(rackScope)}${flavorFilter?`<button class="rt-btn on" title="Clear flavor highlight" onclick="setFlavor('')">✕</button>`:''}</div>
+    <span style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--parch-dim);align-self:center">${esc(d.name)} — ${d.cols} columns × ${d.rows} rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</span>
   </div>`;
 
   // Action / status bar
@@ -3180,7 +3180,7 @@ function rackHTML(){
   // Tray of unplaced bottles (draggable). Identical bottles (same wine) collapse into
   // one chip with a ×N count; placing/dragging acts on one bottle, so N ticks down.
   // The whole zone is a drop target — drag a PLACED bottle here to pull it off the rack.
-  let tray = `<div class="rack-tray-zone" ondragover="rackTrayOver(event)" ondragleave="rackTrayLeave(event)" ondrop="rackDropTray(event)"><div class="rack-tray-head"><span>Unplaced — ${unplaced.length}${(rkind && tray_all>unplaced.length)?` <em style="opacity:.55;font-style:normal">(+${tray_all-unplaced.length} other bottles in the Wine Wall tray)</em>`:''}</span><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>`;
+  let tray = `<div class="rack-tray-zone" ondragover="rackTrayOver(event)" ondragleave="rackTrayLeave(event)" ondrop="rackDropTray(event)"><div class="rack-tray-head"><span>${(rkind && tray_all>unplaced.length)?`<em style="opacity:.55;font-style:normal">+${tray_all-unplaced.length} other bottles in the Wine Wall tray</em>`:''}</span><button class="addcellar" onclick="openCellarAdd()">＋ Add to cellar</button></div>`;
   if(unplaced.length){
     tray += '<div class="rack-tray">' + groupBrowse(unplaced).map(g=>{
       const rep = g[0];
@@ -3216,7 +3216,7 @@ function rackHTML(){
       }
     }
     const focus = `<div class="colfocus"><div class="cf-head"><button class="rt-btn cf-back" onclick="rackFocusColumn('')">← Full rack</button><div class="cf-title"><b>Column ${col}</b> · ${esc(label)}</div><span class="cf-count">${filled}/${d.rows} filled</span></div><div class="cf-list">${rowsHtml}</div></div>`;
-    return `<div class="rack-view" id="rackView"><div class="shead"><p>${esc(d.name)} — ${d.cols} columns × ${d.rows} rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</p></div>${switcher}${tools}${bar}${tray}${focus}${adminBar}</div>`;
+    return `<div class="rack-view" id="rackView">${switcher}${tools}${bar}${tray}${focus}${adminBar}</div>`;
   }
 
   // Grid: header row (corner + 20 numbered col headers), then 29 rows of (row# + 20 slots).
@@ -3261,7 +3261,7 @@ function rackHTML(){
     setTimeout(()=>{ if(flashSlot===key){ flashSlot=null; } }, 4300);
   }
 
-  return `<div class="rack-view" id="rackView"><div class="shead"><p>${esc(d.name)} — ${d.cols} columns × ${d.rows} rows. ${Object.keys(placed).length} placed · ${unplaced.length} unplaced.</p></div>${switcher}${tools}${bar}${tray}<div class="rack-wrap">${grid}</div>${adminBar}</div>`;
+  return `<div class="rack-view" id="rackView">${switcher}${tools}${bar}${tray}<div class="rack-wrap">${grid}</div>${adminBar}</div>`;
 }
 // Full-bleed: pull the rack view out of the app's centered column to span the viewport
 // exactly (documentElement.clientWidth excludes the scrollbar, so no page h-scroll).
