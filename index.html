@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.76</title>
+<title>The Cellar Ledger — Rev 2.77</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -505,7 +505,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.76</div>
+    <div class="auth-rev">Rev 2.77</div>
   </div>
 </div>
 
@@ -622,7 +622,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.76</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.77</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -925,7 +925,7 @@ let buylist = {};   // id -> item
 let histLog = {};   // id -> activity event (cellar/history)
 let askLog = {};    // id -> {q,a,at,by} Ask-AI conversation history (cellar/ask_history)
 let view = 'all';
-let sortMode = 'rating';   // 'rating' | 'newest' | 'az' — sort chips on All Bottles / Buy-Again
+let sortMode = 'newest';   // 'rating' | 'newest' | 'az' — sort chips on All Bottles / Buy-Again
 let varietalFilter = '';   // 🍇 filter — e.g. 'grenache'; list orders by that grape's share
 let flavorFilter = '';     // 🏷 flavor-tag filter — e.g. 'tqcaramel'
 // ── COLLECTIONS: every item carries a kind (missing = wine, so all existing data just works)
@@ -1645,7 +1645,7 @@ window.ddToggle = function(e, btn){
 };
 document.addEventListener('click', ()=>document.querySelectorAll('.dd-panel.open').forEach(p=>p.classList.remove('open')));
 function chipRowHTML(){
-  const chips = [['rating','Rating'],['newest','Newest'],['az','A–Z']];
+  const chips = [['newest','Newest'],['rating','Rating'],['az','A–Z']];
   return '<div class="chiprow">' + chips.map(c=>`<button class="sortchip ${sortMode===c[0]?'on':''}" onclick="setSort('${c[0]}')">${c[1]}</button>`).join('') + varietalSelectHTML() + flavorSelectHTML() +
     (varietalFilter?`<button class="sortchip on" title="Clear varietal filter" onclick="setVarietal('')">✕ ${esc(varietalFilter.replace(/\b\w/g,c=>c.toUpperCase()))}</button>`:'') +
     (flavorFilter?`<button class="sortchip on" title="Clear flavor filter" onclick="setFlavor('')">✕ ${esc(tagInfo(flavorFilter).t)}</button>`:'') + '</div>';
