@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.75</title>
+<title>The Cellar Ledger — Rev 2.76</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -457,6 +457,15 @@
   .dm-sec{border:1px solid var(--line);border-radius:5px;padding:13px 14px;margin-bottom:10px;background:var(--glass)}
   .dm-h{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;margin-bottom:3px}
   .dm-d{font-size:12px;color:var(--parch-dim);margin-bottom:9px}
+  /* Hover peek card — bottle photo + details while working the rack */
+  .rack-peek{position:fixed;z-index:200;display:none;width:270px;background:#1c0d10;border:1px solid var(--gold-dim);border-radius:6px;padding:12px;pointer-events:none;box-shadow:0 8px 28px rgba(0,0,0,.6)}
+  .rack-peek.show{display:flex;gap:12px}
+  .rack-peek img{width:76px;height:110px;object-fit:contain;flex-shrink:0}
+  .rack-peek .pk-ph{width:76px;height:110px;display:flex;align-items:center;justify-content:center;font-size:34px;flex-shrink:0;opacity:.5}
+  .rack-peek .pk-name{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--parch);line-height:1.15}
+  .rack-peek .pk-desc{font-size:11px;color:var(--gold-dim);margin-top:3px;font-style:italic}
+  .rack-peek .pk-meta{font-size:11px;color:var(--parch-dim);margin-top:4px}
+  .rack-peek .pk-score{font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--gold);margin-top:5px}
   /* Rack settings modal steppers */
   .rm-step{display:flex;gap:7px;align-items:center}
   .rm-step button{width:38px;height:38px;font-size:18px;color:var(--gold);background:transparent;border:1px solid var(--line);border-radius:3px;cursor:pointer;font-family:'Inter';line-height:1}
@@ -496,7 +505,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.75</div>
+    <div class="auth-rev">Rev 2.76</div>
   </div>
 </div>
 
@@ -613,7 +622,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.75</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.76</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -3156,7 +3165,7 @@ function rackHTML(){
       const cnt = tot>1 ? ` <b class="tray-x">×${tot}</b>` : '';
       const on = g.some(r=>placing===r.id) ? 'on' : '';
       const ttl = esc([rep.name,rep.producer,rep.vintage].filter(Boolean).join(' · ')) + (tot>1?(' — '+tot+' bottles'):'');
-      return `<button class="tray-chip ${on}" draggable="true" ondragstart="rackDragStart(event,'${rep.id}')" onclick="rackTapBottle('${rep.id}')" title="${ttl}">${esc(rep.name)}${vin}${rep.status==='opened'?' ◐':''}${cnt}</button>`;
+      return `<button class="tray-chip ${on}" data-peek="${rep.id}" draggable="true" ondragstart="rackDragStart(event,'${rep.id}')" onclick="rackTapBottle('${rep.id}')" title="${ttl}">${esc(rep.name)}${vin}${rep.status==='opened'?' ◐':''}${cnt}</button>`;
     }).join('') + '</div>';
   }else{
     tray += '<div class="rack-tray-empty">Drag a bottle here to pull it off the rack.</div>';
@@ -3210,7 +3219,7 @@ function rackHTML(){
         const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ') + (op?' · opened':'') + (xq?(' ·'+xq+' bottles here'):'') + ' · ' + slotCode(c,r);
         const thumb = w.photoUrl ? `<img class="slot-thumb" src="${esc(w.photoUrl)}" alt="">` : '';
         const vdim = ((varietalFilter && pctOf(w, varietalFilter) < 0) || (flavorFilter && !fMatch(w))) ? ' vdim' : '';
-        grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}${flash}${vdim}" data-cell="${c}_${r}" draggable="${rackEdit?'false':'true'}" ondragstart="rackDragStart(event,'${w.id}')" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(title)}" onclick="rackTapSlot(${c},${r})">${thumb}<span class="slot-name">${short}${vv}</span></div>`;
+        grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}${flash}${vdim}" data-peek="${w.id}" data-cell="${c}_${r}" draggable="${rackEdit?'false':'true'}" ondragstart="rackDragStart(event,'${w.id}')" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(title)}" onclick="rackTapSlot(${c},${r})">${thumb}<span class="slot-name">${short}${vv}</span></div>`;
       }else{
         // Empty slot: faint outline + its coordinate only (category lives solely in the header).
         grid += `<div class="rack-slot${placing?' target':''}${flash}" data-cell="${c}_${r}" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="Slot ${slotCode(c,r)} — ${esc(cellLabel(c,r))}" onclick="rackTapSlot(${c},${r})"><span class="slot-coord">${slotCode(c,r)}</span></div>`;
@@ -3260,6 +3269,34 @@ window.rackMarkOpened = function(id){ placing = null; inspect = null; openMarkOp
 window.rackCancel = function(){ placing = null; inspect = null; render(); };
 // Interaction — drag & drop (desktop-first; tap is the touch-safe path)
 window.rackDragStart = function(e, id){ dragId = id; try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', id); }catch(_){} };
+// ── HOVER PEEK: photo + details while working the rack (slots & tray chips) ──
+const peekEl = document.createElement('div');
+peekEl.className = 'rack-peek';
+document.body.appendChild(peekEl);
+function peekHTML(w){
+  const img = w.photoUrl ? `<img src="${esc(w.photoUrl)}" alt="">` : `<span class="pk-ph">${kindEmoji(kindOf(w))}</span>`;
+  const meta = [w.producer, w.vintage, w.grape, w.region, w.abv?w.abv+'%':'', fmtPrice(w.price)].filter(Boolean).join(' · ');
+  const state = w.status==='opened' ? '◐ open bottle' : (Number(w.qty)>1 ? '×'+w.qty+' on hand' : '');
+  const score = w.score!=null ? ('★ '+fmt(w.score)) : ((w.predLow!=null&&w.predHigh!=null)?('predicted '+fmt(w.predLow)+'–'+fmt(w.predHigh)):'');
+  return img + `<div><div class="pk-name">${esc(w.name||'')}</div>${w.desc?`<div class="pk-desc">${esc(w.desc)}</div>`:''}${meta?`<div class="pk-meta">${esc(meta)}</div>`:''}${state?`<div class="pk-meta">${esc(state)}</div>`:''}${score?`<div class="pk-score">${esc(score)}</div>`:''}</div>`;
+}
+document.addEventListener('mouseover', (e)=>{
+  const t = e.target.closest ? e.target.closest('[data-peek]') : null;
+  if(!t){ peekEl.classList.remove('show'); return; }
+  const w = bottles[t.dataset.peek];
+  if(!w){ peekEl.classList.remove('show'); return; }
+  peekEl.innerHTML = peekHTML(w);
+  peekEl.classList.add('show');
+});
+document.addEventListener('mousemove', (e)=>{
+  if(!peekEl.classList.contains('show')) return;
+  const pad = 14, r = peekEl.getBoundingClientRect();
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if(x + r.width  > window.innerWidth  - 8) x = e.clientX - r.width  - pad;
+  if(y + r.height > window.innerHeight - 8) y = e.clientY - r.height - pad;
+  peekEl.style.left = Math.max(8,x) + 'px'; peekEl.style.top = Math.max(8,y) + 'px';
+});
+document.addEventListener('scroll', ()=>peekEl.classList.remove('show'), true);
 window.rackDragOver = function(e){ if(rackEdit) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(_){} e.currentTarget.classList.add('drop-hi'); };
 window.rackDragLeave = function(e){ e.currentTarget.classList.remove('drop-hi'); };
 window.rackDrop = function(e, col, row){ e.preventDefault(); e.currentTarget.classList.remove('drop-hi'); const id = dragId || (e.dataTransfer && e.dataTransfer.getData('text/plain')); dragId = null; if(id) placeBottle(id, col, row); };
