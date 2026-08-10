@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.81</title>
+<title>The Cellar Ledger — Rev 2.82</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,7 +88,7 @@
   .dt-open{padding:9px 15px!important;white-space:nowrap;flex-shrink:0}
   .dt-year{max-width:96px;margin-bottom:0!important}
   .dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-  .dt-grid input{margin-bottom:0!important;width:100%}
+  .dt-grid input,.dt-grid select{margin-bottom:0!important;width:100%;height:44px;box-sizing:border-box}
   @media(max-width:420px){.dt-grid{grid-template-columns:1fr}}
   /* ── History & spend ── */
   .hist-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px}
@@ -496,6 +496,19 @@
   @media(min-width:1200px){
     .wrap{max-width:1440px}
   }
+  /* Browse-card size (S/M/L picker on the main page) — M is the classic look */
+  #content.cs-s .cardphoto{width:64px;height:96px}
+  #content.cs-s .cardphoto.ph{width:56px;height:72px}
+  #content.cs-s .meta .name{font-size:17px}
+  #content.cs-s .score b{font-size:24px}
+  #content.cs-s .wine{padding:10px 0}
+  #content.cs-l .cardphoto{width:150px;height:225px}
+  #content.cs-l .meta .name{font-size:24px}
+  @media(min-width:768px){
+    #content.cs-s .card-grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+    #content.cs-s .card-grid>.wine{padding:10px 12px}
+    #content.cs-l .card-grid{grid-template-columns:repeat(auto-fill,minmax(430px,1fr))}
+  }
 </style>
 </head>
 <body>
@@ -511,7 +524,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.81</div>
+    <div class="auth-rev">Rev 2.82</div>
   </div>
 </div>
 
@@ -628,7 +641,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.81</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.82</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -942,12 +955,12 @@ function kindEmoji(k){ const e={wine:'🍷',bourbon:'🥃',tequila:'🌵',vodka:
 function kindLabel(k){ const f=KINDS.find(x=>x[0]===k); return f?f[1]:'🍷 Wine'; }
 // Per-kind form shaping: which fields make sense, and what to call them.
 const KIND_FIELDS = {
-  wine:    { grape:true,  abv:true,  vintagePH:'Vintage',                       abvPH:'ABV %' },
-  bourbon: { grape:false, abv:true,  vintagePH:'Age / bottling year',           abvPH:'Proof or ABV' },
-  tequila: { grape:false, abv:true,  vintagePH:'Blanco / reposado / añejo',     abvPH:'ABV %' },
-  vodka:   { grape:false, abv:true,  vintagePH:'Year (optional)',               abvPH:'ABV %' },
-  cigar:   { grape:false, abv:false, vintagePH:'Vitola / size',                 abvPH:'' },
-  mixer:   { grape:false, abv:true,  vintagePH:'Year (optional)',               abvPH:'ABV %' }
+  wine:    { grape:true,  abv:true,  vintagePH:'Vintage',                       abvPH:'ABV %',        descPH:'Description — e.g. Amarone della Valpolicella Classico' },
+  bourbon: { grape:false, abv:true,  vintagePH:'Age / bottling year',           abvPH:'Proof or ABV', descPH:'Description — e.g. Kentucky Straight Rye Whiskey' },
+  tequila: { grape:false, abv:true,  vintagePH:'Blanco / reposado / añejo',     abvPH:'ABV %',        descPH:'Description — e.g. Tequila Añejo, 100% de agave' },
+  vodka:   { grape:false, abv:true,  vintagePH:'Year (optional)',               abvPH:'ABV %',        descPH:'Description — e.g. Small-batch wheat vodka' },
+  cigar:   { grape:false, abv:false, vintagePH:'Vitola / size',                 abvPH:'',             descPH:'Description — e.g. Maduro toro, Nicaraguan filler' },
+  mixer:   { grape:false, abv:true,  vintagePH:'Year (optional)',               abvPH:'ABV %',        descPH:'Description — e.g. Italian bitter aperitivo' }
 };
 window.applyKindFields = function(pfx){
   const sel = document.getElementById(pfx+'-kind'); if(!sel) return;
@@ -955,6 +968,7 @@ window.applyKindFields = function(pfx){
   const setEl = (id, show, ph)=>{ const el=document.getElementById(pfx+'-'+id); if(!el) return; el.style.display = show?'':'none'; if(show && ph!==undefined && ph!=='') el.placeholder = ph; };
   setEl('grape', cfg.grape);
   setEl('abv', cfg.abv, cfg.abvPH);
+  setEl('desc', true, cfg.descPH);
   setEl('vintage', true, cfg.vintagePH);
   // wine-only prediction inputs on the Add-to-Cellar form
   setEl('predlow', cfg.grape); setEl('predhigh', cfg.grape);
@@ -991,6 +1005,8 @@ function kindSelectHTML(id){
   return `<select id="${id}" class="rt-jump" style="width:100%;margin-bottom:12px">` + KINDS.map(k=>`<option value="${k[0]}">${k[1]}</option>`).join('') + `</select>`;
 }
 let listMode = 'browse';   // 'browse' | 'list' | 'kanban' — collection display mode (All Bottles / Logged)
+let cardSize = 'm';        // 's' | 'm' | 'l' — browse-card size on the main page
+try{ const _cs=localStorage.getItem('cellar_cardsize'); if(['s','m','l'].includes(_cs)) cardSize=_cs; }catch(_){}
 let listSort = { key:'score', dir:-1 };  // List-mode column sort: key + direction (1 asc, -1 desc)
 try{ const _m=localStorage.getItem('cellar_listmode'); if(['browse','list','kanban'].includes(_m)) listMode=_m; }catch(_){}
 let dtDraft = { id:null, score:null, half:false, tags:[], buy:false };  // detail-modal edit state
@@ -2632,12 +2648,13 @@ function render(){
   // Sort chips + display-mode toggle live on the tabs row (not per-view), shown only where relevant.
   const tc = document.getElementById('tabctrls');
   if(tc){
-    if(view==='all' || view==='logged') tc.innerHTML = (listMode==='list' ? '' : chipRowHTML()) + modeToggleHTML();
-    else if(view==='buy') tc.innerHTML = chipRowHTML();
+    if(view==='all' || view==='logged') tc.innerHTML = (listMode==='list' ? '' : chipRowHTML()) + modeToggleHTML() + (listMode==='browse'?cardSizeHTML():'');
+    else if(view==='buy') tc.innerHTML = chipRowHTML() + cardSizeHTML();
     else tc.innerHTML = '';
   }
 
   const c = document.getElementById('content');
+  c.classList.remove('cs-s','cs-m','cs-l'); c.classList.add('cs-'+cardSize);
   if(view==='history'){ c.innerHTML = historyHTML(); return; }
 
   if(view==='palate'){ c.innerHTML = palateHTML(); return; }
@@ -2679,6 +2696,10 @@ function modeToggleHTML(){
   return '<div class="modebar">' + modes.map(m=>`<button class="modebtn ${listMode===m[0]?'on':''}" onclick="setListMode('${m[0]}')">${m[1]}</button>`).join('') + '</div>';
 }
 window.setListMode = function(m){ listMode=m; try{ localStorage.setItem('cellar_listmode', m); }catch(_){} render(); };
+function cardSizeHTML(){
+  return '<div class="modebar">' + [['s','S'],['m','M'],['l','L']].map(x=>`<button class="modebtn ${cardSize===x[0]?'on':''}" onclick="setCardSize('${x[0]}')">${x[1]}</button>`).join('') + '</div>';
+}
+window.setCardSize = function(s){ cardSize=s; try{ localStorage.setItem('cellar_cardsize', s); }catch(_){} render(); };
 function renderCollection(list){
   if(listMode==='list')   return listTableHTML(list);
   if(listMode==='kanban') return kanbanHTML(list);
