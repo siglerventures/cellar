@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.92</title>
+<title>The Cellar Ledger — Rev 2.93</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -413,7 +413,8 @@
   .w-wine{align-items:center;height:168px;overflow:hidden;position:relative}
   /* Bottle photo FILLS the frame (no backdrop, no side gaps) — cover-crop. */
   .w-wine .cardphoto{width:104px;height:150px;border-radius:6px;overflow:hidden;background:none}
-  .w-wine .cardphoto img{width:100%;height:100%;object-fit:cover;padding:0}
+  /* contain = the WHOLE bottle always shows (no cropping); it sits on the dark card. */
+  .w-wine .cardphoto img{width:100%;height:100%;object-fit:contain;padding:0}
   /* Score badge lives in the top-right corner of the whole card. */
   .w-wine .meta{padding-right:44px}
   .w-wine .cp-score{position:absolute;top:10px;right:10px;z-index:3;font-family:'Cormorant Garamond',serif;
@@ -424,6 +425,14 @@
   #content.cs-s .w-wine .cardphoto{width:74px;height:104px}
   #content.cs-l .w-wine{height:236px}
   #content.cs-l .w-wine .cardphoto{width:150px;height:210px}
+  /* 🖼️ Photos-only gallery */
+  .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+  .img-tile{aspect-ratio:3/4;border:1px solid var(--line);border-radius:6px;overflow:hidden;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;background:var(--glass);transition:.15s}
+  .img-tile:hover{border-color:var(--gold)}
+  .img-tile img{width:100%;height:100%;object-fit:contain;padding:6px}
+  .img-tile .ig-ph{font-size:34px;opacity:.45}
+  @media(min-width:768px){.img-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}}
   /* Grouped-wine card badges */
   .gbadge{display:inline-flex;align-items:center;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;border-radius:20px;padding:2px 9px;border:1px solid var(--line)}
   .gb-rated{color:var(--gold);border-color:var(--gold-dim)}
@@ -544,7 +553,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.92</div>
+    <div class="auth-rev">Rev 2.93</div>
   </div>
 </div>
 
@@ -661,7 +670,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.92</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.93</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -1025,8 +1034,8 @@ function kindSelectHTML(id){
   return `<select id="${id}" class="rt-jump" style="width:100%;margin-bottom:12px">` + KINDS.map(k=>`<option value="${k[0]}">${k[1]}</option>`).join('') + `</select>`;
 }
 let listMode = 'browse';   // 'browse' | 'list' | 'kanban' — collection display mode (All Bottles / Logged)
-let cardSize = 'm';        // 's' | 'm' | 'l' — browse-card size on the main page
-try{ const _cs=localStorage.getItem('cellar_cardsize'); if(['s','m','l'].includes(_cs)) cardSize=_cs; }catch(_){}
+let cardSize = 'm';        // 's' | 'm' | 'l' | 'img' — browse-card size ('img' = photos only)
+try{ const _cs=localStorage.getItem('cellar_cardsize'); if(['s','m','l','img'].includes(_cs)) cardSize=_cs; }catch(_){}
 let listSort = { key:'score', dir:-1 };  // List-mode column sort: key + direction (1 asc, -1 desc)
 try{ const _m=localStorage.getItem('cellar_listmode'); if(['browse','list','kanban'].includes(_m)) listMode=_m; }catch(_){}
 let dtDraft = { id:null, score:null, half:false, tags:[], buy:false };  // detail-modal edit state
@@ -2700,7 +2709,7 @@ function render(){
   }
 
   const c = document.getElementById('content');
-  c.classList.remove('cs-s','cs-m','cs-l'); c.classList.add('cs-'+cardSize);
+  c.classList.remove('cs-s','cs-m','cs-l','cs-img'); c.classList.add('cs-'+cardSize);
   if(view==='history'){ c.innerHTML = historyHTML(); return; }
 
   if(view==='palate'){ c.innerHTML = palateHTML(); return; }
@@ -2743,14 +2752,28 @@ function modeToggleHTML(){
 }
 window.setListMode = function(m){ listMode=m; try{ localStorage.setItem('cellar_listmode', m); }catch(_){} render(); };
 function cardSizeHTML(){
-  return '<div class="modebar">' + [['s','S'],['m','M'],['l','L']].map(x=>`<button class="modebtn ${cardSize===x[0]?'on':''}" onclick="setCardSize('${x[0]}')">${x[1]}</button>`).join('') + '</div>';
+  return '<div class="modebar">' + [['s','S'],['m','M'],['l','L'],['img','🖼️']].map(x=>`<button class="modebtn ${cardSize===x[0]?'on':''}" onclick="setCardSize('${x[0]}')" ${x[0]==='img'?'title="Photos only"':''}>${x[1]}</button>`).join('') + '</div>';
 }
 window.setCardSize = function(s){ cardSize=s; try{ localStorage.setItem('cellar_cardsize', s); }catch(_){} render(); };
 function renderCollection(list){
   if(listMode==='list')   return listTableHTML(list);
   if(listMode==='kanban') return kanbanHTML(list);
+  // 🖼️ Photos-only gallery: just the bottle image for each item, nothing else.
+  if(cardSize==='img')    return imageGridHTML(list);
   // Browse: collapse same-wine records (a tasting + its cellared bottle) into one card.
   return '<div class="card-grid">' + groupBrowse(list).map(groupedCardHTML).join('') + '</div>';
+}
+// Photos-only grid — one tile per wine (grouped), image only, tap to open detail.
+function imageGridHTML(list){
+  const tiles = groupBrowse(list).map(recs=>{
+    const w = recs.find(r=>r.photoUrl) || recs[0];
+    const id = recs[0].id;
+    const inner = w.photoUrl
+      ? `<img src="${esc(w.photoUrl)}" alt="${esc(w.name||'')}" loading="lazy">`
+      : `<span class="ig-ph">${kindEmoji(kindOf(w))}</span>`;
+    return `<div class="img-tile" title="${esc(w.name||'')}" onclick="openWineGroup('${id}')">${inner}</div>`;
+  }).join('');
+  return '<div class="img-grid">' + tiles + '</div>';
 }
 // Wine identity for grouping: name + vintage, accent/punctuation-insensitive.
 function wineKey(w){
