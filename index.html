@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 2.72</title>
+<title>The Cellar Ledger — Rev 2.73</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,7 +496,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 2.72</div>
+    <div class="auth-rev">Rev 2.73</div>
   </div>
 </div>
 
@@ -613,7 +613,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 2.72</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 2.73</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -2456,9 +2456,9 @@ window.openCellarAdd = ()=>{
   document.getElementById('ca-qty').value = '1';
   // Rack / shelf destination: auto (scan suggestion) · a specific rack's first open slot · the tray
   document.getElementById('ca-rack').innerHTML =
-    '<option value="">📍 Place: automatic (scan suggestion)</option>' +
+    '<option value="none">🧺 Unplaced — goes to its collection’s tray</option>' +
     rackIds().map(id=>`<option value="${esc(id)}">📍 ${esc(rackDef(id).name)} — first open slot</option>`).join('') +
-    '<option value="none">🧺 Leave unplaced (tray)</option>';
+    '<option value="">📍 Automatic (scan suggestion)</option>';
   { const ke=document.getElementById('ca-kind'); if(ke) ke.value = (kindFilter==='all') ? 'wine' : kindFilter; } applyKindFields('ca');
   piReset('ca');
   caSuggest = null;
@@ -2517,7 +2517,6 @@ window.addCellarBottle = async function(){
       if(pendingWishlistBuy){ dbRemove('cellar/buylist/'+pendingWishlistBuy).catch(()=>{}); pendingWishlistBuy=null; }
       closeCellarAddModal();
       showToast('Restocked — ' + existing.name + ' (now ×' + newQty + ')');
-      setView('cellar');
       return;
     }
     const r = push(ref(db, 'cellar/bottles'));
@@ -2542,9 +2541,11 @@ window.addCellarBottle = async function(){
     if(pendingWishlistBuy){ dbRemove('cellar/buylist/'+pendingWishlistBuy).catch(()=>{}); pendingWishlistBuy=null; }
     closeCellarAddModal();
     logEvent('added', { bottleId:r.key, name, vintage:document.getElementById('ca-vintage').value.trim(), qty:Math.max(1, Number(document.getElementById('ca-qty').value)||1), price:parsePriceInput('ca-price'), vendor:document.getElementById('ca-vendor').value.trim(), slot:placeCol?slotCode(placeCol,placeRow):null });
-    if(placeCol){ curRack = placeRack; flashSlot = placeCol+'_'+placeRow; showToast('Added — ' + name + ' → ' + slotCode(placeCol,placeRow)); }
-    else { showToast('Added to cellar — ' + name); }
-    setView('cellar');
+    // Stay on the current screen — the new bottle shows up in its collection;
+    // if it WAS placed on a rack, the slot flashes next time the Cellar opens.
+    if(placeCol){ curRack = placeRack; flashSlot = placeCol+'_'+placeRow; showToast('Added — ' + name + ' → ' + rackDef(placeRack).name + ' ' + slotCode(placeCol,placeRow)); }
+    else { showToast('Added — ' + name + ' → ' + kindLabel((document.getElementById('ca-kind')||{value:'wine'}).value).replace(/^\S+ /,'') + ' tray'); }
+    render();
   }catch(e){ document.getElementById('cellarAddStatus').textContent='❌ ' + (e.message||e); }
 };
 
