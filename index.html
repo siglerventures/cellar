@@ -694,6 +694,9 @@
   .ck-item{flex:1}.ck-item em{color:var(--parch-dim);font-style:italic;font-size:12px}
   .ck-slot{font-size:10px;letter-spacing:.04em;color:var(--gold);border:1px solid var(--line);border-radius:4px;padding:1px 6px;flex-shrink:0}
   .ck-subnote{font-size:11px;color:var(--parch-dim);font-style:italic;flex-shrink:0}
+  .ck-usebottle{font-size:11.5px;color:var(--parch-dim);flex-shrink:0;display:flex;align-items:center;gap:5px;max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ck-pick{flex-shrink:0;max-width:52%;font-family:inherit;font-size:11.5px;color:var(--parch);background:rgba(201,163,92,.07);border:1px solid var(--gold-dim);border-radius:6px;padding:3px 6px;cursor:pointer}
+  .ck-pick:hover{border-color:var(--gold)}
   .ck-d-steps{font-size:13.5px;line-height:1.5;color:var(--parch)}
   .ck-d-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 </style>
@@ -4768,15 +4771,11 @@ const COCKTAIL_SUBS = {
   'orange liqueur':['cointreau'], 'champagne':['prosecco'], 'prosecco':['champagne'],
   'drambuie':['honey syrup'], 'gin':[]
 };
-// Sparkling wine is something you must own; every other non-spirit/liqueur
-// ingredient (juice, syrup, soda, dairy, herbs, sugar, bitters, garnish) is an
-// assumed pantry staple and never blocks "can make".
-const SPARKLING = new Set(['champagne','prosecco']);
-function ingRequired(ing){
-  if(ing.optional) return false;
-  if(ing.role==='base_spirit' || ing.role==='liqueur') return true;
-  return SPARKLING.has(ing.item);
-}
+// "Can make" is driven ENTIRELY by real inventory — there are NO assumed pantry
+// items. Every non-optional ingredient must match something you actually own
+// (a spirit/liqueur of that type, or a logged mixer/juice/syrup/bitters). Only
+// optional ingredients (e.g. egg white) never block "can make".
+function ingRequired(ing){ return !ing.optional; }
 
 // Tokens a single bottle provides.
 function bottleTokens(w){
@@ -4798,6 +4797,39 @@ function barTokenMap(){
   activeArr().filter(onShelf).forEach(w=>{ bottleTokens(w).forEach(t=>{ if(!map.has(t)) map.set(t, w); }); });
   return map;
 }
+// ── REAL-INVENTORY MATCHING ──────────────────────────────────────────────────
+// Canonical tokens = spirits, liqueurs, and mixers the keyword map knows about.
+// A NON-canonical ingredient (fresh juice, syrup, bitters, garnish…) is matched
+// by NAME against your logged bottles — so "lemon juice" / "raspberry syrup" only
+// count once you've actually added them (to Mixers).
+const CANON_TOKENS = new Set(INGREDIENT_KEYWORDS.map(([t])=>t));
+function ownedBottles(){ return activeArr().filter(onShelf); }
+// One snapshot per render: each owned bottle + the tokens it provides + its name.
+function invSnapshot(){ return ownedBottles().map(b=>({ b, tokens: bottleTokens(b), name: deburr(String(b.name||'').toLowerCase()) })); }
+// Which owned bottles satisfy an ingredient — directly, then (spirits/liqueurs)
+// via the substitution map. Returns {direct:[bottle], sub:[{b,use}]}.
+function ingMatch(ing, inv){
+  inv = inv || invSnapshot();
+  const item = ing.item, direct = [];
+  if(CANON_TOKENS.has(item)){
+    inv.forEach(e=>{ if(e.tokens.has(item)) direct.push(e.b); });          // by type (e.g. gin → your gins)
+  }else{
+    const q = deburr(String(item||'').toLowerCase()).trim();               // by name (juice/syrup/bitters/…)
+    const words = q.split(/[^a-z0-9]+/).filter(w=>w.length>2);
+    inv.forEach(e=>{ if(q && (e.name.includes(q) || (words.length && words.every(w=>e.name.includes(w))))) direct.push(e.b); });
+  }
+  const sub = [];
+  if(!direct.length && CANON_TOKENS.has(item)){
+    (COCKTAIL_SUBS[item]||[]).forEach(stk=>{ inv.forEach(e=>{ if(e.tokens.has(stk)) sub.push({ b:e.b, use:stk }); }); });
+  }
+  return { direct, sub };
+}
+// Persisted "which bottle does this drink use" pick (when you own several).
+function ckPickFor(id, ing){ const c=cocktails[id]; const p=c&&c.picks; return (p&&p[ckSlug(ing.item)])||null; }
+window.ckSetPick = async function(id, key, bottleId){
+  try{ await dbSet('cellar/cocktails/'+id+'/picks/'+key, bottleId||null); }
+  catch(e){ showToast('Could not save that choice'); }
+};
 function cocktailArr(){
   return Object.keys(cocktails||{}).map(k=>Object.assign({id:k}, cocktails[k]))
     .filter(c=>c && c.name && Array.isArray(c.ingredients));
@@ -4830,14 +4862,17 @@ function allIngredientItems(){
   cocktailArr().forEach(c=>(c.ingredients||[]).forEach(i=>{ if(i.item) s.add(i.item); }));
   return [...s].sort();
 }
-// Compute makeable status for a recipe against an owned-token set.
-function cocktailStatus(c, have){
-  const req = c.ingredients.filter(ingRequired);
+// Honest makeable status: every required ingredient must match real inventory.
+// `inv` is an invSnapshot() (built once by the caller when scoring many recipes).
+function cocktailStatus(c, inv){
+  inv = inv || invSnapshot();
+  const req = (c.ingredients||[]).filter(ingRequired);
   const missing = [], subs = [];
   for(const ing of req){
-    if(have.has(ing.item)) continue;
-    const s = (COCKTAIL_SUBS[ing.item]||[]).find(x=>have.has(x));
-    if(s) subs.push({need:ing.item, use:s}); else missing.push(ing.item);
+    const m = ingMatch(ing, inv);
+    if(m.direct.length) continue;
+    if(m.sub.length) subs.push({ need:ing.item, use:m.sub[0].use });
+    else missing.push(ing.item);
   }
   let state;
   if(missing.length===0) state = subs.length ? 'sub' : 'can';
@@ -4858,9 +4893,8 @@ function cocktailsHTML(){
     return `<div class="shead"><p>Cocktails you can make from your bar.</p></div>
       <div class="empty"><p>No recipe data loaded yet. An admin imports the curated recipe set once into <code>cellar/cocktails</code> (see the Data modal), then every drink you can pour from your shelves shows up here — sorted by what you can make right now.</p></div>`;
   }
-  const map = barTokenMap();
-  const have = new Set(map.keys());
-  const rows = list.map(c=>({ c, fam:cocktailFamily(c), st:cocktailStatus(c, have) }));
+  const inv = invSnapshot();
+  const rows = list.map(c=>({ c, fam:cocktailFamily(c), st:cocktailStatus(c, inv) }));
   const canN = rows.filter(r=>r.st.rank<=1).length;
   const oneN = rows.filter(r=>r.st.state==='one').length;
   const fams = [...new Set(rows.map(r=>r.fam))].filter(f=>FAMILY_LABEL[f]);
@@ -4881,7 +4915,7 @@ function cocktailsHTML(){
   shown = shown.filter(r=>cocktailMatchSearch(r.c));
   shown.sort((a,b)=> a.st.rank-b.st.rank || a.c.name.localeCompare(b.c.name));
 
-  const barEmpty = have.size===0;
+  const barEmpty = inv.length===0;
   const head = `<div class="shead ck-shead"><p>${barEmpty
       ? 'Add a few bottles to your shelves and the cocktails you can pour rise to the top.'
       : '<b>'+canN+'</b> of '+rows.length+' cocktails are within reach of your bar right now.'}</p>${
@@ -4898,10 +4932,13 @@ function cocktailsHTML(){
     else if(st.state==='one'){ badge='● Need '+esc(st.missing[0]); cls='ck-one'; }
     else { badge='✕ '+st.missing.length+' missing'; cls='ck-cant'; }
     const tags = (c.tags||[]).slice(0,3).map(t=>`<span class="ck-tag">${esc(t)}</span>`).join('');
-    // Hover peek: the full ingredient line, in-stock ✓ / missing ✕, plus method.
+    // Hover peek: the full ingredient line, in-stock ✓ / sub ↔ / missing ✕, plus method.
     const peek = c.ingredients.map(ing=>{
-      const own = have.has(ing.item), sub = !own && (COCKTAIL_SUBS[ing.item]||[]).some(x=>have.has(x));
-      const mk = own?'<span class="pk-y">✓</span>':(sub?'<span class="pk-y">↔</span>':(ingRequired(ing)?'<span class="pk-n">✕</span>':'<span class="pk-o">○</span>'));
+      const m = ingMatch(ing, inv);
+      const mk = m.direct.length ? '<span class="pk-y">✓</span>'
+               : m.sub.length ? '<span class="pk-y">↔</span>'
+               : ing.optional ? '<span class="pk-o">○</span>'
+               : '<span class="pk-n">✕</span>';
       return `<div class="pk-row">${mk} ${esc(ing.item)}${ing.optional?' <em>opt</em>':''}</div>`;
     }).join('');
     return `<button class="ck-card ${cls}" onclick="openCocktail('${c.id}')" title="${esc(c.name)} — tap for the recipe &amp; to add a photo">
@@ -4939,9 +4976,8 @@ window.setCocktailFilter = function(k){ cocktailFilter=k; render(); };
 
 window.openCocktail = function(id){
   const c = cocktails[id]; if(!c) return;
-  const map = barTokenMap();
-  const have = new Set(map.keys());
-  const st = cocktailStatus(c, have);
+  const inv = invSnapshot();
+  const st = cocktailStatus(c, inv);
   document.getElementById('ck-d-name').textContent = c.name || 'Cocktail';
   const methodLbl = c.method ? ('shake'===c.method?'shaken':'stir'===c.method?'stirred':c.method) : '';
   const metaBits = [c.category, methodLbl, c.iba?'IBA official':''].filter(Boolean);
@@ -4955,19 +4991,28 @@ window.openCocktail = function(id){
   else if(st.state==='sub'){ bn.classList.add('ck-sub'); bn.textContent='✓ Can make — using '+st.subs.map(s=>s.use+' for '+s.need).join(', ')+'.'; }
   else if(st.state==='one'){ bn.classList.add('ck-one'); bn.textContent='● One bottle away — you\'re missing '+st.missing[0]+'.'; }
   else { bn.classList.add('ck-cant'); bn.textContent='✕ Missing '+st.missing.length+': '+st.missing.join(', ')+'.'; }
-  // ingredient rows
+  // ingredient rows — real status; when you own several qualifying bottles, pick one
   const rows = (c.ingredients||[]).map(ing=>{
     const amt = [ing.amount, ing.unit].filter(Boolean).join(' ');
-    const own = have.has(ing.item);
-    const subUse = !own ? (COCKTAIL_SUBS[ing.item]||[]).find(x=>have.has(x)) : null;
-    const req = ingRequired(ing);
+    const m = ingMatch(ing, inv);
+    const bLabel = b => esc(b.name||'') + ((b.rackCol&&b.rackRow)?` <span class="ck-slot">${esc(slotCode(b.rackCol,b.rackRow))}</span>`:'');
     let icon, note='', rowcls='';
-    if(own){ icon='✓'; rowcls='ck-r-have';
-      const b = map.get(ing.item);
-      if(b && onShelf(b)){ const sl = slotBadgeText(b); if(sl) note = `<span class="ck-slot">${esc(sl)}</span>`; }
-    } else if(subUse){ icon='↔'; rowcls='ck-r-sub'; note=`<span class="ck-subnote">use ${esc(subUse)}</span>`; }
-    else if(!req){ icon='○'; rowcls='ck-r-pantry'; note=`<span class="ck-subnote">${ing.optional?'optional':'pantry'}</span>`; }
-    else { icon='✕'; rowcls='ck-r-miss'; note=`<span class="ck-subnote">not on your shelves</span>`; }
+    if(m.direct.length){
+      icon='✓'; rowcls='ck-r-have';
+      if(m.direct.length>1){
+        const pick = ckPickFor(id, ing) || m.direct[0].id;
+        const opts = m.direct.map(b=>`<option value="${esc(b.id)}" ${b.id===pick?'selected':''}>${esc(b.name||'bottle')}${(b.rackCol&&b.rackRow)?(' · '+esc(slotCode(b.rackCol,b.rackRow))):''}</option>`).join('');
+        note = `<select class="ck-pick" title="Which one this drink uses" onchange="ckSetPick('${id}','${ckSlug(ing.item)}',this.value)">${opts}</select>`;
+      } else {
+        note = `<span class="ck-usebottle">${bLabel(m.direct[0])}</span>`;
+      }
+    } else if(m.sub.length){
+      icon='↔'; rowcls='ck-r-sub'; note=`<span class="ck-subnote">use ${bLabel(m.sub[0].b)}</span>`;
+    } else if(ing.optional){
+      icon='○'; rowcls='ck-r-pantry'; note=`<span class="ck-subnote">optional — not owned</span>`;
+    } else {
+      icon='✕'; rowcls='ck-r-miss'; note=`<span class="ck-subnote">not in your inventory</span>`;
+    }
     return `<div class="ck-row ${rowcls}"><span class="ck-ic">${icon}</span><span class="ck-amt">${esc(amt)}</span><span class="ck-item">${esc(ing.item)}${ing.optional?' <em>(optional)</em>':''}</span>${note}</div>`;
   }).join('');
   document.getElementById('ck-d-ings').innerHTML = rows;
@@ -5124,8 +5169,7 @@ function tokenToBuyKind(tok){
 window.addMissingToBuy = async function(id){
   const c = cocktails[id]; if(!c) return;
   const st = document.getElementById('ckStatus');
-  const have = new Set(barTokenMap().keys());
-  const stt = cocktailStatus(c, have);
+  const stt = cocktailStatus(c);
   const gaps = stt.missing;
   if(!gaps.length){ st.textContent='Nothing missing — you can make it.'; return; }
   // Skip anything already on the Buy list (case-insensitive name match).
@@ -5207,7 +5251,7 @@ function friendsArr(){ return asArr(friends).filter(f=>f && f.name); }
 function friendsWhoLike(ckId){ return friendsArr().filter(f=>(f.favorites||[]).some(x=>x && x.ck===ckId)); }
 
 function friendsHTML(){
-  const have = new Set(barTokenMap().keys());
+  const inv = invSnapshot();
   const arr = friendsArr().sort((a,b)=>a.name.localeCompare(b.name));
   const head = `<div class="shead ck-shead"><p>${arr.length
       ? 'Who likes what — and what you can pour them tonight.'
@@ -5224,7 +5268,7 @@ function friendsHTML(){
       let chip = '';
       if(fav.ck && cocktails[fav.ck]){
         const c = cocktails[fav.ck];
-        const st = cocktailStatus(c, have);
+        const st = cocktailStatus(c, inv);
         const can = st.rank<=1; if(can) ready++;
         const cls = can?'fav-can':(st.state==='one'?'fav-one':'fav-cant');
         const ic  = can?'✓':(st.state==='one'?'●':'✕');
