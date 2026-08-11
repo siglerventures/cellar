@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.15</title>
+<title>The Cellar Ledger — Rev 3.16</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -647,7 +647,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.15</div>
+    <div class="auth-rev">Rev 3.16</div>
   </div>
 </div>
 
@@ -765,7 +765,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.15</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.16</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -3793,7 +3793,7 @@ function rackHTML(){
   const ids = rackIds();
   const switcher = `<div class="rack-tools" style="margin-top:4px">` +
     `<button class="rt-btn rk-chip" title="Back to All Bottles" onclick="setView('all')">← Back</button>` +
-    ids.map(id=>`<button class="rt-btn rk-chip ${id===curRack?'on':''}" onclick="rackSwitch('${id}')">${esc(rackDef(id).name)}</button>`).join('') +
+    ids.map(id=>`<button class="rt-btn rk-chip ${id===curRack?'on':''}" data-rack="${esc(id)}" onclick="rackSwitch('${id}')">${esc(rackDef(id).name)}</button>`).join('') +
     `</div>`;
   // Admin rack management lives at the BOTTOM of the rack view.
   const adminBar = admin ? `<div class="rack-tools" style="margin-top:12px"><button class="rt-btn rk-chip" onclick="openRackModal('edit')" title="Rename / resize this rack">⚙ Rack settings</button><button class="rt-btn rk-chip" onclick="openRackModal('new')" title="Add another rack">＋ New rack</button></div>` : '';
@@ -4081,6 +4081,48 @@ window.rackEditCell = async function(col, row){
 };
 
 // ── RACK MANAGEMENT: switch · settings (rename/resize) · add · delete ────────
+// ── Right-click a rack chip (Cellar tab): Rename · Move left · Move right ──
+const rackCtx = document.createElement('div');
+rackCtx.className = 'dd-panel';
+rackCtx.style.cssText = 'position:fixed;z-index:210;display:none';
+document.body.appendChild(rackCtx);
+function hideRackCtx(){ rackCtx.style.display='none'; }
+document.addEventListener('click', hideRackCtx);
+document.addEventListener('contextmenu', (e)=>{
+  const t = e.target.closest ? e.target.closest('[data-rack]') : null;
+  if(!t) { hideRackCtx(); return; }
+  if(!isAdmin()) return;
+  e.preventDefault(); e.stopPropagation();
+  const id = t.dataset.rack;
+  rackCtx.innerHTML =
+    `<button class="dd-opt" onclick="rackCtxRename('${esc(id)}')">✏️ Rename</button>` +
+    `<button class="dd-opt" onclick="rackCtxMove('${esc(id)}',-1)">← Move left</button>` +
+    `<button class="dd-opt" onclick="rackCtxMove('${esc(id)}',1)">→ Move right</button>`;
+  rackCtx.style.display='block';
+  const r = rackCtx.getBoundingClientRect();
+  rackCtx.style.left = Math.min(e.clientX, window.innerWidth - r.width - 8) + 'px';
+  rackCtx.style.top  = Math.min(e.clientY, window.innerHeight - r.height - 8) + 'px';
+}, true);
+window.rackCtxRename = async function(id){
+  hideRackCtx();
+  const d = rackDef(id);
+  const v = prompt('Rack name (emoji welcome — the words drive the routing):', d.name || '');
+  if(v===null || !v.trim()) return;
+  try{ await dbUpdate('cellar/racks/'+id, { name:v.trim() }); showToast('Renamed — ' + v.trim()); }
+  catch(e){ showToast('Rename failed'); }
+};
+window.rackCtxMove = async function(id, dir){
+  hideRackCtx();
+  const ids = rackIds();
+  const i = ids.indexOf(id), j = i + dir;
+  if(i<0 || j<0 || j>=ids.length) return;
+  // Normalize orders to their current positions, then swap the neighbors.
+  const updates = {};
+  ids.forEach((rid,idx)=>{ updates['cellar/racks/'+rid+'/order'] = idx; });
+  updates['cellar/racks/'+id+'/order'] = j;
+  updates['cellar/racks/'+ids[j]+'/order'] = i;
+  try{ await dbUpdate('/', updates); }catch(e){ showToast('Reorder failed'); }
+};
 window.rackSwitch = function(id){ curRack = id; placing=null; inspect=null; rackEdit=false; rackFocusCol=null; varietalFilter=''; flavorFilter=''; render(); };
 // Rack settings / new-rack modal — one page for name + size (+ delete).
 let rmMode = 'edit';   // 'edit' the current rack | 'new' create one
@@ -4132,7 +4174,7 @@ window.rmNote = function(){
 window.addCollection = async function(k){
   setKind(k);
   if(k==='all' || rackForKind(k)) return;
-  const name = kindLabel(k).replace(/^[^\p{L}\p{N}]+\s*/u,'');   // "🫒 Gin" → "Gin"
+  const name = kindLabel(k);   // keep the emoji — "🍹 Rum" (kind routing reads the words)
   try{
     const id = 'r' + Date.now().toString(36);
     await dbSet('cellar/racks/'+id, { name, cols:5, rows:5, order:rackIds().length, createdAt:Date.now() });
