@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.35</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.36</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -721,7 +721,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.35</div>  </div></div>
+    <div class="auth-rev">Rev 3.36</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -838,7 +838,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.35</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.36</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -1101,6 +1101,8 @@
     <div class="qlabel" style="margin-top:14px">Go-to drinks <span class="rc-hint">— drink, preferred bottle from your stock, add-ons, how it's made</span></div>
     <div id="fr-favs"></div>
     <button class="rc-addrow" onclick="frAddOrder()">＋ add drink</button>
+    <div class="qlabel" style="margin-top:14px">Photos <span class="rc-hint">— them, their drink, you together (up to 4)</span></div>
+    <div class="pintake" id="fp-intake" ondragover="piDragOver(event,'fp')" ondragleave="piDragLeave(event,'fp')" ondrop="piDrop(event,'fp')"></div>
     <div class="qlabel" style="margin-top:14px">Avoid <span class="rc-hint">— allergies, dislikes</span></div>
     <input id="fr-avoid" placeholder="e.g. gin, anything smoky, nut allergy — comma separated">
     <div class="qlabel" style="margin-top:14px">Notes</div>
@@ -1422,7 +1424,7 @@ let draft = { score:null, half:false, tags:[], buy:false };
 let openDraft = { id:null, score:null, half:false, tags:[], buy:false };
 // Photo intake per context — q (log), ca (add-to-cellar), dt (detail modal), ai (Ask AI).
 // Each entry: {dataUrl} for new pics, {path,url} for already-uploaded ones. Index 0 = MAIN.
-let piStore = { q:[], ca:[], dt:[], ai:[], ws:[], wl:[], ck:[] };
+let piStore = { q:[], ca:[], dt:[], ai:[], ws:[], wl:[], ck:[], fp:[] };
 let piScanned = { q:false, ca:false, wl:false };  // first photo per form triggers a scanLabel run
 let dtRemoved = [];                     // Storage paths to delete when the detail modal saves
 let search = '';      // current search filter
@@ -1748,6 +1750,7 @@ function subscribe(){
   onValue(ref(db, 'cellar/racks'), snap => { racks = snap.val() || {}; ensureLocations(); if(!racks[curRack] && Object.keys(racks).length) curRack = rackIds()[0]; if(view==='cellar') render(); });
   onValue(ref(db, 'cellar/type_notes'), snap => { typeNotes = snap.val() || {}; });
   onValue(ref(db, 'cellar/kind_prefs'), snap => { kindPrefs = snap.val() || {}; renderKindRow(); });
+  onValue(ref(db, 'cellar/custom_methods'), snap => { customMethods = snap.val() || {}; });
   onValue(ref(db, 'cellar/custom_tags'), snap => {
     customTags = snap.val() || {};
     Object.keys(TAG_PADS).forEach(id=>{ const p=TAG_PADS[id]; if(p.kind) rebuildTagPad(id, p.kind); });
@@ -1813,7 +1816,7 @@ rebuildTagPad('openTags', 'wine');
 buildScorepad(document.getElementById('dtScorepad'), (v)=>{ dtDraft.score=v; paintScore(document.getElementById('dtScorepad'), v); echo('dtScoreEcho', dtDraft); });
 rebuildTagPad('dtTags', 'wine');
 // Photo intakes start empty (renders the buttons + file inputs into each surface)
-['q','ca','dt','ai','ws','wl'].forEach(piRender);
+['q','ca','dt','ai','ws','wl','fp'].forEach(piRender);
 
 // ── TOP ACTION ROW + COLLAPSIBLE LOG PANEL ──
 function openLogPanel(){ document.getElementById('quickPanel').classList.add('show'); }
@@ -2564,7 +2567,7 @@ function compressImage(file, maxEdge=1600, quality=0.8){
   });
 }
 // ── PHOTO INTAKE (Eats-style): camera · library · drag-drop · Ctrl+V paste · gallery ──
-const PI_MAX = { q:12, ca:12, dt:12, ai:4, ws:4, wl:8, ck:6 };
+const PI_MAX = { q:12, ca:12, dt:12, ai:4, ws:4, wl:8, ck:6, fp:4 };
 function piRender(ctx){
   const host = document.getElementById(ctx+'-intake'); if(!host) return;
   const cam=ctx+'-pi-cam', lib=ctx+'-pi-lib';
@@ -2648,7 +2651,7 @@ async function piAddFiles(ctx, files){
       // local (no CORS) — the transparent PNG is what gets stored & shown.
       // Track whether a cut actually happened so cocktail cards can float the
       // transparent glass on their tinted background (vs. cover-cropping a scene).
-      const cut = await scrapeLocal(raw);
+      const cut = (ctx==='fp') ? null : await scrapeLocal(raw);
       piStore[ctx].push({ dataUrl: cut || raw, cut: !!cut, raw });
       piRender(ctx);
       draftQueue(ctx);
@@ -5434,6 +5437,8 @@ function friendsHTML(){
       return `<div class="fav-item">${dph}${chip||'<span class="fav-chip fav-txt">their pour</span>'}${spec}</div>`;
     }).filter(Boolean).join('');
     const avoid = (f.avoid||[]).map(a=>`<span class="avoid-chip">⊘ ${esc(a)}</span>`).join('');
+    const strip = (Array.isArray(f.photos)&&f.photos.length)
+      ? '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">'+f.photos.filter(p=>p&&p.url).map(p=>`<img src="${esc(p.url)}" alt="" style="width:56px;height:56px;border-radius:6px;object-fit:cover;border:1px solid var(--line)" onclick="event.stopPropagation();viewImage('${esc(p.url)}')">`).join('')+'</div>' : '';
     return `<div class="friend-card" data-fid="${esc(f.id)}"${isAdmin()?` style="cursor:pointer" onclick="openFriendEditor('${f.id}')"`:''}>
       <div class="friend-top">
         ${f.photoUrl?`<img src="${esc(f.photoUrl)}" alt="" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:1px solid var(--gold-dim);flex-shrink:0" onclick="event.stopPropagation();viewImage('${esc(f.photoUrl)}')">`:''}
@@ -5470,12 +5475,29 @@ function frMatchBottle(name){
   return hit?hit.id:null;
 }
 const FR_METHODS = ['Shaken','Stirred','Built','Blended','Neat','On the rocks','Up','Frozen'];
+let customMethods = {};   // cellar/custom_methods/{key} = name — ➕ next to Method
+function allMethods(){ return FR_METHODS.concat(Object.values(customMethods).filter(m=>m && !FR_METHODS.includes(m))); }
+window.frAddMethod = async function(btn){
+  const name = (prompt('New method — e.g. Single Large Rock')||'').trim();
+  if(!name) return;
+  if(!allMethods().some(m=>m.toLowerCase()===name.toLowerCase())){
+    try{ await dbSet('cellar/custom_methods/m' + Date.now().toString(36), name); }catch(e){}
+    customMethods['_tmp'+Date.now()] = name;   // optimistic; onValue confirms
+  }
+  const sel = btn && btn.previousElementSibling && btn.previousElementSibling.classList.contains('fo-method') ? btn.previousElementSibling : null;
+  if(sel){
+    if(![...sel.options].some(o=>o.value===name||o.text===name)){ const o=document.createElement('option'); o.text=name; sel.add(o); }
+    sel.value = name;
+  }
+  showToast('Method added — ' + name);
+};
 // One "order" row: drink · preferred bottle · add-ons · method · glass.
 function frOrderRowHTML(o){
   o=o||{};
   const drink = o.ck && cocktails[o.ck] ? cocktails[o.ck].name : (o.txt||'');
   const bottle = o.bottleName || (o.bottleId && bottles[o.bottleId] ? bottles[o.bottleId].name : '');
-  const methodOpts = ['<option value="">Method…</option>'].concat(FR_METHODS.map(m=>`<option ${((o.method||'')===m)?'selected':''}>${m}</option>`)).join('');
+  const ms = allMethods(); if(o.method && !ms.includes(o.method)) ms.push(o.method);
+  const methodOpts = ['<option value="">Method…</option>'].concat(ms.map(m=>`<option ${((o.method||'')===m)?'selected':''}>${m}</option>`)).join('');
   // Glass is a property of the recipe (shown in the cocktail's detail), not a
   // per-friend choice — so it isn't edited here. Any legacy value rides along.
   const glassKeep = o.glass ? `<input type="hidden" class="fo-glass" value="${esc(o.glass)}">` : '';
@@ -5484,7 +5506,7 @@ function frOrderRowHTML(o){
       <input class="fo-drink" placeholder="Drink — e.g. Whisky Sour" list="ckNames" value="${esc(drink)}">
       <input class="fo-spirit" placeholder="Preferred bottle — from your stock" list="bottleNames" value="${esc(bottle)}">
       <input class="fo-addons" placeholder="Add-ons — e.g. egg whites" value="${esc(o.addons||'')}">
-      <select class="fo-method">${methodOpts}</select>
+      <span style="display:flex;gap:4px;align-items:center"><select class="fo-method" style="flex:1">${methodOpts}</select><button class="pi-btn" title="Add a method" onclick="frAddMethod(this)">➕</button></span>
     </div>${glassKeep}
     <input type="hidden" class="fo-phurl" value="${esc(o.photoUrl||'')}"><input type="hidden" class="fo-phpath" value="${esc(o.photoPath||'')}">
     <div class="mrow" style="align-items:center;gap:8px;margin-top:6px">
@@ -5550,7 +5572,8 @@ window.frDrinkDrop = function(e){ e.preventDefault(); frApplyDrinkFile(e.current
 // otherwise the avatar.
 window.frPastePhoto = function(f){
   const row = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.fav-order') : null;
-  if(row) frApplyDrinkFile(row, f); else frApplyAvatarFile(f);
+  if(row) frApplyDrinkFile(row, f);
+  else piAddFiles('fp', [f]);   // pasted shots land in the photo gallery
 };
 window.frAvatarPick = function(input){ const f=(input.files||[])[0]; input.value=''; frApplyAvatarFile(f); };
 window.frDrinkPhoto = function(input){ const f=(input.files||[])[0]; input.value=''; frApplyDrinkFile(input.closest('.fav-order'), f); };
@@ -5569,6 +5592,8 @@ window.openFriendEditor = function(id){
   document.getElementById('fr-avoid').value = f ? (f.avoid||[]).join(', ') : '';
   document.getElementById('fr-notes').value = f ? (f.notes||'') : '';
   frFavs = f && Array.isArray(f.favorites) ? f.favorites.map(x=>({...x})) : [];
+  piStore.fp = (f && Array.isArray(f.photos)) ? f.photos.filter(p=>p&&p.url).map(p=>({path:p.path||null,url:p.url})) : [];
+  piRender('fp');
   frRenderFavs();
   if(!frFavs.length) frAddOrder();   // start a new friend with one empty order row
   document.getElementById('fr-delbtn').style.display = f ? '' : 'none';
@@ -5602,6 +5627,8 @@ window.saveFriend = async function(){
     for(const o of favorites){
       if(o._pending){ const up = await uploadLabel('friend_'+id+'_drink', o._pending); o.photoUrl=up.url; o.photoPath=up.path; delete o._pending; }
     }
+    const gal = await uploadPhotos('friend_'+id+'_g', piStore.fp);
+    rec.photos = gal.length ? gal : null;
     await dbSet('cellar/friends/'+id, rec);
     closeFriendEditor();
     showToast((frEditId?'Updated ':'Added ')+name);
