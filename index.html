@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.17</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.18</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -591,6 +591,31 @@
   .rc-addrow:hover{background:rgba(201,163,92,.08)}
   .mbtn.danger{color:#c96a6a;border-color:rgba(201,106,106,.4)}
   .mbtn.danger:hover{background:rgba(201,106,106,.14)}
+  /* ── FRIENDS ── */
+  .friend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .friend-card{background:var(--glass);border:1px solid var(--line);border-radius:8px;padding:14px 15px}
+  .friend-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .friend-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;line-height:1}
+  .friend-ready{font-size:10.5px;font-weight:700;letter-spacing:.02em;color:var(--green);background:rgba(122,176,106,.12);border:1px solid rgba(122,176,106,.3);border-radius:20px;padding:2px 9px;white-space:nowrap}
+  .friend-edit{margin-left:auto;background:none;border:none;cursor:pointer;font-size:14px;opacity:.6;padding:2px 4px}
+  .friend-edit:hover{opacity:1}
+  .fav-row{display:flex;flex-wrap:wrap;gap:6px}
+  .fav-chip{font-family:inherit;font-size:12px;font-weight:600;border-radius:20px;padding:4px 11px;border:1px solid var(--line);background:rgba(236,227,210,.05);color:var(--parch);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:.12s}
+  button.fav-chip:hover{border-color:var(--gold)}
+  .fav-chip.fav-can{color:#8fe08a;border-color:rgba(122,176,106,.4);background:rgba(122,176,106,.1)}
+  .fav-chip.fav-one{color:var(--gold);border-color:var(--gold-dim);background:rgba(201,163,92,.08)}
+  .fav-chip.fav-cant{color:var(--parch-dim)}
+  .fav-chip.fav-txt{cursor:default;color:var(--parch-dim)}
+  .fav-x{background:none;border:none;color:inherit;opacity:.55;cursor:pointer;font-size:11px;padding:0 0 0 2px;margin-left:2px}
+  .fav-x:hover{opacity:1;color:#c96a6a}
+  .avoid-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .avoid-chip{font-size:10.5px;letter-spacing:.02em;color:#c98f8f;background:rgba(201,106,106,.08);border:1px solid rgba(201,106,106,.28);border-radius:20px;padding:2px 9px}
+  .friend-notes{margin-top:10px;font-size:12.5px;line-height:1.5;color:var(--parch-dim);font-style:italic}
+  .friend-empty{font-size:12px;color:var(--parch-dim)}
+  .fr-addfav{display:flex;gap:8px;margin-top:8px}
+  .fr-addfav input{flex:1;margin:0}
+  #fr-favs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px}
+  .ck-liked{font-size:12.5px;color:var(--parch-dim);margin-top:10px}
   .ck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
   .ck-card{text-align:left;font-family:inherit;color:var(--parch);background:var(--glass);border:1px solid var(--line);border-radius:8px;padding:0;cursor:pointer;transition:.15s;overflow:hidden;display:flex;flex-direction:column}
   .ck-card:hover{border-color:var(--gold);transform:translateY(-2px)}
@@ -662,7 +687,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.17</div>  </div>
+    <div class="auth-rev">Rev 3.18</div>  </div>
 </div>
 
 <div class="wrap">
@@ -771,6 +796,7 @@
     <button class="vtab" data-view="cellar" onclick="setView('cellar')">Cellar</button>
     <button class="vtab" data-view="palate" onclick="setView('palate')">Palate</button>
     <button class="vtab" data-view="cocktails" onclick="setView('cocktails')">Cocktails</button>
+    <button class="vtab" data-view="friends" onclick="setView('friends')">Friends</button>
     <button class="vtab" data-view="buy" onclick="setView('buy')">Buy</button>
     <button class="vtab" data-view="wishlist" onclick="setView('wishlist')">Wishlist</button>
     <button class="vtab" data-view="history" onclick="setView('history')">History</button>
@@ -779,7 +805,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.17</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.18</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -972,6 +998,7 @@
     <div class="qlabel" style="margin-top:14px">Method</div>
     <div id="ck-d-steps" class="ck-d-steps"></div>
     <div class="ck-d-tags" id="ck-d-tags"></div>
+    <div class="ck-liked" id="ck-d-likedby"></div>
     <button class="mbtn ghost" id="ck-d-buybtn" style="display:none;margin-top:14px;width:100%"></button>
     <div id="ck-d-photowrap" style="display:none">
       <div class="qlabel" style="margin-top:16px">Your photos — first is the card image</div>
@@ -1018,6 +1045,32 @@
 <datalist id="rcItems"></datalist>
 <datalist id="rcUnits"><option>oz</option><option>ml</option><option>dash</option><option>dashes</option><option>barspoon</option><option>tsp</option><option>splash</option><option>part</option><option>cube</option><option>wedge</option><option>slice</option><option>leaves</option><option>piece</option><option>top</option></datalist>
 <datalist id="rcGlasses"><option>Coupe</option><option>Rocks</option><option>Highball</option><option>Collins</option><option>Martini</option><option>Nick &amp; Nora</option><option>Flute</option><option>Wine</option><option>Mug</option><option>Hurricane</option></datalist>
+
+<!-- ── FRIEND EDITOR ── -->
+<div class="modal" id="friendModal">
+  <div class="modal-card">
+    <h3 id="fr-title" style="margin-bottom:12px">Add a friend</h3>
+    <input id="fr-name" placeholder="Name">
+    <div class="qlabel" style="margin-top:14px">Favorite drinks <span class="rc-hint">— tag your cocktails, or type anything</span></div>
+    <div id="fr-favs"></div>
+    <div class="fr-addfav">
+      <input id="fr-favinput" placeholder="Start typing a cocktail, or anything they love" list="ckNames"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();frAddFav();}">
+      <button class="mbtn ghost" onclick="frAddFav()">Add</button>
+    </div>
+    <div class="qlabel" style="margin-top:14px">Avoid <span class="rc-hint">— allergies, dislikes</span></div>
+    <input id="fr-avoid" placeholder="e.g. gin, anything smoky, nut allergy — comma separated">
+    <div class="qlabel" style="margin-top:14px">Notes</div>
+    <textarea id="fr-notes" placeholder="How they take it, their usual order, stories…"></textarea>
+    <div class="mstatus" id="frStatus"></div>
+    <div class="mrow" style="margin-top:14px">
+      <button class="mbtn ghost" onclick="closeFriendEditor()">Cancel</button>
+      <button class="mbtn danger" id="fr-delbtn" style="display:none" onclick="deleteFriend()">Delete</button>
+      <button class="mbtn dt-save" onclick="saveFriend()">Save</button>
+    </div>
+  </div>
+</div>
+<datalist id="ckNames"></datalist>
 
 <!-- ── ARCHIVE HISTORY ── -->
 <!-- ── BARCODE SCANNER ── -->
@@ -1166,6 +1219,7 @@ let cocktails = {};  // id -> recipe (cellar/cocktails) — static, imported onc
 let cocktailPhotos = {};  // id -> [{path,url}] — user drink photos, kept SEPARATE from the
                           // recipe set so re-importing recipes never wipes your photos
 let cocktailDetailId = null;
+let friends = {};  // id -> {name, favorites:[{ck|txt}], avoid:[…], notes} (cellar/friends)
 let cocktailFilter = 'can';  // 'all' | 'can' | 'one' | family key ('agave'|'whiskey'|…)
 let buylist = {};   // id -> item
 let histLog = {};   // id -> activity event (cellar/history)
@@ -1634,6 +1688,7 @@ function subscribe(){
   onValue(ref(db, 'cellar/buylist'), snap => { buylist = snap.val() || {}; render(); });
   onValue(ref(db, 'cellar/cocktails'), snap => { cocktails = snap.val() || {}; if(view==='cocktails') render(); });
   onValue(ref(db, 'cellar/cocktail_photos'), snap => { cocktailPhotos = snap.val() || {}; if(view==='cocktails') render(); });
+  onValue(ref(db, 'cellar/friends'), snap => { friends = snap.val() || {}; if(view==='friends'||view==='cocktails') render(); });
   onValue(ref(db, 'cellar/history'), snap => { histLog = snap.val() || {}; if(view==='history') render(); });
   onValue(ref(db, 'cellar/ask_history'), snap => { askLog = snap.val() || {}; const el=document.getElementById('askHist'); if(el && el.style.display!=='none') renderAskHistory(); });
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
@@ -3170,7 +3225,7 @@ window.goHome = function(){
   setView('all');
   window.scrollTo({ top:0, behavior:'smooth' });
 };
-window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = (hideSearch||v==='cocktails') ? 'none' : ''; document.getElementById('kindRow').style.display = (v==='cellar'||v==='cocktails') ? 'none' : ''; { const ar=document.getElementById('actionRow'); if(ar) ar.style.display = (v==='cellar')?'none':''; const tr=document.getElementById('tabsRow'); if(tr) tr.style.display = (v==='cellar')?'none':''; } render(); };
+window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = (hideSearch||v==='cocktails'||v==='friends') ? 'none' : ''; document.getElementById('kindRow').style.display = (v==='cellar'||v==='cocktails'||v==='friends') ? 'none' : ''; { const ar=document.getElementById('actionRow'); if(ar) ar.style.display = (v==='cellar')?'none':''; const tr=document.getElementById('tabsRow'); if(tr) tr.style.display = (v==='cellar')?'none':''; } render(); };
 // Strip accents/diacritics so "chateauneuf" matches "Châteauneuf", "rose" matches "rosé", etc.
 function deburr(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 window.onSearch = function(v){ search=deburr((v||'').trim().toLowerCase()); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
@@ -3286,6 +3341,8 @@ function render(){
   if(view==='palate'){ c.innerHTML = palateHTML(); return; }
 
   if(view==='cocktails'){ c.innerHTML = cocktailsHTML(); return; }
+
+  if(view==='friends'){ c.innerHTML = friendsHTML(); return; }
 
   if(view==='wishlist'){ c.innerHTML = wishlistHTML(); return; }
 
@@ -4667,6 +4724,11 @@ window.openCocktail = function(id){
   document.getElementById('ck-d-steps').textContent = c.instructions || '';
   document.getElementById('ck-d-tags').innerHTML = (c.tags||[]).map(t=>`<span class="ck-tag">${esc(t)}</span>`).join('');
 
+  // ── "❤️ Liked by" — friends who tagged this drink as a favorite ──
+  const likers = friendsWhoLike(id);
+  document.getElementById('ck-d-likedby').innerHTML = likers.length
+    ? '❤️ Liked by '+likers.map(f=>esc(f.name)).join(', ') : '';
+
   // ── "Add missing to Buy list" — only the spirits/liqueurs you're short, and
   //    only when you're actually short one or more (subs don't count as missing).
   cocktailDetailId = id;
@@ -4832,6 +4894,129 @@ window.addMissingToBuy = async function(id){
     }
     st.textContent = added ? ('✅ Added '+added+' to Buy list — check the Buy tab.') : 'Already on your Buy list.';
   }catch(e){ st.textContent='❌ '+(e.message||e); }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// FRIENDS — who likes what, and what you can pour them tonight.
+// cellar/friends/{id} = { name, favorites:[{ck}|{txt}], avoid:[…], notes }
+// ══════════════════════════════════════════════════════════════════════════
+function friendsArr(){ return asArr(friends).filter(f=>f && f.name); }
+// Friends who tagged a given cocktail id as a favorite.
+function friendsWhoLike(ckId){ return friendsArr().filter(f=>(f.favorites||[]).some(x=>x && x.ck===ckId)); }
+
+function friendsHTML(){
+  const have = new Set(barTokenMap().keys());
+  const arr = friendsArr().sort((a,b)=>a.name.localeCompare(b.name));
+  const head = `<div class="shead ck-shead"><p>${arr.length
+      ? 'Who likes what — and what you can pour them tonight.'
+      : 'Remember which friends love which drinks.'}</p>${
+      isAdmin()?'<button class="ck-addbtn" onclick="openFriendEditor()">➕ Friend</button>':''}</div>`;
+  if(!arr.length) return head + '<div class="empty"><p>No friends yet.'+(isAdmin()?' Add someone and tag the drinks they love — the cocktails you can make for them right now rise to the top.':'')+'</p></div>';
+  const shown = arr.filter(f=> !search || deburr(((f.name||'')+' '+(f.notes||'')).toLowerCase()).includes(search));
+  if(!shown.length) return head + '<div class="empty"><p>No friends match your search.</p></div>';
+
+  const cards = shown.map(f=>{
+    let ready=0;
+    const favs = (f.favorites||[]).map(fav=>{
+      if(fav && fav.ck && cocktails[fav.ck]){
+        const c = cocktails[fav.ck];
+        const st = cocktailStatus(c, have);
+        const can = st.rank<=1; if(can) ready++;
+        const cls = can?'fav-can':(st.state==='one'?'fav-one':'fav-cant');
+        const ic  = can?'✓':(st.state==='one'?'●':'✕');
+        return `<button class="fav-chip ${cls}" onclick="openCocktail('${fav.ck}')" title="${st.state==='one'?'One bottle away':(can?'You can pour this now':'Missing '+st.missing.length)}">${ic} ${esc(c.name)}</button>`;
+      }
+      const txt = (fav && (fav.txt||fav.ck)) || '';
+      return txt ? `<span class="fav-chip fav-txt">${esc(txt)}</span>` : '';
+    }).filter(Boolean).join('');
+    const avoid = (f.avoid||[]).map(a=>`<span class="avoid-chip">⊘ ${esc(a)}</span>`).join('');
+    return `<div class="friend-card">
+      <div class="friend-top">
+        <span class="friend-name">${esc(f.name)}</span>
+        ${ready?`<span class="friend-ready" title="Favorites you can pour right now">${ready} ready now</span>`:''}
+        ${isAdmin()?`<button class="friend-edit" title="Edit" onclick="openFriendEditor('${f.id}')">✏️</button>`:''}
+      </div>
+      ${favs?`<div class="fav-row">${favs}</div>`:'<div class="friend-empty">No drinks tagged yet.</div>'}
+      ${avoid?`<div class="avoid-row">${avoid}</div>`:''}
+      ${f.notes?`<div class="friend-notes">${esc(f.notes)}</div>`:''}
+    </div>`;
+  }).join('');
+  return head + '<div class="friend-grid">'+cards+'</div>';
+}
+
+// ── FRIEND EDITOR ──
+let frEditId = null, frFavs = [];
+function frMatchCocktail(text){
+  const q = deburr(String(text||'').toLowerCase().trim());
+  if(!q) return null;
+  const hit = cocktailArr().find(c=>deburr(c.name.toLowerCase())===q);
+  return hit ? hit.id : null;
+}
+function frRenderFavs(){
+  const host = document.getElementById('fr-favs');
+  if(!frFavs.length){ host.innerHTML = '<div class="friend-empty">No drinks added yet.</div>'; return; }
+  host.innerHTML = frFavs.map((fav,i)=>{
+    const linked = fav.ck && cocktails[fav.ck];
+    const label = linked ? cocktails[fav.ck].name : (fav.txt||fav.ck||'');
+    return `<span class="fav-chip ${linked?'fav-can':'fav-txt'}">${linked?'🍸 ':''}${esc(label)}<button class="fav-x" onclick="frRemoveFav(${i})">✕</button></span>`;
+  }).join('');
+}
+window.frRemoveFav = function(i){ frFavs.splice(i,1); frRenderFavs(); };
+window.frAddFav = function(){
+  const inp = document.getElementById('fr-favinput');
+  const val = (inp.value||'').trim();
+  if(!val) return;
+  const ck = frMatchCocktail(val);
+  frFavs.push(ck ? {ck} : {txt:val});
+  inp.value=''; inp.focus(); frRenderFavs();
+};
+window.openFriendEditor = function(id){
+  if(!isAdmin()){ showToast('Admins can add friends'); return; }
+  document.getElementById('ckNames').innerHTML = cocktailArr().map(c=>`<option>${esc(c.name)}</option>`).join('');
+  frEditId = id || null;
+  const f = id ? friends[id] : null;
+  document.getElementById('fr-title').textContent = f ? 'Edit friend' : 'Add a friend';
+  document.getElementById('fr-name').value = f ? (f.name||'') : '';
+  document.getElementById('fr-avoid').value = f ? (f.avoid||[]).join(', ') : '';
+  document.getElementById('fr-notes').value = f ? (f.notes||'') : '';
+  frFavs = f && Array.isArray(f.favorites) ? f.favorites.map(x=>({...x})) : [];
+  frRenderFavs();
+  document.getElementById('fr-delbtn').style.display = f ? '' : 'none';
+  document.getElementById('frStatus').textContent = '';
+  document.getElementById('friendModal').classList.add('open');
+  document.getElementById('fr-name').focus();
+};
+window.closeFriendEditor = ()=>document.getElementById('friendModal').classList.remove('open');
+window.saveFriend = async function(){
+  const st = document.getElementById('frStatus');
+  const name = (document.getElementById('fr-name').value||'').trim();
+  if(!name){ st.textContent='Give them a name first.'; document.getElementById('fr-name').focus(); return; }
+  let id = frEditId;
+  if(!id){ const base = ckSlug(name) || 'friend'; id = base; let n=2; while(friends[id]) id = base+'_'+(n++); }
+  const rec = {
+    name,
+    favorites: frFavs,
+    avoid: (document.getElementById('fr-avoid').value||'').split(',').map(t=>t.trim()).filter(Boolean),
+    notes: (document.getElementById('fr-notes').value||'').trim(),
+    addedBy: (auth.currentUser&&auth.currentUser.uid)||''
+  };
+  const prev = friends[id];
+  rec.addedAt = (prev && prev.addedAt) ? prev.addedAt : Date.now();
+  rec.editedAt = Date.now();
+  try{
+    st.textContent='⏳ Saving…';
+    await dbSet('cellar/friends/'+id, rec);
+    closeFriendEditor();
+    showToast((frEditId?'Updated ':'Added ')+name);
+  }catch(e){ st.textContent = '❌ '+(e.message||e); }
+};
+window.deleteFriend = async function(){
+  if(!frEditId) return;
+  const f = friends[frEditId];
+  if(!confirm('Remove '+((f&&f.name)||'this friend')+'?')) return;
+  const st = document.getElementById('frStatus');
+  try{ st.textContent='⏳ Removing…'; await dbSet('cellar/friends/'+frEditId, null); closeFriendEditor(); showToast('Removed'); }
+  catch(e){ st.textContent = '❌ '+(e.message||e); }
 };
 
 // ── WISHLIST (buy list) ──
