@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.33</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.34</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -700,8 +700,10 @@
   .ck-slot{font-size:10px;letter-spacing:.04em;color:var(--gold);border:1px solid var(--line);border-radius:4px;padding:1px 6px;flex-shrink:0}
   .ck-subnote{font-size:11px;color:var(--parch-dim);font-style:italic;flex-shrink:0}
   .ck-usebottle{font-size:11.5px;color:var(--parch-dim);flex-shrink:0;display:flex;align-items:center;gap:5px;max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .ck-pick{flex-shrink:0;max-width:52%;font-family:inherit;font-size:11.5px;color:var(--parch);background:rgba(201,163,92,.07);border:1px solid var(--gold-dim);border-radius:6px;padding:3px 6px;cursor:pointer}
+  .ck-pick{flex-shrink:0;max-width:46%;font-family:inherit;font-size:11.5px;color:var(--parch);background:rgba(201,163,92,.07);border:1px solid var(--gold-dim);border-radius:6px;padding:3px 6px;cursor:pointer}
   .ck-pick:hover{border-color:var(--gold)}
+  .ck-loc{flex-shrink:0;background:none;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-size:12px;line-height:1;padding:4px 6px;margin-left:6px}
+  .ck-loc:hover{border-color:var(--gold);background:rgba(201,163,92,.1)}
   .ck-d-steps{font-size:13.5px;line-height:1.5;color:var(--parch)}
   .ck-d-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 </style>
@@ -719,7 +721,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.33</div>  </div></div>
+    <div class="auth-rev">Rev 3.34</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -836,7 +838,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.33</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.34</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -4881,6 +4883,15 @@ window.ckSetPick = async function(id, key, bottleId){
   try{ await dbSet('cellar/cocktails/'+id+'/picks/'+key, bottleId||null); }
   catch(e){ showToast('Could not save that choice'); }
 };
+// Jump from a cocktail's ingredient to the exact slot the bottle sits in.
+window.ckLocate = function(bottleId){
+  const w = bottles[bottleId]; if(!w){ showToast('Not in your inventory'); return; }
+  closeCocktail();
+  placing=null; inspect=null; rackEdit=false; rackFocusCol=null;
+  if(w.rackCol && w.rackRow){ curRack = bRack(w); flashSlot = Number(w.rackCol)+'_'+Number(w.rackRow); showToast('📍 '+(w.name||'')+' — '+slotOf(w)); }
+  else { curRack = (typeof rackForKind==='function' && rackForKind(kindOf(w))) || 'main'; showToast((w.name||'bottle')+' — not placed on a rack yet'); }
+  setView('cellar');
+};
 function cocktailArr(){
   return Object.keys(cocktails||{}).map(k=>Object.assign({id:k}, cocktails[k]))
     .filter(c=>c && c.name && Array.isArray(c.ingredients));
@@ -5042,21 +5053,20 @@ function ckRenderStatus(id){
   const bLabel = b => esc(b.name||'bottle') + ((b.rackCol&&b.rackRow)?` <span class="ck-slot">${esc(slotCode(b.rackCol,b.rackRow))}</span>`:'');
   const optHTML = (b,sel) => `<option value="${esc(b.id)}" ${sel?'selected':''}>${esc(b.name||'bottle')}${(b.rackCol&&b.rackRow)?(' · '+esc(slotCode(b.rackCol,b.rackRow))):''}</option>`;
   const picker = (key,opts) => `<select class="ck-pick" onchange="ckSetPick('${id}','${key}',this.value)">${opts}</select>`;
+  // 📍 jump-to-cellar for the bottle a slot uses (only when it's placed on a rack).
+  const locBtn = b => (b && b.rackCol && b.rackRow) ? `<button class="ck-loc" title="Find ${esc(b.name||'it')} in your cellar" onclick="ckLocate('${b.id}')">📍</button>` : '';
   const rows = (c.ingredients||[]).map(ing=>{
     const amt = [ing.amount, ing.unit].filter(Boolean).join(' ');
     const r = ingResolve(ing, inv, c);
     let icon, rowcls, note='';
-    if(r.via==='have'){
-      icon='✓'; rowcls='ck-r-have';
-      note = r.m.direct.length>1
-        ? picker(r.key, r.m.direct.map(b=>optHTML(b, r.chosen&&b.id===r.chosen.id)).join(''))
-        : `<span class="ck-usebottle">${bLabel(r.chosen)}</span>`;
-    } else if(r.via==='sub'){
-      icon='↔'; rowcls='ck-r-sub';
-      const cands = ingCandidates(ing, inv, r.m);
-      note = cands.length>1
+    if(r.via==='have' || r.via==='sub'){
+      icon = r.via==='have' ? '✓' : '↔';
+      rowcls = r.via==='have' ? 'ck-r-have' : 'ck-r-sub';
+      const cands = ingCandidates(ing, inv, r.m);   // spirits → your qualifying bottles; juices → your Mixers
+      const control = cands.length>1
         ? picker(r.key, cands.map(b=>optHTML(b, r.chosen&&b.id===r.chosen.id)).join(''))
-        : `<span class="ck-subnote">use ${bLabel(r.chosen)}</span>`;
+        : `<span class="ck-usebottle">${r.via==='sub'?'use ':''}${bLabel(r.chosen)}</span>`;
+      note = control + locBtn(r.chosen);
     } else if(ing.optional){
       icon='○'; rowcls='ck-r-pantry'; note=`<span class="ck-subnote">optional — not owned</span>`;
     } else {
