@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.24</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.25</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -713,7 +713,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.24</div>  </div>
+    <div class="auth-rev">Rev 3.25</div>  </div>
 </div>
 
 <div class="wrap">
@@ -831,7 +831,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.24</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.25</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -986,6 +986,7 @@
         <img id="dtAdjPrev" alt="" style="width:64px;height:96px;border:1px solid var(--line);border-radius:4px;flex-shrink:0;object-fit:cover;background:#160a0c">
         <button class="pi-btn" id="dtFitBtn" onclick="dtToggleFit()" style="white-space:nowrap">⬜ Fill (crop)</button>
         <input type="range" id="dtPosY" min="0" max="100" step="1" style="flex:1;min-width:0" oninput="dtPosInput(this.value)" title="Slide the crop up / down">
+        <span style="font-size:14px" title="Transparency">👻</span><input type="range" id="dtAlpha" min="10" max="100" step="1" style="flex:1;min-width:0" oninput="dtAlphaInput(this.value)" title="Transparency — slide left to fade the image">
       </div>
     </div>
     <div class="qlabel">Score</div>
@@ -1043,6 +1044,7 @@
           <img id="ckAdjPrev" alt="" style="width:84px;height:63px;border:1px solid var(--line);border-radius:4px;flex-shrink:0;object-fit:cover;background:#160a0c">
           <button class="pi-btn" id="ckFitBtn" onclick="ckToggleFit()" style="white-space:nowrap">⬜ Fill (crop)</button>
           <input type="range" id="ckPosY" min="0" max="100" step="1" style="flex:1;min-width:0" oninput="ckPosInput(this.value)" title="Slide the crop up / down">
+          <span style="font-size:14px" title="Transparency">👻</span><input type="range" id="ckAlpha" min="10" max="100" step="1" style="flex:1;min-width:0" oninput="ckAlphaInput(this.value)" title="Transparency — slide left to fade the image">
         </div>
       </div>
     </div>
@@ -2486,6 +2488,7 @@ function dtAdjustApply(){
   const img=document.getElementById('dtAdjPrev'); if(!img) return;
   img.style.objectFit = dtDraft.fit==='contain' ? 'contain' : 'cover';
   img.style.objectPosition = '50% ' + (dtDraft.posY==null?50:dtDraft.posY) + '%';
+  img.style.opacity = ((dtDraft.alpha==null?100:dtDraft.alpha)/100).toFixed(2);
   const b=document.getElementById('dtFitBtn'); if(b) b.textContent = dtDraft.fit==='contain' ? '🔳 Fit (whole image)' : '⬜ Fill (crop)';
   const s=document.getElementById('dtPosY'); if(s) s.disabled = dtDraft.fit==='contain';
 }
@@ -2494,14 +2497,17 @@ function dtAdjustInit(w){
   const url = w.photoUrl || (piStore.dt[0] && (piStore.dt[0].url || piStore.dt[0].dataUrl));
   dtDraft.fit = w.photoFit==='contain' ? 'contain' : 'cover';
   dtDraft.posY = (w.photoPosY==null || w.photoPosY==='') ? 50 : Number(w.photoPosY);
+  dtDraft.alpha = (w.photoAlpha==null || w.photoAlpha==='') ? 100 : Number(w.photoAlpha);
   if(!url){ box.style.display='none'; return; }
   box.style.display='';
   document.getElementById('dtAdjPrev').src = url;
   document.getElementById('dtPosY').value = dtDraft.posY;
+  { const a=document.getElementById('dtAlpha'); if(a) a.value = dtDraft.alpha; }
   dtAdjustApply();
 }
 window.dtToggleFit = function(){ dtDraft.fit = dtDraft.fit==='contain' ? 'cover' : 'contain'; dtAdjustApply(); };
 window.dtPosInput = function(v){ dtDraft.posY = Math.max(0, Math.min(100, Number(v)||0)); dtAdjustApply(); };
+window.dtAlphaInput = function(v){ dtDraft.alpha = Math.max(10, Math.min(100, Number(v)||100)); dtAdjustApply(); };
 window.dtToggleHalf = ()=>{ dtDraft.half=!dtDraft.half; document.getElementById('dtHalfbtn').classList.toggle('on',dtDraft.half); echo('dtScoreEcho',dtDraft); };
 window.dtToggleBuy = ()=>{ dtDraft.buy=!dtDraft.buy; document.getElementById('dtBuyflag').classList.toggle('on',dtDraft.buy); };
 window.saveDetail = async function(){
@@ -2537,7 +2543,7 @@ window.saveDetail = async function(){
       name, producer, region, qty, score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
       vintage, abv, rep, url, desc, notes, kind:(document.getElementById('dt-kind')||{value:kindOf(w)}).value,
       photos: ups.length?ups:null,
-      photoFit:(dtDraft.fit==='contain'?'contain':'cover'), photoPosY:(dtDraft.posY==null?50:Number(dtDraft.posY)),
+      photoFit:(dtDraft.fit==='contain'?'contain':'cover'), photoPosY:(dtDraft.posY==null?50:Number(dtDraft.posY)), photoAlpha:(dtDraft.alpha==null?100:Number(dtDraft.alpha)),
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
     });
     if(before!==after) logEvent('edited', { bottleId:dtDraft.id, name:name||'', vintage:w.vintage||'' });
@@ -3577,10 +3583,11 @@ function collectionCardHTML(w){
 // image, dark letterbox), photoPosY 0–100 slides the cover crop up/down.
 // Applied everywhere the main photo renders (cards, rack slots, column view, peek).
 function imgAdjStyle(w){
-  if(!w || (!w.photoFit && w.photoPosY==null)) return '';
+  if(!w || (!w.photoFit && w.photoPosY==null && w.photoAlpha==null)) return '';
   const fit = w.photoFit==='contain' ? 'contain' : 'cover';
   const pos = (w.photoPosY==null || w.photoPosY==='') ? 50 : Math.max(0, Math.min(100, Number(w.photoPosY)||0));
-  return `object-fit:${fit};object-position:50% ${pos}%;background:#160a0c;`;
+  const alpha = (w.photoAlpha==null || w.photoAlpha==='') ? 100 : Math.max(10, Math.min(100, Number(w.photoAlpha)||100));
+  return `object-fit:${fit};object-position:50% ${pos}%;background:#160a0c;` + (alpha<100 ? `opacity:${(alpha/100).toFixed(2)};` : '');
 }
 function cardPhotoHTML(w, overlay){
   const ov = overlay || '';
@@ -4927,8 +4934,8 @@ function cocktailPhotoCard(id, fam){
   if(rec){
     // Same per-photo framing as bottles: fit 'contain' shows the whole shot on a
     // dark letterbox; posY slides the cover crop.
-    const adj = (rec.fit || rec.posY!=null)
-      ? ` style="object-fit:${rec.fit==='contain'?'contain':'cover'};object-position:50% ${rec.posY==null?50:Math.max(0,Math.min(100,Number(rec.posY)||0))}%;background:#160a0c"` : '';
+    const adj = (rec.fit || rec.posY!=null || rec.alpha!=null)
+      ? ` style="object-fit:${rec.fit==='contain'?'contain':'cover'};object-position:50% ${rec.posY==null?50:Math.max(0,Math.min(100,Number(rec.posY)||0))}%;background:#160a0c;${(rec.alpha!=null&&Number(rec.alpha)<100)?('opacity:'+(Math.max(10,Math.min(100,Number(rec.alpha)))/100).toFixed(2)+';'):''}"` : '';
     return `<img class="ck-img ${rec.cut?'ck-cut':''}"${adj} src="${esc(rec.url)}" alt="" loading="lazy">`;
   }
   return `<span class="ck-glass">${FAMILY_GLASS[fam]||'🍸'}</span>`;
@@ -5104,6 +5111,7 @@ function ckAdjustApply(){
   const img=document.getElementById('ckAdjPrev'); if(!img) return;
   img.style.objectFit = ckAdj.fit==='contain' ? 'contain' : 'cover';
   img.style.objectPosition = '50% ' + ckAdj.posY + '%';
+  img.style.opacity = ((ckAdj.alpha==null?100:ckAdj.alpha)/100).toFixed(2);
   const b=document.getElementById('ckFitBtn'); if(b) b.textContent = ckAdj.fit==='contain' ? '🔳 Fit (whole image)' : '⬜ Fill (crop)';
   const s=document.getElementById('ckPosY'); if(s) s.disabled = ckAdj.fit==='contain';
 }
@@ -5113,14 +5121,17 @@ function ckAdjustInit(id){
   const url = (rec && rec.url) || (piStore.ck[0] && (piStore.ck[0].url || piStore.ck[0].dataUrl));
   ckAdj.fit = (rec && rec.fit==='contain') ? 'contain' : 'cover';
   ckAdj.posY = (rec && rec.posY!=null) ? Math.max(0,Math.min(100,Number(rec.posY)||0)) : 50;
+  ckAdj.alpha = (rec && rec.alpha!=null) ? Math.max(10,Math.min(100,Number(rec.alpha)||100)) : 100;
   if(!url){ box.style.display='none'; return; }
   box.style.display='';
   document.getElementById('ckAdjPrev').src = url;
   document.getElementById('ckPosY').value = ckAdj.posY;
+  { const a=document.getElementById('ckAlpha'); if(a) a.value = ckAdj.alpha; }
   ckAdjustApply();
 }
 window.ckToggleFit = function(){ ckAdj.fit = ckAdj.fit==='contain' ? 'cover' : 'contain'; ckAdjustApply(); };
 window.ckPosInput = function(v){ ckAdj.posY = Math.max(0, Math.min(100, Number(v)||0)); ckAdjustApply(); };
+window.ckAlphaInput = function(v){ ckAdj.alpha = Math.max(10, Math.min(100, Number(v)||100)); ckAdjustApply(); };
 window.saveCocktailPhotos = async function(id){
   const st = document.getElementById('ckStatus');
   try{
@@ -5128,7 +5139,7 @@ window.saveCocktailPhotos = async function(id){
     const ups = await uploadPhotos('cocktail_'+id, piStore.ck);
     // Carry the transparent-cutout flag through so the card knows to float it.
     const recs = ups.map((u,i)=>({ ...u, cut: !!(piStore.ck[i] && piStore.ck[i].cut) }));
-    if(recs[0]){ recs[0].fit = ckAdj.fit; recs[0].posY = ckAdj.posY; }   // framing rides on the card photo
+    if(recs[0]){ recs[0].fit = ckAdj.fit; recs[0].posY = ckAdj.posY; recs[0].alpha = (ckAdj.alpha==null?100:ckAdj.alpha); }   // framing rides on the card photo
     await dbSet('cellar/cocktail_photos/'+id, recs.length ? recs : null);
     st.textContent = ups.length ? '✅ Saved '+ups.length+' photo'+(ups.length>1?'s':'') : '✅ Photos cleared';
   }catch(e){ st.textContent = '❌ '+(e.message||e); }
