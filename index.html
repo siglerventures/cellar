@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.22</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.23</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -702,7 +702,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.22</div>  </div>
+    <div class="auth-rev">Rev 3.23</div>  </div>
 </div>
 
 <div class="wrap">
@@ -820,7 +820,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.22</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.23</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -969,6 +969,14 @@
     <div class="dt-sibs" id="dtSibs" style="display:none"></div>
     <div class="qlabel">Photos — first is the card image</div>
     <div class="pintake" id="dt-intake" ondragover="piDragOver(event,'dt')" ondragleave="piDragLeave(event,'dt')" ondrop="piDrop(event,'dt')"></div>
+    <div id="dtAdjust" style="display:none">
+      <div class="qlabel" style="margin-top:10px">Adjust image — how cards frame the main photo</div>
+      <div class="mrow" style="align-items:center;gap:10px;flex-wrap:nowrap">
+        <img id="dtAdjPrev" alt="" style="width:64px;height:96px;border:1px solid var(--line);border-radius:4px;flex-shrink:0;object-fit:cover;background:#160a0c">
+        <button class="pi-btn" id="dtFitBtn" onclick="dtToggleFit()" style="white-space:nowrap">⬜ Fill (crop)</button>
+        <input type="range" id="dtPosY" min="0" max="100" step="1" style="flex:1;min-width:0" oninput="dtPosInput(this.value)" title="Slide the crop up / down">
+      </div>
+    </div>
     <div class="qlabel">Score</div>
     <div class="scorepad" id="dtScorepad"></div>
     <div class="halfrow"><button class="half" id="dtHalfbtn" onclick="dtToggleHalf()">+ ½ point</button><span class="scoreEcho" id="dtScoreEcho"></span></div>
@@ -2283,6 +2291,7 @@ window.openDetail = function(id){
     ? w.photos.filter(p=>p && p.url).map(p=>({ path:p.path||null, url:p.url }))
     : (w.photoUrl ? [{ path:w.photoPath||null, url:w.photoUrl }] : []);
   piRender('dt');
+  dtAdjustInit(w);
   paintScore(document.getElementById('dtScorepad'), whole==null?-1:whole);
   paintTags(document.getElementById('dtTags'), dtDraft.tags);
   document.getElementById('dtHalfbtn').classList.toggle('on', half);
@@ -2453,6 +2462,27 @@ window.boughtAgain = function(id){
   if(ph.length){ piStore.ca = ph; piScanned.ca = true; piRender('ca'); }
   showToast('Set Qty & confirm price, then Add — it restocks your count');
 };
+// "Adjust image" — live-preview reframing of the main photo (saved with Save).
+function dtAdjustApply(){
+  const img=document.getElementById('dtAdjPrev'); if(!img) return;
+  img.style.objectFit = dtDraft.fit==='contain' ? 'contain' : 'cover';
+  img.style.objectPosition = '50% ' + (dtDraft.posY==null?50:dtDraft.posY) + '%';
+  const b=document.getElementById('dtFitBtn'); if(b) b.textContent = dtDraft.fit==='contain' ? '🔳 Fit (whole image)' : '⬜ Fill (crop)';
+  const s=document.getElementById('dtPosY'); if(s) s.disabled = dtDraft.fit==='contain';
+}
+function dtAdjustInit(w){
+  const box=document.getElementById('dtAdjust'); if(!box) return;
+  const url = w.photoUrl || (piStore.dt[0] && (piStore.dt[0].url || piStore.dt[0].dataUrl));
+  dtDraft.fit = w.photoFit==='contain' ? 'contain' : 'cover';
+  dtDraft.posY = (w.photoPosY==null || w.photoPosY==='') ? 50 : Number(w.photoPosY);
+  if(!url){ box.style.display='none'; return; }
+  box.style.display='';
+  document.getElementById('dtAdjPrev').src = url;
+  document.getElementById('dtPosY').value = dtDraft.posY;
+  dtAdjustApply();
+}
+window.dtToggleFit = function(){ dtDraft.fit = dtDraft.fit==='contain' ? 'cover' : 'contain'; dtAdjustApply(); };
+window.dtPosInput = function(v){ dtDraft.posY = Math.max(0, Math.min(100, Number(v)||0)); dtAdjustApply(); };
 window.dtToggleHalf = ()=>{ dtDraft.half=!dtDraft.half; document.getElementById('dtHalfbtn').classList.toggle('on',dtDraft.half); echo('dtScoreEcho',dtDraft); };
 window.dtToggleBuy = ()=>{ dtDraft.buy=!dtDraft.buy; document.getElementById('dtBuyflag').classList.toggle('on',dtDraft.buy); };
 window.saveDetail = async function(){
@@ -2488,6 +2518,7 @@ window.saveDetail = async function(){
       name, producer, region, qty, score, tags:dtDraft.tags.slice(), tag:(dtDraft.tags[0]||null), buyAgain:dtDraft.buy, price, vendor, grape,
       vintage, abv, rep, url, desc, notes, kind:(document.getElementById('dt-kind')||{value:kindOf(w)}).value,
       photos: ups.length?ups:null,
+      photoFit:(dtDraft.fit==='contain'?'contain':'cover'), photoPosY:(dtDraft.posY==null?50:Number(dtDraft.posY)),
       photoPath:(ups[0]&&ups[0].path)||null, photoUrl:(ups[0]&&ups[0].url)||null
     });
     if(before!==after) logEvent('edited', { bottleId:dtDraft.id, name:name||'', vintage:w.vintage||'' });
@@ -3523,9 +3554,19 @@ function collectionCardHTML(w){
 // Photo band at the top of every browse card: label photo, or a placeholder inviting one.
 // `overlay` (optional) is injected inside the photo frame — used by wine cards to
 // float the score badge on the photo. Non-wine callers pass nothing (unchanged).
+// Per-record image framing: photoFit 'cover' (crop to fill) | 'contain' (whole
+// image, dark letterbox), photoPosY 0–100 slides the cover crop up/down.
+// Applied everywhere the main photo renders (cards, rack slots, column view, peek).
+function imgAdjStyle(w){
+  if(!w || (!w.photoFit && w.photoPosY==null)) return '';
+  const fit = w.photoFit==='contain' ? 'contain' : 'cover';
+  const pos = (w.photoPosY==null || w.photoPosY==='') ? 50 : Math.max(0, Math.min(100, Number(w.photoPosY)||0));
+  return `object-fit:${fit};object-position:50% ${pos}%;background:#160a0c;`;
+}
 function cardPhotoHTML(w, overlay){
   const ov = overlay || '';
-  if(w.photoUrl){ schedScrape(); return `<div class="cardphoto">${ov}<img src="${esc(w.photoUrl)}" data-scrape="${esc(w.photoUrl)}" alt="label" loading="lazy" onclick="event.stopPropagation();viewImage('${esc(w.photoUrl)}')"></div>`; }
+  const adj = imgAdjStyle(w);
+  if(w.photoUrl){ schedScrape(); return `<div class="cardphoto">${ov}<img src="${esc(w.photoUrl)}" data-scrape="${esc(w.photoUrl)}"${adj?` style="${adj}"`:''} alt="label" loading="lazy" onclick="event.stopPropagation();viewImage('${esc(w.photoUrl)}')"></div>`; }
   return `<div class="cardphoto ph" title="Tap the card to add a photo">${ov}<span class="ph-glass">🍷</span></div>`;
 }
 // The score badge floated on a wine card's photo. `inner` is the rating markup.
@@ -4001,7 +4042,7 @@ function rackHTML(){
         const sub = [w.producer,w.region,w.grape,fmtPrice(w.price)].filter(Boolean).join(' · ');
         const isScore = w.score!=null;
         const scoreTxt = isScore ? fmt(w.score) : ((w.predLow!=null&&w.predHigh!=null)?fmt(w.predLow)+'–'+fmt(w.predHigh):'');
-        const thumb = w.photoUrl ? `<img class="cf-thumb" src="${esc(w.photoUrl)}" alt="">` : `<span class="cf-thumb">🍷</span>`;
+        const thumb = w.photoUrl ? `<img class="cf-thumb" src="${esc(w.photoUrl)}"${imgAdjStyle(w)?` style="${imgAdjStyle(w)}"`:''} alt="">` : `<span class="cf-thumb">🍷</span>`;
         const tags = tagChipsHTML(w);
         rowsHtml += `<button class="cf-row filled" onclick="openDetail('${w.id}')"><span class="cf-slot">${slot}</span>${thumb}<span class="cf-meta"><span class="cf-nm">${esc(w.name||'')}${vin}${w.status==='opened'?' ◐':''}</span>${sub?`<span class="cf-sub">${esc(sub)}</span>`:''}${tags?`<span class="cf-tags">${tags}</span>`:''}</span>${scoreTxt?`<span class="cf-score${isScore?'':' band'}">${esc(scoreTxt)}</span>`:''}</button>`;
       }else{
@@ -4042,7 +4083,7 @@ function rackHTML(){
         const xq = (w.status==='cellared' && Number(w.qty)>1) ? ' ×'+w.qty : '';
         const short = esc(w.name || w.producer || '') + op + xq;
         const title = [w.name, w.producer, w.vintage].filter(Boolean).join(' · ') + (op?' · opened':'') + (xq?(' ·'+xq+' bottles here'):'') + ' · ' + slotCode(c,r);
-        const thumb = w.photoUrl ? `<img class="slot-thumb" src="${esc(w.photoUrl)}" alt="">` : '';
+        const thumb = w.photoUrl ? `<img class="slot-thumb" src="${esc(w.photoUrl)}"${imgAdjStyle(w)?` style="${imgAdjStyle(w)}"`:''} alt="">` : '';
         const vdim = ((varietalFilter && pctOf(w, varietalFilter) < 0) || (flavorFilter && !fMatch(w))) ? ' vdim' : '';
         grid += `<div class="rack-slot filled${inspect===w.id?' sel':''}${flash}${vdim}" data-peek="${w.id}" data-cell="${c}_${r}" draggable="${rackEdit?'false':'true'}" ondragstart="rackDragStart(event,'${w.id}')" ondragover="rackDragOver(event)" ondragleave="rackDragLeave(event)" ondrop="rackDrop(event,${c},${r})" title="${esc(title)}" onclick="rackTapSlot(${c},${r})">${thumb}<span class="slot-name">${short}${vv}</span></div>`;
       }else{
@@ -4098,7 +4139,7 @@ const peekEl = document.createElement('div');
 peekEl.className = 'rack-peek';
 document.body.appendChild(peekEl);
 function peekHTML(w){
-  const img = w.photoUrl ? `<img src="${esc(w.photoUrl)}" alt="">` : `<span class="pk-ph">${kindEmoji(kindOf(w))}</span>`;
+  const img = w.photoUrl ? `<img src="${esc(w.photoUrl)}"${imgAdjStyle(w)?` style="${imgAdjStyle(w)}"`:''} alt="">` : `<span class="pk-ph">${kindEmoji(kindOf(w))}</span>`;
   const meta = [w.producer, w.vintage, w.grape, w.region, w.abv?w.abv+'%':'', fmtPrice(w.price)].filter(Boolean).join(' · ');
   const state = w.status==='opened' ? '◐ open bottle' : (Number(w.qty)>1 ? '×'+w.qty+' on hand' : '');
   const score = w.score!=null ? ('★ '+fmt(w.score)) : ((w.predLow!=null&&w.predHigh!=null)?('predicted '+fmt(w.predLow)+'–'+fmt(w.predHigh)):'');
