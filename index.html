@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.36</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.37</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -721,7 +721,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.36</div>  </div></div>
+    <div class="auth-rev">Rev 3.37</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -838,7 +838,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.36</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.37</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -5139,8 +5139,9 @@ function ckRenderLiked(id){
 window.ckToggleFriend = async function(fid){
   const id = cocktailDetailId; const f = friends[fid]; if(!id || !f) return;
   const favs = Array.isArray(f.favorites) ? f.favorites.filter(Boolean).map(x=>({...x})) : [];
-  const has = favs.some(x=>x.ck===id);
-  const next = has ? favs.filter(x=>x.ck!==id) : favs.concat([{ ck:id }]);
+  const isThis = x => x.ck===id || (!x.ck && frMatchCocktail(x.txt)===id);
+  const has = favs.some(isThis);
+  const next = has ? favs.filter(x=>!isThis(x)) : favs.concat([{ ck:id }]);
   try{
     await dbUpdate('cellar/friends/'+fid, { favorites: next });
     friends[fid] = Object.assign({}, f, { favorites: next });   // optimistic; onValue confirms
@@ -5399,7 +5400,7 @@ function globalSearchHTML(){
   return html;
 }
 // Friends who tagged a given cocktail id as a favorite.
-function friendsWhoLike(ckId){ return friendsArr().filter(f=>(f.favorites||[]).some(x=>x && x.ck===ckId)); }
+function friendsWhoLike(ckId){ return friendsArr().filter(f=>(f.favorites||[]).some(x=>x && (x.ck===ckId || (!x.ck && frMatchCocktail(x.txt)===ckId)))); }
 
 function friendsHTML(){
   const inv = invSnapshot();
@@ -5417,13 +5418,14 @@ function friendsHTML(){
     const favs = (f.favorites||[]).map(fav=>{
       if(!fav) return '';
       let chip = '';
-      if(fav.ck && cocktails[fav.ck]){
-        const c = cocktails[fav.ck];
+      const ckid = (fav.ck && cocktails[fav.ck]) ? fav.ck : frMatchCocktail(fav.txt);
+      if(ckid){
+        const c = cocktails[ckid];
         const st = cocktailStatus(c, inv);
         const can = st.rank<=1; if(can) ready++;
         const cls = can?'fav-can':(st.state==='one'?'fav-one':'fav-cant');
         const ic  = can?'✓':(st.state==='one'?'●':'✕');
-        chip = `<button class="fav-chip ${cls}" onclick="event.stopPropagation();openCocktail('${fav.ck}')" title="${st.state==='one'?'One bottle away':(can?'You can pour this now':'Missing '+st.missing.length)}">${ic} ${esc(c.name)}</button>`;
+        chip = `<button class="fav-chip ${cls}" onclick="event.stopPropagation();openCocktail('${ckid}')" title="${st.state==='one'?'One bottle away':(can?'You can pour this now':'Missing '+st.missing.length)}">${ic} ${esc(c.name)}</button>`;
       } else {
         const txt = fav.txt || fav.ck || '';
         if(txt) chip = `<span class="fav-chip fav-txt">${esc(txt)}</span>`;
@@ -5494,16 +5496,24 @@ window.frAddMethod = async function(btn){
 // One "order" row: drink · preferred bottle · add-ons · method · glass.
 function frOrderRowHTML(o){
   o=o||{};
-  const drink = o.ck && cocktails[o.ck] ? cocktails[o.ck].name : (o.txt||'');
   const bottle = o.bottleName || (o.bottleId && bottles[o.bottleId] ? bottles[o.bottleId].name : '');
   const ms = allMethods(); if(o.method && !ms.includes(o.method)) ms.push(o.method);
   const methodOpts = ['<option value="">Method…</option>'].concat(ms.map(m=>`<option ${((o.method||'')===m)?'selected':''}>${m}</option>`)).join('');
+  // The drink is a pick from the Cocktails list (so friend ↔ recipe stay linked);
+  // "Other" reveals a text box for drinks that aren't recipes. Legacy free-text
+  // that matches a recipe name auto-links.
+  const ckId = (o.ck && cocktails[o.ck]) ? o.ck : frMatchCocktail(o.txt);
+  const txtVal = ckId ? '' : (o.txt||'');
+  const ckOpts = ['<option value="">Pick from the Cocktails list…</option>']
+    .concat(cocktailArr().slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${esc(c.id)}" ${c.id===ckId?'selected':''}>${esc(c.name)}</option>`))
+    .concat([`<option value="__txt" ${(!ckId&&txtVal)?'selected':''}>✎ Other — not on the list</option>`]).join('');
   // Glass is a property of the recipe (shown in the cocktail's detail), not a
   // per-friend choice — so it isn't edited here. Any legacy value rides along.
   const glassKeep = o.glass ? `<input type="hidden" class="fo-glass" value="${esc(o.glass)}">` : '';
   return `<div class="fav-order" ondragover="event.preventDefault()" ondrop="frDrinkDrop(event)">
     <div class="fo-grid">
-      <input class="fo-drink" placeholder="Drink — e.g. Whisky Sour" list="ckNames" value="${esc(drink)}">
+      <select class="fo-drink-sel" style="grid-column:1/-1" onchange="frDrinkSel(this)">${ckOpts}</select>
+      <input class="fo-drink" placeholder="Drink name — e.g. Whisky Sour" value="${esc(txtVal)}" style="${(!ckId&&txtVal)?'':'display:none'}">
       <input class="fo-spirit" placeholder="Preferred bottle — from your stock" list="bottleNames" value="${esc(bottle)}">
       <input class="fo-addons" placeholder="Add-ons — e.g. egg whites" value="${esc(o.addons||'')}">
       <span style="display:flex;gap:4px;align-items:center"><select class="fo-method" style="flex:1">${methodOpts}</select><button class="pi-btn" title="Add a method" onclick="frAddMethod(this)">➕</button></span>
@@ -5525,9 +5535,18 @@ function frRenderFavs(){
   host.innerHTML = frFavs.length ? frFavs.map(frOrderRowHTML).join('') : '';
 }
 window.frAddOrder = function(){ document.getElementById('fr-favs').insertAdjacentHTML('beforeend', frOrderRowHTML({})); };
+// Cocktail dropdown → show the free-text box only when "Other" is chosen.
+window.frDrinkSel = function(sel){
+  const row = sel.closest('.fav-order'); if(!row) return;
+  const inp = row.querySelector('.fo-drink'); if(!inp) return;
+  if(sel.value==='__txt'){ inp.style.display=''; inp.focus(); }
+  else { inp.style.display='none'; }
+};
 // Read the order rows back out of the DOM into stored objects.
 function frReadOrders(){
   return [...document.querySelectorAll('#fr-favs .fav-order')].map(row=>{
+    const selEl=row.querySelector('.fo-drink-sel');
+    const selVal=selEl?selEl.value:'';
     const drink=(row.querySelector('.fo-drink').value||'').trim();
     const spirit=(row.querySelector('.fo-spirit').value||'').trim();
     const addons=(row.querySelector('.fo-addons').value||'').trim();
@@ -5537,8 +5556,8 @@ function frReadOrders(){
     const php=(row.querySelector('.fo-phpath')||{value:''}).value.trim();
     const pend=row.dataset.pendingPhoto||'';
     const o={};
-    const ck=frMatchCocktail(drink);
-    if(ck) o.ck=ck; else if(drink) o.txt=drink;
+    if(selVal && selVal!=='__txt' && cocktails[selVal]) o.ck=selVal;
+    else { const ck=frMatchCocktail(drink); if(ck) o.ck=ck; else if(drink) o.txt=drink; }
     if(spirit){ const bid=frMatchBottle(spirit); if(bid) o.bottleId=bid; o.bottleName=spirit; }
     if(addons) o.addons=addons;
     if(method) o.method=method;
