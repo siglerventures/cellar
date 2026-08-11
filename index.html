@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.16</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.18</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -576,7 +575,47 @@
     #content.cs-l .card-grid{grid-template-columns:repeat(auto-fill,minmax(430px,1fr))}
   }
   /* ── COCKTAILS ── */
+  .ck-shead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .ck-addbtn{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--gold);background:rgba(201,163,92,.08);border:1px solid var(--gold-dim);border-radius:20px;padding:7px 14px;cursor:pointer;white-space:nowrap;transition:.15s}
+  .ck-addbtn:hover{background:var(--gold);color:#1a1206;border-color:var(--gold)}
   .ck-chips{margin-bottom:16px}
+  /* recipe editor rows */
+  .rc-hint{color:var(--parch-dim);font-weight:400;font-size:11px;text-transform:none;letter-spacing:0}
+  .rc-row{display:grid;grid-template-columns:52px 74px 1fr auto auto;gap:6px;align-items:center;margin-bottom:6px}
+  .rc-row input[type=text],.rc-row .rc-amt,.rc-row .rc-unit,.rc-row .rc-item{margin:0}
+  .rc-opt{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--parch-dim);white-space:nowrap}
+  .rc-opt input{width:auto;margin:0}
+  .rc-del{background:none;border:none;color:var(--parch-dim);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:4px}
+  .rc-del:hover{color:#c96a6a;background:rgba(201,106,106,.1)}
+  .rc-addrow{font-family:inherit;font-size:12px;color:var(--gold);background:none;border:1px dashed var(--gold-dim);border-radius:6px;padding:7px 12px;cursor:pointer;margin-top:2px}
+  .rc-addrow:hover{background:rgba(201,163,92,.08)}
+  .mbtn.danger{color:#c96a6a;border-color:rgba(201,106,106,.4)}
+  .mbtn.danger:hover{background:rgba(201,106,106,.14)}
+  /* ── FRIENDS ── */
+  .friend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .friend-card{background:var(--glass);border:1px solid var(--line);border-radius:8px;padding:14px 15px}
+  .friend-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .friend-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;line-height:1}
+  .friend-ready{font-size:10.5px;font-weight:700;letter-spacing:.02em;color:var(--green);background:rgba(122,176,106,.12);border:1px solid rgba(122,176,106,.3);border-radius:20px;padding:2px 9px;white-space:nowrap}
+  .friend-edit{margin-left:auto;background:none;border:none;cursor:pointer;font-size:14px;opacity:.6;padding:2px 4px}
+  .friend-edit:hover{opacity:1}
+  .fav-row{display:flex;flex-wrap:wrap;gap:6px}
+  .fav-chip{font-family:inherit;font-size:12px;font-weight:600;border-radius:20px;padding:4px 11px;border:1px solid var(--line);background:rgba(236,227,210,.05);color:var(--parch);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:.12s}
+  button.fav-chip:hover{border-color:var(--gold)}
+  .fav-chip.fav-can{color:#8fe08a;border-color:rgba(122,176,106,.4);background:rgba(122,176,106,.1)}
+  .fav-chip.fav-one{color:var(--gold);border-color:var(--gold-dim);background:rgba(201,163,92,.08)}
+  .fav-chip.fav-cant{color:var(--parch-dim)}
+  .fav-chip.fav-txt{cursor:default;color:var(--parch-dim)}
+  .fav-x{background:none;border:none;color:inherit;opacity:.55;cursor:pointer;font-size:11px;padding:0 0 0 2px;margin-left:2px}
+  .fav-x:hover{opacity:1;color:#c96a6a}
+  .avoid-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .avoid-chip{font-size:10.5px;letter-spacing:.02em;color:#c98f8f;background:rgba(201,106,106,.08);border:1px solid rgba(201,106,106,.28);border-radius:20px;padding:2px 9px}
+  .friend-notes{margin-top:10px;font-size:12.5px;line-height:1.5;color:var(--parch-dim);font-style:italic}
+  .friend-empty{font-size:12px;color:var(--parch-dim)}
+  .fr-addfav{display:flex;gap:8px;margin-top:8px}
+  .fr-addfav input{flex:1;margin:0}
+  #fr-favs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px}
+  .ck-liked{font-size:12.5px;color:var(--parch-dim);margin-top:10px}
   .ck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
   .ck-card{text-align:left;font-family:inherit;color:var(--parch);background:var(--glass);border:1px solid var(--line);border-radius:8px;padding:0;cursor:pointer;transition:.15s;overflow:hidden;display:flex;flex-direction:column}
   .ck-card:hover{border-color:var(--gold);transform:translateY(-2px)}
@@ -585,6 +624,7 @@
   /* photo / placeholder area */
   .ck-photo{position:relative;aspect-ratio:4/3;overflow:hidden;display:flex;align-items:center;justify-content:center}
   .ck-img{width:100%;height:100%;object-fit:cover;display:block}
+  .ck-img.ck-cut{object-fit:contain;padding:8px;filter:drop-shadow(0 5px 12px rgba(0,0,0,.55))}
   .ck-glass{font-size:52px;opacity:.9;filter:drop-shadow(0 3px 8px rgba(0,0,0,.4))}
   /* spirit-family tints behind the placeholder glass */
   .ck-fam-agave{background:radial-gradient(120% 120% at 50% 0,#2f4a2a,#141d12)}
@@ -647,8 +687,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.16</div>
-  </div>
+    <div class="auth-rev">Rev 3.18</div>  </div>
 </div>
 
 <div class="wrap">
@@ -757,6 +796,7 @@
     <button class="vtab" data-view="cellar" onclick="setView('cellar')">Cellar</button>
     <button class="vtab" data-view="palate" onclick="setView('palate')">Palate</button>
     <button class="vtab" data-view="cocktails" onclick="setView('cocktails')">Cocktails</button>
+    <button class="vtab" data-view="friends" onclick="setView('friends')">Friends</button>
     <button class="vtab" data-view="buy" onclick="setView('buy')">Buy</button>
     <button class="vtab" data-view="wishlist" onclick="setView('wishlist')">Wishlist</button>
     <button class="vtab" data-view="history" onclick="setView('history')">History</button>
@@ -765,8 +805,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.16</span>
-    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.18</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -959,6 +998,7 @@
     <div class="qlabel" style="margin-top:14px">Method</div>
     <div id="ck-d-steps" class="ck-d-steps"></div>
     <div class="ck-d-tags" id="ck-d-tags"></div>
+    <div class="ck-liked" id="ck-d-likedby"></div>
     <button class="mbtn ghost" id="ck-d-buybtn" style="display:none;margin-top:14px;width:100%"></button>
     <div id="ck-d-photowrap" style="display:none">
       <div class="qlabel" style="margin-top:16px">Your photos — first is the card image</div>
@@ -966,11 +1006,71 @@
     </div>
     <div class="mrow" style="margin-top:16px">
       <button class="mbtn ghost dt-close" onclick="closeCocktail()">Close</button>
+      <button class="mbtn ghost" id="ck-d-editbtn" style="display:none" onclick="closeCocktail();openRecipeEditor(cocktailDetailId)">✏️ Edit recipe</button>
       <button class="mbtn dt-save" id="ck-d-savebtn" style="display:none" onclick="saveCocktailPhotos(cocktailDetailId)">Save photos</button>
     </div>
     <div class="mstatus" id="ckStatus"></div>
   </div>
 </div>
+
+<!-- ── RECIPE EDITOR (add / edit a cocktail) ── -->
+<div class="modal" id="recipeModal">
+  <div class="modal-card">
+    <h3 id="rc-title" style="margin-bottom:12px">Add a recipe</h3>
+    <input id="rc-name" placeholder="Cocktail name">
+    <div class="mgrid" style="margin-top:8px">
+      <input id="rc-glass" placeholder="Glass — e.g. Coupe, Rocks" list="rcGlasses">
+      <select id="rc-method">
+        <option value="">Method…</option>
+        <option value="shake">Shaken</option>
+        <option value="stir">Stirred</option>
+        <option value="build">Built in glass</option>
+        <option value="blend">Blended</option>
+      </select>
+    </div>
+    <div class="qlabel" style="margin-top:14px">Ingredients <span class="rc-hint">— amount · unit · what it is</span></div>
+    <div id="rc-ings"></div>
+    <button class="rc-addrow" onclick="rcAddRow()">＋ add ingredient</button>
+    <div class="qlabel" style="margin-top:14px">Method</div>
+    <textarea id="rc-steps" placeholder="Stir with ice and strain over a large cube; orange peel."></textarea>
+    <input id="rc-tags" placeholder="Tags — comma separated, e.g. boozy, citrusy, classic" style="margin-top:8px">
+    <div class="mstatus" id="rcStatus"></div>
+    <div class="mrow" style="margin-top:14px">
+      <button class="mbtn ghost" onclick="closeRecipeEditor()">Cancel</button>
+      <button class="mbtn danger" id="rc-delbtn" style="display:none" onclick="deleteRecipe()">Delete</button>
+      <button class="mbtn dt-save" onclick="saveRecipe()">Save recipe</button>
+    </div>
+  </div>
+</div>
+<datalist id="rcItems"></datalist>
+<datalist id="rcUnits"><option>oz</option><option>ml</option><option>dash</option><option>dashes</option><option>barspoon</option><option>tsp</option><option>splash</option><option>part</option><option>cube</option><option>wedge</option><option>slice</option><option>leaves</option><option>piece</option><option>top</option></datalist>
+<datalist id="rcGlasses"><option>Coupe</option><option>Rocks</option><option>Highball</option><option>Collins</option><option>Martini</option><option>Nick &amp; Nora</option><option>Flute</option><option>Wine</option><option>Mug</option><option>Hurricane</option></datalist>
+
+<!-- ── FRIEND EDITOR ── -->
+<div class="modal" id="friendModal">
+  <div class="modal-card">
+    <h3 id="fr-title" style="margin-bottom:12px">Add a friend</h3>
+    <input id="fr-name" placeholder="Name">
+    <div class="qlabel" style="margin-top:14px">Favorite drinks <span class="rc-hint">— tag your cocktails, or type anything</span></div>
+    <div id="fr-favs"></div>
+    <div class="fr-addfav">
+      <input id="fr-favinput" placeholder="Start typing a cocktail, or anything they love" list="ckNames"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();frAddFav();}">
+      <button class="mbtn ghost" onclick="frAddFav()">Add</button>
+    </div>
+    <div class="qlabel" style="margin-top:14px">Avoid <span class="rc-hint">— allergies, dislikes</span></div>
+    <input id="fr-avoid" placeholder="e.g. gin, anything smoky, nut allergy — comma separated">
+    <div class="qlabel" style="margin-top:14px">Notes</div>
+    <textarea id="fr-notes" placeholder="How they take it, their usual order, stories…"></textarea>
+    <div class="mstatus" id="frStatus"></div>
+    <div class="mrow" style="margin-top:14px">
+      <button class="mbtn ghost" onclick="closeFriendEditor()">Cancel</button>
+      <button class="mbtn danger" id="fr-delbtn" style="display:none" onclick="deleteFriend()">Delete</button>
+      <button class="mbtn dt-save" onclick="saveFriend()">Save</button>
+    </div>
+  </div>
+</div>
+<datalist id="ckNames"></datalist>
 
 <!-- ── ARCHIVE HISTORY ── -->
 <!-- ── BARCODE SCANNER ── -->
@@ -1119,6 +1219,7 @@ let cocktails = {};  // id -> recipe (cellar/cocktails) — static, imported onc
 let cocktailPhotos = {};  // id -> [{path,url}] — user drink photos, kept SEPARATE from the
                           // recipe set so re-importing recipes never wipes your photos
 let cocktailDetailId = null;
+let friends = {};  // id -> {name, favorites:[{ck|txt}], avoid:[…], notes} (cellar/friends)
 let cocktailFilter = 'can';  // 'all' | 'can' | 'one' | family key ('agave'|'whiskey'|…)
 let buylist = {};   // id -> item
 let histLog = {};   // id -> activity event (cellar/history)
@@ -1587,6 +1688,7 @@ function subscribe(){
   onValue(ref(db, 'cellar/buylist'), snap => { buylist = snap.val() || {}; render(); });
   onValue(ref(db, 'cellar/cocktails'), snap => { cocktails = snap.val() || {}; if(view==='cocktails') render(); });
   onValue(ref(db, 'cellar/cocktail_photos'), snap => { cocktailPhotos = snap.val() || {}; if(view==='cocktails') render(); });
+  onValue(ref(db, 'cellar/friends'), snap => { friends = snap.val() || {}; if(view==='friends'||view==='cocktails') render(); });
   onValue(ref(db, 'cellar/history'), snap => { histLog = snap.val() || {}; if(view==='history') render(); });
   onValue(ref(db, 'cellar/ask_history'), snap => { askLog = snap.val() || {}; const el=document.getElementById('askHist'); if(el && el.style.display!=='none') renderAskHistory(); });
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
@@ -2448,11 +2550,12 @@ async function piAddFiles(ctx, files){
     if(piStore[ctx].length >= PI_MAX[ctx]){ showToast('Max '+PI_MAX[ctx]+' photos here — remove one first'); break; }
     try{
       const raw = await compressImage(f);
-      // Cut the bottle out of white/gray backdrops NOW, while the image is
+      // Cut the subject out of white/gray backdrops NOW, while the image is
       // local (no CORS) — the transparent PNG is what gets stored & shown.
-      // Cocktail photos ('ck') are full scenes, not bottles — keep them intact.
-      const cut = (ctx==='ck') ? null : await scrapeLocal(raw);
-      piStore[ctx].push({ dataUrl: cut || raw });
+      // Track whether a cut actually happened so cocktail cards can float the
+      // transparent glass on their tinted background (vs. cover-cropping a scene).
+      const cut = await scrapeLocal(raw);
+      piStore[ctx].push({ dataUrl: cut || raw, cut: !!cut });
       piRender(ctx);
       draftQueue(ctx);
       // Scan from the untouched original — the model reads it more reliably.
@@ -3122,7 +3225,7 @@ window.goHome = function(){
   setView('all');
   window.scrollTo({ top:0, behavior:'smooth' });
 };
-window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = (hideSearch||v==='cocktails') ? 'none' : ''; document.getElementById('kindRow').style.display = (v==='cellar'||v==='cocktails') ? 'none' : ''; { const ar=document.getElementById('actionRow'); if(ar) ar.style.display = (v==='cellar')?'none':''; const tr=document.getElementById('tabsRow'); if(tr) tr.style.display = (v==='cellar')?'none':''; } render(); };
+window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = (hideSearch||v==='cocktails'||v==='friends') ? 'none' : ''; document.getElementById('kindRow').style.display = (v==='cellar'||v==='cocktails'||v==='friends') ? 'none' : ''; { const ar=document.getElementById('actionRow'); if(ar) ar.style.display = (v==='cellar')?'none':''; const tr=document.getElementById('tabsRow'); if(tr) tr.style.display = (v==='cellar')?'none':''; } render(); };
 // Strip accents/diacritics so "chateauneuf" matches "Châteauneuf", "rose" matches "rosé", etc.
 function deburr(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 window.onSearch = function(v){ search=deburr((v||'').trim().toLowerCase()); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
@@ -3238,6 +3341,8 @@ function render(){
   if(view==='palate'){ c.innerHTML = palateHTML(); return; }
 
   if(view==='cocktails'){ c.innerHTML = cocktailsHTML(); return; }
+
+  if(view==='friends'){ c.innerHTML = friendsHTML(); return; }
 
   if(view==='wishlist'){ c.innerHTML = wishlistHTML(); return; }
 
@@ -4464,6 +4569,25 @@ function cocktailFamily(c){
   const b = c.ingredients.find(i=>i.role==='base_spirit' && !i.optional) || c.ingredients.find(i=>i.role==='base_spirit');
   return (b && FAMILY[b.item]) || 'other';
 }
+// A custom recipe's ingredients need roles so "can I make it?" works. Infer them
+// from the canonical token: spirits are the base, vermouth/amari/liqueurs count
+// as required liqueurs, everything else is an assumed pantry staple.
+const CK_BASE_TOKENS = new Set(['mezcal','tequila','rye whiskey','scotch','bourbon','whiskey','gin','vodka','white rum','aged rum','dark rum','cachaça','cachaca','cognac']);
+const CK_LIQ_TOKENS  = new Set(['drambuie','lillet blanc','orange liqueur','sweet vermouth','dry vermouth','campari','aperol','amaro','maraschino liqueur','green chartreuse','crème de cassis','crème de cacao','crème de violette','coffee liqueur','amaretto','cherry liqueur']);
+function inferRole(item){
+  const it = deburr(String(item||'').toLowerCase().trim());
+  if(CK_BASE_TOKENS.has(item) || CK_BASE_TOKENS.has(it)) return 'base_spirit';
+  if(CK_LIQ_TOKENS.has(item)  || CK_LIQ_TOKENS.has(it))  return 'liqueur';
+  return '';
+}
+function ckSlug(n){ return deburr(String(n||'')).toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''); }
+// Every ingredient string used across the recipe set — the datalist vocabulary.
+function allIngredientItems(){
+  const s = new Set();
+  INGREDIENT_KEYWORDS.forEach(([tok])=>s.add(tok));
+  cocktailArr().forEach(c=>(c.ingredients||[]).forEach(i=>{ if(i.item) s.add(i.item); }));
+  return [...s].sort();
+}
 // Compute makeable status for a recipe against an owned-token set.
 function cocktailStatus(c, have){
   const req = c.ingredients.filter(ingRequired);
@@ -4516,9 +4640,10 @@ function cocktailsHTML(){
   shown.sort((a,b)=> a.st.rank-b.st.rank || a.c.name.localeCompare(b.c.name));
 
   const barEmpty = have.size===0;
-  const head = `<div class="shead"><p>${barEmpty
+  const head = `<div class="shead ck-shead"><p>${barEmpty
       ? 'Add a few bottles to your shelves and the cocktails you can pour rise to the top.'
-      : '<b>'+canN+'</b> of '+rows.length+' cocktails are within reach of your bar right now.'}</p></div>
+      : '<b>'+canN+'</b> of '+rows.length+' cocktails are within reach of your bar right now.'}</p>${
+      isAdmin()?'<button class="ck-addbtn" onclick="openRecipeEditor()">➕ Recipe</button>':''}</div>
     <div class="chiprow ck-chips">${chips}</div>`;
 
   if(!shown.length) return head + '<div class="empty"><p>No cocktails match — try a different filter or search.</p></div>';
@@ -4552,15 +4677,15 @@ function cocktailsHTML(){
 }
 // Card image: the user's first uploaded photo, or a spirit-tinted glass placeholder.
 const FAMILY_GLASS = { agave:'🍹', whiskey:'🥃', vodka:'🍸', gin:'🍸', rum:'🍹', brandy:'🥃', other:'🍷' };
-function cocktailPhotoMain(id){
+function cocktailPhotoRec(id){
   const ph = cocktailPhotos[id];
   const arr = Array.isArray(ph) ? ph : (ph ? Object.values(ph) : []);
-  const first = arr.find(p=>p && p.url);
-  return first ? first.url : '';
+  return arr.find(p=>p && p.url) || null;
 }
 function cocktailPhotoCard(id, fam){
-  const url = cocktailPhotoMain(id);
-  if(url) return `<img class="ck-img" src="${esc(url)}" alt="" loading="lazy">`;
+  const rec = cocktailPhotoRec(id);
+  // A cut-out (transparent) shot floats on the family gradient; a full scene covers.
+  if(rec) return `<img class="ck-img ${rec.cut?'ck-cut':''}" src="${esc(rec.url)}" alt="" loading="lazy">`;
   return `<span class="ck-glass">${FAMILY_GLASS[fam]||'🍸'}</span>`;
 }
 window.setCocktailFilter = function(k){ cocktailFilter=k; render(); };
@@ -4599,6 +4724,11 @@ window.openCocktail = function(id){
   document.getElementById('ck-d-steps').textContent = c.instructions || '';
   document.getElementById('ck-d-tags').innerHTML = (c.tags||[]).map(t=>`<span class="ck-tag">${esc(t)}</span>`).join('');
 
+  // ── "❤️ Liked by" — friends who tagged this drink as a favorite ──
+  const likers = friendsWhoLike(id);
+  document.getElementById('ck-d-likedby').innerHTML = likers.length
+    ? '❤️ Liked by '+likers.map(f=>esc(f.name)).join(', ') : '';
+
   // ── "Add missing to Buy list" — only the spirits/liqueurs you're short, and
   //    only when you're actually short one or more (subs don't count as missing).
   cocktailDetailId = id;
@@ -4612,17 +4742,114 @@ window.openCocktail = function(id){
 
   // ── Photos: load existing, wire the intake (camera / library / paste) ──
   const ph = cocktailPhotos[id];
-  piStore.ck = (Array.isArray(ph) ? ph : (ph ? Object.values(ph) : [])).filter(p=>p&&p.url).map(p=>({path:p.path||null, url:p.url}));
+  piStore.ck = (Array.isArray(ph) ? ph : (ph ? Object.values(ph) : [])).filter(p=>p&&p.url).map(p=>({path:p.path||null, url:p.url, cut:!!p.cut}));
   piRender('ck');
   const photoWrap = document.getElementById('ck-d-photowrap');
   const saveBtn = document.getElementById('ck-d-savebtn');
-  if(isAdmin()){ photoWrap.style.display=''; saveBtn.style.display=''; saveBtn.onclick=()=>saveCocktailPhotos(id); }
-  else { photoWrap.style.display='none'; saveBtn.style.display='none'; }
+  const editBtn = document.getElementById('ck-d-editbtn');
+  if(isAdmin()){ photoWrap.style.display=''; saveBtn.style.display=''; saveBtn.onclick=()=>saveCocktailPhotos(id); editBtn.style.display=''; }
+  else { photoWrap.style.display='none'; saveBtn.style.display='none'; editBtn.style.display='none'; }
 
   document.getElementById('ckStatus').textContent='';
   document.getElementById('cocktailModal').classList.add('open');
 };
 window.closeCocktail = ()=>document.getElementById('cocktailModal').classList.remove('open');
+
+// ── RECIPE EDITOR ──────────────────────────────────────────────────────────
+let rcEditId = null;   // slug being edited, or null for a brand-new recipe
+function rcRowHTML(ing){
+  ing = ing || {};
+  return `<div class="rc-row">
+    <input class="rc-amt" placeholder="1" value="${esc(ing.amount!=null?ing.amount:'')}">
+    <input class="rc-unit" placeholder="oz" list="rcUnits" value="${esc(ing.unit||'')}">
+    <input class="rc-item" placeholder="ingredient" list="rcItems" value="${esc(ing.item||'')}">
+    <label class="rc-opt" title="Optional / garnish"><input type="checkbox" ${ing.optional?'checked':''}>opt</label>
+    <button class="rc-del" title="Remove" onclick="this.closest('.rc-row').remove()">✕</button>
+  </div>`;
+}
+window.rcAddRow = function(ing){
+  document.getElementById('rc-ings').insertAdjacentHTML('beforeend', rcRowHTML(ing));
+};
+window.openRecipeEditor = function(id){
+  if(!isAdmin()){ showToast('Admins can add recipes'); return; }
+  // Fill the ingredient datalist from the current vocabulary.
+  document.getElementById('rcItems').innerHTML = allIngredientItems().map(t=>`<option>${esc(t)}</option>`).join('');
+  rcEditId = id || null;
+  const c = id ? cocktails[id] : null;
+  document.getElementById('rc-title').textContent = c ? 'Edit recipe' : 'Add a recipe';
+  document.getElementById('rc-name').value = c ? (c.name||'') : '';
+  document.getElementById('rc-glass').value = c ? (c.glass||'') : '';
+  document.getElementById('rc-method').value = c ? (c.method||'') : '';
+  document.getElementById('rc-steps').value = c ? (c.instructions||'') : '';
+  document.getElementById('rc-tags').value = c ? (c.tags||[]).join(', ') : '';
+  const host = document.getElementById('rc-ings'); host.innerHTML='';
+  const ings = (c && c.ingredients && c.ingredients.length) ? c.ingredients : [{},{},{}];
+  ings.forEach(i=>rcAddRow(i));
+  document.getElementById('rc-delbtn').style.display = c ? '' : 'none';
+  document.getElementById('rcStatus').textContent = '';
+  document.getElementById('recipeModal').classList.add('open');
+  document.getElementById('rc-name').focus();
+};
+window.closeRecipeEditor = ()=>document.getElementById('recipeModal').classList.remove('open');
+window.saveRecipe = async function(){
+  const st = document.getElementById('rcStatus');
+  const name = (document.getElementById('rc-name').value||'').trim();
+  if(!name){ st.textContent='Give it a name first.'; document.getElementById('rc-name').focus(); return; }
+  const ingredients = [...document.querySelectorAll('#rc-ings .rc-row')].map(row=>{
+    const item = (row.querySelector('.rc-item').value||'').trim();
+    if(!item) return null;
+    const amtRaw = (row.querySelector('.rc-amt').value||'').trim();
+    const amtNum = parseFloat(amtRaw);
+    return {
+      amount: amtRaw==='' ? '' : (isNaN(amtNum) ? amtRaw : amtNum),
+      unit: (row.querySelector('.rc-unit').value||'').trim(),
+      item,
+      optional: row.querySelector('.rc-opt input').checked,
+      role: inferRole(item)
+    };
+  }).filter(Boolean);
+  if(!ingredients.length){ st.textContent='Add at least one ingredient.'; return; }
+  // Keep the id stable on edit; derive a fresh (collision-free) slug for new ones.
+  let id = rcEditId;
+  if(!id){
+    const base = ckSlug(name) || 'recipe';
+    id = base; let n=2;
+    while(cocktails[id]) id = base+'_'+(n++);
+  }
+  const rec = {
+    name,
+    glass: (document.getElementById('rc-glass').value||'').trim(),
+    method: document.getElementById('rc-method').value||'',
+    instructions: (document.getElementById('rc-steps').value||'').trim(),
+    tags: (document.getElementById('rc-tags').value||'').split(',').map(t=>t.trim()).filter(Boolean),
+    ingredients,
+    custom: true,
+    addedBy: (auth.currentUser&&auth.currentUser.uid)||''
+  };
+  const prev = cocktails[id];
+  if(prev && prev.addedAt) rec.addedAt = prev.addedAt; else rec.addedAt = Date.now();
+  rec.editedAt = Date.now();
+  try{
+    st.textContent = '⏳ Saving…';
+    await dbSet('cellar/cocktails/'+id, rec);
+    st.textContent = '✅ Saved';
+    closeRecipeEditor();
+    showToast((rcEditId?'Updated ':'Added ')+name);
+  }catch(e){ st.textContent = '❌ '+(e.message||e); }
+};
+window.deleteRecipe = async function(){
+  if(!rcEditId) return;
+  const c = cocktails[rcEditId];
+  if(!confirm('Delete "'+((c&&c.name)||'this recipe')+'"? This removes it for everyone.')) return;
+  const st = document.getElementById('rcStatus');
+  try{
+    st.textContent = '⏳ Deleting…';
+    await dbSet('cellar/cocktails/'+rcEditId, null);
+    await dbSet('cellar/cocktail_photos/'+rcEditId, null);
+    closeRecipeEditor();
+    showToast('Deleted');
+  }catch(e){ st.textContent = '❌ '+(e.message||e); }
+};
 
 // Persist the drink's photos to cellar/cocktail_photos/{id} (separate from recipes).
 window.saveCocktailPhotos = async function(id){
@@ -4630,7 +4857,9 @@ window.saveCocktailPhotos = async function(id){
   try{
     st.textContent='⏳ Saving photos…';
     const ups = await uploadPhotos('cocktail_'+id, piStore.ck);
-    await dbSet('cellar/cocktail_photos/'+id, ups.length ? ups : null);
+    // Carry the transparent-cutout flag through so the card knows to float it.
+    const recs = ups.map((u,i)=>({ ...u, cut: !!(piStore.ck[i] && piStore.ck[i].cut) }));
+    await dbSet('cellar/cocktail_photos/'+id, recs.length ? recs : null);
     st.textContent = ups.length ? '✅ Saved '+ups.length+' photo'+(ups.length>1?'s':'') : '✅ Photos cleared';
   }catch(e){ st.textContent = '❌ '+(e.message||e); }
 };
@@ -4665,6 +4894,129 @@ window.addMissingToBuy = async function(id){
     }
     st.textContent = added ? ('✅ Added '+added+' to Buy list — check the Buy tab.') : 'Already on your Buy list.';
   }catch(e){ st.textContent='❌ '+(e.message||e); }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// FRIENDS — who likes what, and what you can pour them tonight.
+// cellar/friends/{id} = { name, favorites:[{ck}|{txt}], avoid:[…], notes }
+// ══════════════════════════════════════════════════════════════════════════
+function friendsArr(){ return asArr(friends).filter(f=>f && f.name); }
+// Friends who tagged a given cocktail id as a favorite.
+function friendsWhoLike(ckId){ return friendsArr().filter(f=>(f.favorites||[]).some(x=>x && x.ck===ckId)); }
+
+function friendsHTML(){
+  const have = new Set(barTokenMap().keys());
+  const arr = friendsArr().sort((a,b)=>a.name.localeCompare(b.name));
+  const head = `<div class="shead ck-shead"><p>${arr.length
+      ? 'Who likes what — and what you can pour them tonight.'
+      : 'Remember which friends love which drinks.'}</p>${
+      isAdmin()?'<button class="ck-addbtn" onclick="openFriendEditor()">➕ Friend</button>':''}</div>`;
+  if(!arr.length) return head + '<div class="empty"><p>No friends yet.'+(isAdmin()?' Add someone and tag the drinks they love — the cocktails you can make for them right now rise to the top.':'')+'</p></div>';
+  const shown = arr.filter(f=> !search || deburr(((f.name||'')+' '+(f.notes||'')).toLowerCase()).includes(search));
+  if(!shown.length) return head + '<div class="empty"><p>No friends match your search.</p></div>';
+
+  const cards = shown.map(f=>{
+    let ready=0;
+    const favs = (f.favorites||[]).map(fav=>{
+      if(fav && fav.ck && cocktails[fav.ck]){
+        const c = cocktails[fav.ck];
+        const st = cocktailStatus(c, have);
+        const can = st.rank<=1; if(can) ready++;
+        const cls = can?'fav-can':(st.state==='one'?'fav-one':'fav-cant');
+        const ic  = can?'✓':(st.state==='one'?'●':'✕');
+        return `<button class="fav-chip ${cls}" onclick="openCocktail('${fav.ck}')" title="${st.state==='one'?'One bottle away':(can?'You can pour this now':'Missing '+st.missing.length)}">${ic} ${esc(c.name)}</button>`;
+      }
+      const txt = (fav && (fav.txt||fav.ck)) || '';
+      return txt ? `<span class="fav-chip fav-txt">${esc(txt)}</span>` : '';
+    }).filter(Boolean).join('');
+    const avoid = (f.avoid||[]).map(a=>`<span class="avoid-chip">⊘ ${esc(a)}</span>`).join('');
+    return `<div class="friend-card">
+      <div class="friend-top">
+        <span class="friend-name">${esc(f.name)}</span>
+        ${ready?`<span class="friend-ready" title="Favorites you can pour right now">${ready} ready now</span>`:''}
+        ${isAdmin()?`<button class="friend-edit" title="Edit" onclick="openFriendEditor('${f.id}')">✏️</button>`:''}
+      </div>
+      ${favs?`<div class="fav-row">${favs}</div>`:'<div class="friend-empty">No drinks tagged yet.</div>'}
+      ${avoid?`<div class="avoid-row">${avoid}</div>`:''}
+      ${f.notes?`<div class="friend-notes">${esc(f.notes)}</div>`:''}
+    </div>`;
+  }).join('');
+  return head + '<div class="friend-grid">'+cards+'</div>';
+}
+
+// ── FRIEND EDITOR ──
+let frEditId = null, frFavs = [];
+function frMatchCocktail(text){
+  const q = deburr(String(text||'').toLowerCase().trim());
+  if(!q) return null;
+  const hit = cocktailArr().find(c=>deburr(c.name.toLowerCase())===q);
+  return hit ? hit.id : null;
+}
+function frRenderFavs(){
+  const host = document.getElementById('fr-favs');
+  if(!frFavs.length){ host.innerHTML = '<div class="friend-empty">No drinks added yet.</div>'; return; }
+  host.innerHTML = frFavs.map((fav,i)=>{
+    const linked = fav.ck && cocktails[fav.ck];
+    const label = linked ? cocktails[fav.ck].name : (fav.txt||fav.ck||'');
+    return `<span class="fav-chip ${linked?'fav-can':'fav-txt'}">${linked?'🍸 ':''}${esc(label)}<button class="fav-x" onclick="frRemoveFav(${i})">✕</button></span>`;
+  }).join('');
+}
+window.frRemoveFav = function(i){ frFavs.splice(i,1); frRenderFavs(); };
+window.frAddFav = function(){
+  const inp = document.getElementById('fr-favinput');
+  const val = (inp.value||'').trim();
+  if(!val) return;
+  const ck = frMatchCocktail(val);
+  frFavs.push(ck ? {ck} : {txt:val});
+  inp.value=''; inp.focus(); frRenderFavs();
+};
+window.openFriendEditor = function(id){
+  if(!isAdmin()){ showToast('Admins can add friends'); return; }
+  document.getElementById('ckNames').innerHTML = cocktailArr().map(c=>`<option>${esc(c.name)}</option>`).join('');
+  frEditId = id || null;
+  const f = id ? friends[id] : null;
+  document.getElementById('fr-title').textContent = f ? 'Edit friend' : 'Add a friend';
+  document.getElementById('fr-name').value = f ? (f.name||'') : '';
+  document.getElementById('fr-avoid').value = f ? (f.avoid||[]).join(', ') : '';
+  document.getElementById('fr-notes').value = f ? (f.notes||'') : '';
+  frFavs = f && Array.isArray(f.favorites) ? f.favorites.map(x=>({...x})) : [];
+  frRenderFavs();
+  document.getElementById('fr-delbtn').style.display = f ? '' : 'none';
+  document.getElementById('frStatus').textContent = '';
+  document.getElementById('friendModal').classList.add('open');
+  document.getElementById('fr-name').focus();
+};
+window.closeFriendEditor = ()=>document.getElementById('friendModal').classList.remove('open');
+window.saveFriend = async function(){
+  const st = document.getElementById('frStatus');
+  const name = (document.getElementById('fr-name').value||'').trim();
+  if(!name){ st.textContent='Give them a name first.'; document.getElementById('fr-name').focus(); return; }
+  let id = frEditId;
+  if(!id){ const base = ckSlug(name) || 'friend'; id = base; let n=2; while(friends[id]) id = base+'_'+(n++); }
+  const rec = {
+    name,
+    favorites: frFavs,
+    avoid: (document.getElementById('fr-avoid').value||'').split(',').map(t=>t.trim()).filter(Boolean),
+    notes: (document.getElementById('fr-notes').value||'').trim(),
+    addedBy: (auth.currentUser&&auth.currentUser.uid)||''
+  };
+  const prev = friends[id];
+  rec.addedAt = (prev && prev.addedAt) ? prev.addedAt : Date.now();
+  rec.editedAt = Date.now();
+  try{
+    st.textContent='⏳ Saving…';
+    await dbSet('cellar/friends/'+id, rec);
+    closeFriendEditor();
+    showToast((frEditId?'Updated ':'Added ')+name);
+  }catch(e){ st.textContent = '❌ '+(e.message||e); }
+};
+window.deleteFriend = async function(){
+  if(!frEditId) return;
+  const f = friends[frEditId];
+  if(!confirm('Remove '+((f&&f.name)||'this friend')+'?')) return;
+  const st = document.getElementById('frStatus');
+  try{ st.textContent='⏳ Removing…'; await dbSet('cellar/friends/'+frEditId, null); closeFriendEditor(); showToast('Removed'); }
+  catch(e){ st.textContent = '❌ '+(e.message||e); }
 };
 
 // ── WISHLIST (buy list) ──
