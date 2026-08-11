@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.20</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.21</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -603,7 +603,16 @@
   .friend-ready{font-size:10.5px;font-weight:700;letter-spacing:.02em;color:var(--green);background:rgba(122,176,106,.12);border:1px solid rgba(122,176,106,.3);border-radius:20px;padding:2px 9px;white-space:nowrap}
   .friend-edit{margin-left:auto;background:none;border:none;cursor:pointer;font-size:14px;opacity:.6;padding:2px 4px}
   .friend-edit:hover{opacity:1}
-  .fav-row{display:flex;flex-wrap:wrap;gap:6px}
+  .fav-row{display:flex;flex-direction:column;gap:7px}
+  .fav-item{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .fav-spec{font-size:11.5px;color:var(--parch-dim)}
+  /* friend editor — one card per go-to drink */
+  .fav-order{border:1px solid var(--line);border-radius:8px;padding:10px 10px 8px;margin-bottom:8px;background:rgba(236,227,210,.03)}
+  .fo-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .fo-grid input,.fo-grid select{margin:0;font-size:13px}
+  .fo-drink,.fo-spirit,.fo-addons{grid-column:1/-1}
+  .fo-del{margin-top:7px;background:none;border:none;color:var(--parch-dim);font-size:11px;cursor:pointer;padding:2px 0}
+  .fo-del:hover{color:#c96a6a}
   .fav-chip{font-family:inherit;font-size:12px;font-weight:600;border-radius:20px;padding:4px 11px;border:1px solid var(--line);background:rgba(236,227,210,.05);color:var(--parch);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:.12s}
   button.fav-chip:hover{border-color:var(--gold)}
   .fav-chip.fav-can{color:#8fe08a;border-color:rgba(122,176,106,.4);background:rgba(122,176,106,.1)}
@@ -691,7 +700,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.20</div>  </div>
+    <div class="auth-rev">Rev 3.21</div>  </div>
 </div>
 
 <div class="wrap">
@@ -809,7 +818,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.20</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.21</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -1055,13 +1064,9 @@
   <div class="modal-card">
     <h3 id="fr-title" style="margin-bottom:12px">Add a friend</h3>
     <input id="fr-name" placeholder="Name">
-    <div class="qlabel" style="margin-top:14px">Favorite drinks <span class="rc-hint">— tag your cocktails, or type anything</span></div>
+    <div class="qlabel" style="margin-top:14px">Go-to drinks <span class="rc-hint">— drink, preferred bottle from your stock, add-ons, how it's made</span></div>
     <div id="fr-favs"></div>
-    <div class="fr-addfav">
-      <input id="fr-favinput" placeholder="Start typing a cocktail, or anything they love" list="ckNames"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();frAddFav();}">
-      <button class="mbtn ghost" onclick="frAddFav()">Add</button>
-    </div>
+    <button class="rc-addrow" onclick="frAddOrder()">＋ add drink</button>
     <div class="qlabel" style="margin-top:14px">Avoid <span class="rc-hint">— allergies, dislikes</span></div>
     <input id="fr-avoid" placeholder="e.g. gin, anything smoky, nut allergy — comma separated">
     <div class="qlabel" style="margin-top:14px">Notes</div>
@@ -1075,6 +1080,7 @@
   </div>
 </div>
 <datalist id="ckNames"></datalist>
+<datalist id="bottleNames"></datalist>
 
 <!-- ── ARCHIVE HISTORY ── -->
 <!-- ── BARCODE SCANNER ── -->
@@ -5019,16 +5025,25 @@ function friendsHTML(){
   const cards = shown.map(f=>{
     let ready=0;
     const favs = (f.favorites||[]).map(fav=>{
-      if(fav && fav.ck && cocktails[fav.ck]){
+      if(!fav) return '';
+      let chip = '';
+      if(fav.ck && cocktails[fav.ck]){
         const c = cocktails[fav.ck];
         const st = cocktailStatus(c, have);
         const can = st.rank<=1; if(can) ready++;
         const cls = can?'fav-can':(st.state==='one'?'fav-one':'fav-cant');
         const ic  = can?'✓':(st.state==='one'?'●':'✕');
-        return `<button class="fav-chip ${cls}" onclick="openCocktail('${fav.ck}')" title="${st.state==='one'?'One bottle away':(can?'You can pour this now':'Missing '+st.missing.length)}">${ic} ${esc(c.name)}</button>`;
+        chip = `<button class="fav-chip ${cls}" onclick="openCocktail('${fav.ck}')" title="${st.state==='one'?'One bottle away':(can?'You can pour this now':'Missing '+st.missing.length)}">${ic} ${esc(c.name)}</button>`;
+      } else {
+        const txt = fav.txt || fav.ck || '';
+        if(txt) chip = `<span class="fav-chip fav-txt">${esc(txt)}</span>`;
       }
-      const txt = (fav && (fav.txt||fav.ck)) || '';
-      return txt ? `<span class="fav-chip fav-txt">${esc(txt)}</span>` : '';
+      // Spec line: preferred bottle · add-ons · method · glass.
+      const bottleNm = fav.bottleName || (fav.bottleId && bottles[fav.bottleId] ? bottles[fav.bottleId].name : '');
+      const parts = [bottleNm, fav.addons, fav.method, fav.glass].filter(Boolean).map(esc);
+      const spec = parts.length ? `<span class="fav-spec">${parts.join(' · ')}</span>` : '';
+      if(!chip && !spec) return '';
+      return `<div class="fav-item">${chip||'<span class="fav-chip fav-txt">their pour</span>'}${spec}</div>`;
     }).filter(Boolean).join('');
     const avoid = (f.avoid||[]).map(a=>`<span class="avoid-chip">⊘ ${esc(a)}</span>`).join('');
     return `<div class="friend-card">
@@ -5053,27 +5068,63 @@ function frMatchCocktail(text){
   const hit = cocktailArr().find(c=>deburr(c.name.toLowerCase())===q);
   return hit ? hit.id : null;
 }
+// Distinct bottle names you own (any kind, on shelf or cellared) — the pool the
+// "preferred bottle" field pulls from.
+function stockBottleList(){
+  const seen=new Set(), out=[];
+  activeArr().forEach(w=>{ const n=(w.name||'').trim(); if(n && !seen.has(n.toLowerCase())){ seen.add(n.toLowerCase()); out.push(n); } });
+  return out.sort((a,b)=>a.localeCompare(b));
+}
+function frMatchBottle(name){
+  const q=deburr(String(name||'').toLowerCase().trim()); if(!q) return null;
+  const hit=activeArr().find(w=>deburr((w.name||'').toLowerCase())===q);
+  return hit?hit.id:null;
+}
+const FR_METHODS = ['Shaken','Stirred','Built','Blended','Neat','On the rocks','Up','Frozen'];
+// One "order" row: drink · preferred bottle · add-ons · method · glass.
+function frOrderRowHTML(o){
+  o=o||{};
+  const drink = o.ck && cocktails[o.ck] ? cocktails[o.ck].name : (o.txt||'');
+  const bottle = o.bottleName || (o.bottleId && bottles[o.bottleId] ? bottles[o.bottleId].name : '');
+  const methodOpts = ['<option value="">Method…</option>'].concat(FR_METHODS.map(m=>`<option ${((o.method||'')===m)?'selected':''}>${m}</option>`)).join('');
+  return `<div class="fav-order">
+    <div class="fo-grid">
+      <input class="fo-drink" placeholder="Drink — e.g. Whisky Sour" list="ckNames" value="${esc(drink)}">
+      <input class="fo-spirit" placeholder="Preferred bottle — from your stock" list="bottleNames" value="${esc(bottle)}">
+      <input class="fo-addons" placeholder="Add-ons — e.g. egg whites" value="${esc(o.addons||'')}">
+      <select class="fo-method">${methodOpts}</select>
+      <input class="fo-glass" placeholder="Glass — e.g. Coupe" list="rcGlasses" value="${esc(o.glass||'')}">
+    </div>
+    <button class="fo-del" title="Remove this drink" onclick="this.closest('.fav-order').remove()">✕ remove</button>
+  </div>`;
+}
 function frRenderFavs(){
   const host = document.getElementById('fr-favs');
-  if(!frFavs.length){ host.innerHTML = '<div class="friend-empty">No drinks added yet.</div>'; return; }
-  host.innerHTML = frFavs.map((fav,i)=>{
-    const linked = fav.ck && cocktails[fav.ck];
-    const label = linked ? cocktails[fav.ck].name : (fav.txt||fav.ck||'');
-    return `<span class="fav-chip ${linked?'fav-can':'fav-txt'}">${linked?'🍸 ':''}${esc(label)}<button class="fav-x" onclick="frRemoveFav(${i})">✕</button></span>`;
-  }).join('');
+  host.innerHTML = frFavs.length ? frFavs.map(frOrderRowHTML).join('') : '';
 }
-window.frRemoveFav = function(i){ frFavs.splice(i,1); frRenderFavs(); };
-window.frAddFav = function(){
-  const inp = document.getElementById('fr-favinput');
-  const val = (inp.value||'').trim();
-  if(!val) return;
-  const ck = frMatchCocktail(val);
-  frFavs.push(ck ? {ck} : {txt:val});
-  inp.value=''; inp.focus(); frRenderFavs();
-};
+window.frAddOrder = function(){ document.getElementById('fr-favs').insertAdjacentHTML('beforeend', frOrderRowHTML({})); };
+// Read the order rows back out of the DOM into stored objects.
+function frReadOrders(){
+  return [...document.querySelectorAll('#fr-favs .fav-order')].map(row=>{
+    const drink=(row.querySelector('.fo-drink').value||'').trim();
+    const spirit=(row.querySelector('.fo-spirit').value||'').trim();
+    const addons=(row.querySelector('.fo-addons').value||'').trim();
+    const method=(row.querySelector('.fo-method').value||'').trim();
+    const glass=(row.querySelector('.fo-glass').value||'').trim();
+    const o={};
+    const ck=frMatchCocktail(drink);
+    if(ck) o.ck=ck; else if(drink) o.txt=drink;
+    if(spirit){ const bid=frMatchBottle(spirit); if(bid) o.bottleId=bid; o.bottleName=spirit; }
+    if(addons) o.addons=addons;
+    if(method) o.method=method;
+    if(glass) o.glass=glass;
+    return (o.ck||o.txt||o.bottleName||o.addons||o.method||o.glass) ? o : null;
+  }).filter(Boolean);
+}
 window.openFriendEditor = function(id){
   if(!isAdmin()){ showToast('Admins can add friends'); return; }
   document.getElementById('ckNames').innerHTML = cocktailArr().map(c=>`<option>${esc(c.name)}</option>`).join('');
+  document.getElementById('bottleNames').innerHTML = stockBottleList().map(n=>`<option>${esc(n)}</option>`).join('');
   frEditId = id || null;
   const f = id ? friends[id] : null;
   document.getElementById('fr-title').textContent = f ? 'Edit friend' : 'Add a friend';
@@ -5082,6 +5133,7 @@ window.openFriendEditor = function(id){
   document.getElementById('fr-notes').value = f ? (f.notes||'') : '';
   frFavs = f && Array.isArray(f.favorites) ? f.favorites.map(x=>({...x})) : [];
   frRenderFavs();
+  if(!frFavs.length) frAddOrder();   // start a new friend with one empty order row
   document.getElementById('fr-delbtn').style.display = f ? '' : 'none';
   document.getElementById('frStatus').textContent = '';
   document.getElementById('friendModal').classList.add('open');
@@ -5096,7 +5148,7 @@ window.saveFriend = async function(){
   if(!id){ const base = ckSlug(name) || 'friend'; id = base; let n=2; while(friends[id]) id = base+'_'+(n++); }
   const rec = {
     name,
-    favorites: frFavs,
+    favorites: frReadOrders(),
     avoid: (document.getElementById('fr-avoid').value||'').split(',').map(t=>t.trim()).filter(Boolean),
     notes: (document.getElementById('fr-notes').value||'').trim(),
     addedBy: (auth.currentUser&&auth.currentUser.uid)||''
