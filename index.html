@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.34</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.35</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -721,7 +721,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.34</div>  </div></div>
+    <div class="auth-rev">Rev 3.35</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -838,7 +838,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.34</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.35</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -1044,8 +1044,8 @@
 
     <div class="mrow" style="margin-top:16px">
       <button class="mbtn ghost dt-close" onclick="closeCocktail()">Close</button>
-      <button class="mbtn ghost" id="ck-d-editbtn" style="display:none" onclick="closeCocktail();openRecipeEditor(cocktailDetailId)">✏️ Edit recipe</button>
-      <button class="mbtn dt-save" id="ck-d-savebtn" style="display:none" onclick="saveCocktailAndClose(cocktailDetailId)">Save</button>
+      <button class="mbtn ghost" id="ck-d-editbtn" style="display:none" onclick="ckEditRecipe()">✏️ Edit recipe</button>
+      <button class="mbtn dt-save" id="ck-d-savebtn" style="display:none" onclick="ckSaveClose()">Save</button>
     </div>
     <div class="mstatus" id="ckStatus"></div>
   </div>
@@ -1075,6 +1075,7 @@
     <div class="mstatus" id="rcStatus"></div>
     <div class="mrow" style="margin-top:14px">
       <button class="mbtn ghost" onclick="closeRecipeEditor()">Cancel</button>
+      <button class="mbtn ghost" id="rc-dupbtn" style="display:none" onclick="duplicateRecipe()">⧉ Duplicate</button>
       <button class="mbtn danger" id="rc-delbtn" style="display:none" onclick="deleteRecipe()">Delete</button>
       <button class="mbtn dt-save" onclick="saveRecipe()">Save recipe</button>
     </div>
@@ -5102,10 +5103,8 @@ window.openCocktail = function(id){
   document.getElementById('ck-d-steps').textContent = c.instructions || '';
   document.getElementById('ck-d-tags').innerHTML = (c.tags||[]).map(t=>`<span class="ck-tag">${esc(t)}</span>`).join('');
 
-  // ── "❤️ Liked by" — friends who tagged this drink as a favorite ──
-  const likers = friendsWhoLike(id);
-  document.getElementById('ck-d-likedby').innerHTML = likers.length
-    ? '❤️ Liked by '+likers.map(f=>esc(f.name)).join(', ') : '';
+  // ── "❤️ Friends" — tap a name to tag/untag this drink as their favorite ──
+  ckRenderLiked(id);
 
   // ── Photos: load existing, wire the intake (camera / library / paste) ──
   const ph = cocktailPhotos[id];
@@ -5121,6 +5120,33 @@ window.openCocktail = function(id){
   document.getElementById('cocktailModal').classList.add('open');
 };
 window.closeCocktail = ()=>document.getElementById('cocktailModal').classList.remove('open');
+// Inline onclicks can't see module-scoped cocktailDetailId — these can.
+function ckRenderLiked(id){
+  const el = document.getElementById('ck-d-likedby'); if(!el) return;
+  const likers = friendsWhoLike(id);
+  const likedIds = new Set(likers.map(f=>f.id));
+  const allFr = friendsArr();
+  if(isAdmin() && allFr.length){
+    el.innerHTML = '<span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--parch-dim);font-weight:600;margin-right:6px">❤️ Friends</span>' +
+      allFr.map(f=>`<button class="fav-chip ${likedIds.has(f.id)?'fav-can':'fav-txt'}" onclick="ckToggleFriend('${esc(f.id)}')" title="${likedIds.has(f.id)?'Remove from':'Add to'} ${esc(f.name)}’s go-to drinks">${likedIds.has(f.id)?'❤️':'♡'} ${esc(f.name)}</button>`).join(' ');
+  } else {
+    el.innerHTML = likers.length ? '❤️ Liked by ' + likers.map(f=>esc(f.name)).join(', ') : '';
+  }
+}
+window.ckToggleFriend = async function(fid){
+  const id = cocktailDetailId; const f = friends[fid]; if(!id || !f) return;
+  const favs = Array.isArray(f.favorites) ? f.favorites.filter(Boolean).map(x=>({...x})) : [];
+  const has = favs.some(x=>x.ck===id);
+  const next = has ? favs.filter(x=>x.ck!==id) : favs.concat([{ ck:id }]);
+  try{
+    await dbUpdate('cellar/friends/'+fid, { favorites: next });
+    friends[fid] = Object.assign({}, f, { favorites: next });   // optimistic; onValue confirms
+    ckRenderLiked(id);
+    showToast((has?'Removed from ':'Added to ') + (f.name||'friend') + '’s drinks');
+  }catch(e){ showToast('Could not update'); }
+};
+window.ckEditRecipe = function(){ const id=cocktailDetailId; closeCocktail(); if(id) openRecipeEditor(id); };
+window.ckSaveClose = function(){ if(cocktailDetailId) saveCocktailAndClose(cocktailDetailId); };
 
 // ── RECIPE EDITOR ──────────────────────────────────────────────────────────
 let rcEditId = null;   // slug being edited, or null for a brand-new recipe
@@ -5153,11 +5179,22 @@ window.openRecipeEditor = function(id){
   const ings = (c && c.ingredients && c.ingredients.length) ? c.ingredients : [{},{},{}];
   ings.forEach(i=>rcAddRow(i));
   document.getElementById('rc-delbtn').style.display = c ? '' : 'none';
+  { const d=document.getElementById('rc-dupbtn'); if(d) d.style.display = c ? '' : 'none'; }
   document.getElementById('rcStatus').textContent = '';
   document.getElementById('recipeModal').classList.add('open');
   document.getElementById('rc-name').focus();
 };
 window.closeRecipeEditor = ()=>document.getElementById('recipeModal').classList.remove('open');
+// ⧉ Duplicate: keep the ingredients on screen but save as a NEW recipe — the
+// fast path for variants (Daiquiri → "Strawberry Daiquiri" + add strawberries).
+window.duplicateRecipe = function(){
+  rcEditId = null;
+  document.getElementById('rc-title').textContent = 'Add a recipe (duplicating — rename it!)';
+  document.getElementById('rc-delbtn').style.display='none';
+  { const d=document.getElementById('rc-dupbtn'); if(d) d.style.display='none'; }
+  showToast('Editing a COPY — rename it (e.g. Strawberry Daiquiri) and Save');
+  const n=document.getElementById('rc-name'); if(n){ n.focus(); n.select(); }
+};
 window.saveRecipe = async function(){
   const st = document.getElementById('rcStatus');
   const name = (document.getElementById('rc-name').value||'').trim();
