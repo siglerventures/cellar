@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.19</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.20</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -691,7 +691,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.19</div>  </div>
+    <div class="auth-rev">Rev 3.20</div>  </div>
 </div>
 
 <div class="wrap">
@@ -809,7 +809,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.19</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.20</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -1098,6 +1098,11 @@
       <button class="mbtn" onclick="dataBackup()">⬇ Download Backup</button>
     </div>
     <div class="dm-sec">
+      <div class="dm-h">🌐 Full Backup (HTML)</div>
+      <div class="dm-d">Save the whole app as one HTML file — keeps the exact look &amp; flow. (Your data is in the JSON backup above.)</div>
+      <button class="mbtn" onclick="dataHtmlBackup()">⬇ Download App HTML</button>
+    </div>
+    <div class="dm-sec">
       <div class="dm-h">📊 Export Bottles as CSV</div>
       <div class="dm-d">All bottles — opens in Excel or Google Sheets.</div>
       <button class="mbtn" onclick="dataCSV()">⬇ Download CSV</button>
@@ -1109,7 +1114,7 @@
     </div>
     <div class="dm-sec">
       <div class="dm-h">🍸 Cocktail Recipes</div>
-      <div class="dm-d">The Cocktails tab reads a curated recipe set from <code>cellar/cocktails</code>. It's static — imported once. Download the JSON, then in the Firebase console (Realtime Database → the <code>cellar</code> node → ⋮ → Import JSON) import it under a child named <code>cocktails</code>. Matching against your bottles is 100% in-app; no re-import needed as your bar changes.</div>
+      <div class="dm-d">Curated recipe set behind the Cocktails tab. Download it to back up or bulk-edit.</div>
       <button class="mbtn" onclick="downloadCocktailSeed()">⬇ Download cocktails.json</button>
     </div>
     <div class="dm-sec">
@@ -3007,6 +3012,22 @@ window.dataBackup = async function(){
     const data = snap.val() || {};
     dlFile('philinity-cellar-backup-' + new Date().toISOString().slice(0,10) + '.json', JSON.stringify(data, null, 2), 'application/json');
     st.textContent = '✅ Backup downloaded.';
+  }catch(e){ st.textContent = '❌ ' + (e.message||e); }
+};
+// Snapshot the whole app as one self-contained HTML file — preserves the exact
+// look & flow of the site (the data itself lives in the JSON backup above).
+window.dataHtmlBackup = async function(){
+  const st = document.getElementById('dataStatus');
+  st.textContent = '⏳ Saving the app…';
+  try{
+    let html;
+    try{
+      const res = await fetch(location.href.split('?')[0], { cache:'no-store' });
+      html = await res.text();
+    }catch(_){ html = '<!doctype html>\n' + document.documentElement.outerHTML; }
+    const rev = ((document.title.match(/Rev\s*([\d.]+)/)||[])[1]) || '';
+    dlFile('philinity-cellar-app' + (rev?('-v'+rev):'') + '-' + new Date().toISOString().slice(0,10) + '.html', html, 'text/html');
+    st.textContent = '✅ App HTML saved — open it in any browser to see the exact look & flow.';
   }catch(e){ st.textContent = '❌ ' + (e.message||e); }
 };
 window.dataCSV = function(){
