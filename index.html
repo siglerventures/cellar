@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.40</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.41</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -723,7 +723,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.40</div>  </div></div>
+    <div class="auth-rev">Rev 3.41</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -840,7 +840,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.40</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.41</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -1158,8 +1158,8 @@
     </div>
     <div class="dm-sec">
       <div class="dm-h">🍸 Cocktail Recipes</div>
-      <div class="dm-d">Curated recipe set behind the Cocktails tab. Download it to back up or bulk-edit.</div>
-      <button class="mbtn" onclick="downloadCocktailSeed()">⬇ Download cocktails.json</button>
+      <div class="dm-d">Your LIVE recipe set — including drinks you've added or edited. Download to back up or bulk-edit.</div>
+      <button class="mbtn" onclick="downloadCocktailSeed()">⬇ Download recipes (JSON)</button>
     </div>
     <div class="dm-sec">
       <div class="dm-h">🗄 Archived Bottles</div>
@@ -3090,13 +3090,25 @@ function dlFile(name, text, type){
 // Grab it here so an admin can one-time Import-JSON it into cellar/cocktails.
 window.downloadCocktailSeed = async function(){
   const st = document.getElementById('dataStatus');
-  st.textContent = '⏳ Fetching cocktails.json…';
+  st.textContent = '⏳ Building your recipe export…';
   try{
+    // LIVE set first — everything you've added/edited/duplicated in-app,
+    // including glass choices and bottle picks. Keyed by slug (the DB shape),
+    // so Import-JSON under cellar/cocktails restores it 1:1.
+    const snap = await dbGet('cellar/cocktails');
+    const live = snap && snap.val ? (snap.val()||null) : null;
+    if(live && Object.keys(live).length){
+      const n = Object.keys(live).length;
+      dlFile('philinity-cocktails-'+new Date().toISOString().slice(0,10)+'.json', JSON.stringify(live, null, 2), 'application/json');
+      st.textContent = '✅ Exported your LIVE set — '+n+' recipes (incl. your custom drinks & edits).';
+      return;
+    }
+    // Nothing imported yet → fall back to the curated seed file.
     const res = await fetch('data/cocktails.json', {cache:'no-store'});
     if(!res.ok) throw new Error('HTTP '+res.status);
     const arr = await res.json();
     dlFile('cocktails.json', JSON.stringify(arr, null, 2), 'application/json');
-    st.textContent = '✅ Downloaded '+ (Array.isArray(arr)?arr.length:0) +' recipes — Import-JSON it under cellar/cocktails.';
+    st.textContent = '✅ Downloaded the curated seed ('+(Array.isArray(arr)?arr.length:0)+' recipes) — nothing imported yet, so this IS the latest.';
   }catch(e){ st.textContent = '❌ '+(e.message||e); }
 };
 window.dataBackup = async function(){
