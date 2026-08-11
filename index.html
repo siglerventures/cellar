@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.21</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.22</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -314,7 +314,9 @@
   .rack-colhead.col-drop-hi{box-shadow:inset 0 3px 0 var(--gold),inset 3px 0 0 var(--gold)}
   .rack-colhead.col-drop-hi .ch-num{background:var(--gold);color:#1a1206}
   .rack-corner{display:flex;align-items:center;justify-content:center;font-size:13px;font-family:'Cormorant Garamond',serif;color:var(--gold-dim);height:22px;background:rgba(201,163,92,0.08);border-bottom:1px solid var(--line);align-self:start;position:sticky;top:0;left:0;z-index:4}
-  .rack-rowhead{font-family:'Cormorant Garamond',serif;font-size:12px;font-weight:600;color:var(--parch);display:flex;align-items:center;justify-content:center;position:sticky;left:0;background:#160a0c;z-index:3}
+  .rack-rowhead{font-family:'Cormorant Garamond',serif;font-size:12px;font-weight:600;color:var(--parch);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;position:sticky;left:0;background:#160a0c;z-index:3}
+  .rack-rowhead .rh-lbl{font-family:'Inter';font-size:8.5px;font-weight:600;letter-spacing:.03em;color:var(--gold-dim);text-align:center;line-height:1.1;max-width:68px;overflow:hidden}
+  .rack-rowhead.editable{outline:1px dashed var(--gold-dim);outline-offset:-2px}
   .colfocus{max-width:760px;margin:2px auto 0}
   .cf-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
   .cf-back{font-size:13px;color:#fff;padding:8px 14px}
@@ -700,7 +702,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.21</div>  </div>
+    <div class="auth-rev">Rev 3.22</div>  </div>
 </div>
 
 <div class="wrap">
@@ -818,7 +820,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.21</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.22</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -3754,8 +3756,8 @@ function openedCardHTML(w){
 function rackIds(){ const ids=Object.keys(racks); if(!ids.length) return ['main']; return ids.sort((a,b)=>((racks[a].order||0)-(racks[b].order||0)) || a.localeCompare(b)); }
 function rackDef(id){
   const r = racks[id];
-  if(r) return { name:r.name||'Rack', cols:Math.max(1,Number(r.cols)||RACK_COLS), rows:Math.max(1,Number(r.rows)||RACK_ROWS), cells:r.cells||{} };
-  return { name:'Wine Wall', cols:RACK_COLS, rows:RACK_ROWS, cells:(rackLayout&&rackLayout.cells)||{} };  // pre-migration fallback
+  if(r) return { name:r.name||'Rack', cols:Math.max(1,Number(r.cols)||RACK_COLS), rows:Math.max(1,Number(r.rows)||RACK_ROWS), cells:r.cells||{}, type:r.type||'grid', rowLabels:r.rowLabels||{} };
+  return { name:'Wine Wall', cols:RACK_COLS, rows:RACK_ROWS, cells:(rackLayout&&rackLayout.cells)||{}, type:'grid', rowLabels:{} };  // pre-migration fallback
 }
 function curDef(){ return rackDef(curRack); }
 function bRack(w){ return w.rackId || 'main'; }
@@ -3957,7 +3959,7 @@ function rackHTML(){
   // Action / status bar
   let bar;
   if(rackEdit){
-    bar = `<div class="rack-bar rb-hint"><span class="rb-msg">Editing labels — tap a <b>column header</b> to label the whole column, or a <b>slot</b> to label just that one.</span></div>`;
+    bar = `<div class="rack-bar rb-hint"><span class="rb-msg">Editing labels — tap a <b>column header</b> to label the whole column, a <b>row number</b> to name that row as a shelf, or a <b>slot</b> to label just that one.</span></div>`;
   }else if(placing && bottles[placing]){
     bar = `<div class="rack-bar"><span class="rb-msg">Placing <b>${esc(bottles[placing].name)}</b> — tap a slot (drops onto a full one swap).</span><span class="rb-actions"><button class="scout-btn ghost" onclick="rackCancel()">Cancel</button></span></div>`;
   }else if(inspect && bottles[inspect]){
@@ -4012,7 +4014,8 @@ function rackHTML(){
 
   // Grid: header row (corner + 20 numbered col headers), then 29 rows of (row# + 20 slots).
   // Column header shows the NUMBER (1–20) as the primary id, category beneath.
-  let grid = `<div class="rack-grid z${rackZoom}" style="grid-template-columns:var(--rh) repeat(${d.cols},minmax(var(--cw),1fr))"><div class="rack-corner" title="column → / row ↓">#</div>`;
+  const hasRL = Object.keys(d.rowLabels||{}).length > 0;   // named shelf rows widen the row-header rail
+  let grid = `<div class="rack-grid z${rackZoom}" style="grid-template-columns:${hasRL?'72px':'var(--rh)'} repeat(${d.cols},minmax(var(--cw),1fr))"><div class="rack-corner" title="column → / row ↓">#</div>`;
   for(let c=1;c<=d.cols;c++){
     const label = colHeaderLabel(c);
     const inEdit = rackEdit && admin;                         // rename only while "Edit labels" is on
@@ -4025,7 +4028,10 @@ function rackHTML(){
     grid += `<div class="rack-colhead${inEdit?' editable':''}${admin?' movable':''}" data-col="${c}"${dnd} title="${hTitle}" onclick="${hClick}"><span class="ch-num">${c}</span><span class="ch-cat">${esc(label)}</span></div>`;
   }
   for(let r=1;r<=d.rows;r++){
-    grid += `<div class="rack-rowhead">${r}</div>`;
+    { const rl = (d.rowLabels||{})[r] || '';
+      const rClick = (rackEdit && admin) ? ` onclick="rackEditRowLabel(${r})" style="cursor:pointer"` : '';
+      const rTitle = (rackEdit && admin) ? `Name row ${r} as a shelf` : (rl ? `Row ${r} — ${esc(rl)}` : `Row ${r}`);
+      grid += `<div class="rack-rowhead${(rackEdit&&admin)?' editable':''}" title="${rTitle}"${rClick}>${r}${rl?`<span class="rh-lbl">${esc(rl)}</span>`:''}</div>`; }
     for(let c=1;c<=d.cols;c++){
       const w = placed[c+'_'+r];
       const flash = flashSlot===(c+'_'+r) ? ' flash' : '';
@@ -4213,6 +4219,17 @@ window.rackEditColLabel = async function(col){
   for(let r=1;r<=R;r++) updates['cellar/racks/'+curRack+'/cells/'+col+'_'+r] = v ? { label:v } : null;
   try{ await dbUpdate('/', updates); showToast('Column ' + col + ' labelled'); }
   catch(e){ showToast('Could not save label'); }
+};
+// Name a ROW as a shelf ("Top Shelf", "Glass Shelf") — a shelf INSIDE the grid;
+// bottles stay exactly where they are, the row just gets its name on the rail.
+window.rackEditRowLabel = async function(row){
+  if(!isAdmin()) return;
+  const cur = (curDef().rowLabels||{})[row] || '';
+  const val = prompt('Shelf name for row ' + row + ' (blank to clear):', cur);
+  if(val===null) return;
+  const v = val.trim();
+  try{ await dbSet('cellar/racks/'+curRack+'/rowLabels/'+row, v || null); showToast(v ? ('Row '+row+' → "'+v+'"') : ('Row '+row+' label cleared')); }
+  catch(e){ showToast('Could not save shelf name'); }
 };
 window.rackEditCell = async function(col, row){
   if(!isAdmin()) return;
