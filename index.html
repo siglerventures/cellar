@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.28</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.29</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -714,7 +714,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.28</div>  </div>
+    <div class="auth-rev">Rev 3.29</div>  </div>
 </div>
 
 <div class="wrap">
@@ -832,7 +832,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.28</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.29</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -5251,6 +5251,12 @@ window.ckSetGlass = async function(id, val){
 // ══════════════════════════════════════════════════════════════════════════
 function friendsArr(){ return asArr(friends).filter(f=>f && f.name); }
 // ── GLOBAL SEARCH: one query, every corner of the app ────────────────────────
+window.searchGoFriend = function(id){
+  clearSearch();                     // global view stays up while a search is live
+  setView('friends');
+  setTimeout(()=>{ const el=document.querySelector('.friend-card[data-fid="'+id+'"]');
+    if(el){ el.scrollIntoView({behavior:'smooth', block:'center'}); el.style.outline='1px solid var(--gold)'; setTimeout(()=>{ el.style.outline=''; }, 2500); } }, 80);
+};
 function globalSearchHTML(){
   const q = search;
   const hitB = applySort(activeArr().filter(matchSearch));
@@ -5268,7 +5274,7 @@ function globalSearchHTML(){
   }
   if(hitF.length){
     html += '<h3 class="hist-h">🧑‍🤝‍🧑 Friends</h3><div class="card-grid">' + hitF.map(f=>
-      `<div class="lb-row" onclick="setView('friends')"><div class="rank">🥂</div><div class="lscore"></div><div><div class="lname">${esc(f.name||'')}</div><div class="lmeta">${esc(((f.favorites||[]).map(x=>x&&(x.txt||(x.ck&&cocktails[x.ck]&&cocktails[x.ck].name)||'')).filter(Boolean).join(' · '))||'—')}</div></div></div>`
+      `<div class="lb-row" onclick="searchGoFriend('${f.id}')"><div class="rank">🥂</div><div class="lscore"></div><div><div class="lname">${esc(f.name||'')}</div><div class="lmeta">${esc(((f.favorites||[]).map(x=>x&&(x.txt||(x.ck&&cocktails[x.ck]&&cocktails[x.ck].name)||'')).filter(Boolean).join(' · '))||'—')}</div></div></div>`
     ).join('') + '</div>';
   }
   if(hitW.length){
@@ -5316,7 +5322,7 @@ function friendsHTML(){
       return `<div class="fav-item">${chip||'<span class="fav-chip fav-txt">their pour</span>'}${spec}</div>`;
     }).filter(Boolean).join('');
     const avoid = (f.avoid||[]).map(a=>`<span class="avoid-chip">⊘ ${esc(a)}</span>`).join('');
-    return `<div class="friend-card">
+    return `<div class="friend-card" data-fid="${esc(f.id)}">
       <div class="friend-top">
         <span class="friend-name">${esc(f.name)}</span>
         ${ready?`<span class="friend-ready" title="Favorites you can pour right now">${ready} ready now</span>`:''}
