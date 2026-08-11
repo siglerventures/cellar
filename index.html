@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.31</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.33</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -645,6 +645,12 @@
   #fr-favs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px}
   .ck-liked{font-size:12.5px;color:var(--parch-dim);margin-top:10px}
   .ck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+  #content.cs-s .ck-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  #content.cs-s .ck-photo{aspect-ratio:1/1}
+  #content.cs-l .ck-grid{grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+  #content.cs-img .ck-grid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  #content.cs-img .ck-photo{aspect-ratio:1/1}
+  #content.cs-img .ck-card .ck-tags,#content.cs-img .ck-card .ck-meta{display:none}
   .ck-card{text-align:left;font-family:inherit;color:var(--parch);background:var(--glass);border:1px solid var(--line);border-radius:8px;padding:0;cursor:pointer;transition:.15s;overflow:hidden;display:flex;flex-direction:column}
   .ck-card:hover{border-color:var(--gold);transform:translateY(-2px)}
   .ck-card.ck-cant{opacity:.66}
@@ -713,7 +719,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.31</div>  </div></div>
+    <div class="auth-rev">Rev 3.33</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -830,7 +836,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.31</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.33</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -1080,7 +1086,15 @@
 <div class="modal" id="friendModal">
   <div class="modal-card">
     <h3 id="fr-title" style="margin-bottom:12px">Add a friend</h3>
-    <input id="fr-name" placeholder="Name">
+    <div class="mrow" id="fr-ava-row" style="align-items:center;gap:10px;margin-bottom:10px" ondragover="event.preventDefault()" ondrop="frAvatarDrop(event)">
+      <img id="fr-ava" alt="" style="display:none;width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--gold-dim);flex-shrink:0">
+      <span id="fr-ava-ph" style="width:56px;height:56px;border-radius:50%;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🥂</span>
+      <button class="pi-btn" onclick="document.getElementById('fr-ava-cam').click()">📷 Take photo</button>
+      <button class="pi-btn" onclick="document.getElementById('fr-ava-file').click()">🖼 Library</button>
+      <input type="file" id="fr-ava-cam" accept="image/*" capture="user" style="display:none" onchange="frAvatarPick(this)">
+      <input type="file" id="fr-ava-file" accept="image/*" style="display:none" onchange="frAvatarPick(this)">
+      <input id="fr-name" placeholder="Name" style="flex:1;margin-bottom:0">
+    </div>
     <div class="qlabel" style="margin-top:14px">Go-to drinks <span class="rc-hint">— drink, preferred bottle from your stock, add-ons, how it's made</span></div>
     <div id="fr-favs"></div>
     <button class="rc-addrow" onclick="frAddOrder()">＋ add drink</button>
@@ -2743,8 +2757,13 @@ document.addEventListener('paste', (e)=>{
   const items = e.clipboardData && e.clipboardData.items; if(!items) return;
   const files=[];
   for(const it of items){ if(it.type && it.type.startsWith('image/')){ const f=it.getAsFile(); if(f) files.push(f); } }
-  if(!files.length) return;
+  if(!files.length){
+    const frOpen = document.getElementById('friendModal') && document.getElementById('friendModal').classList.contains('open');
+    if(piPasteTarget() || frOpen) showToast('Clipboard had no image — right-click the picture and choose “Copy image” (a copied LINK can’t paste)');
+    return;
+  }
   const ctx = piPasteTarget();
+  if(document.getElementById('friendModal') && document.getElementById('friendModal').classList.contains('open')){ e.preventDefault(); frPastePhoto(files[0]); showToast('📋 Pasted'); return; }
   if(ctx){ e.preventDefault(); piAddFiles(ctx, files); showToast('📋 Pasted'); }
   // On the Wishlist tab itself, a pasted image goes straight through the scan flow.
   else if(view==='wishlist'){ e.preventDefault(); showToast('📋 Pasted — scanning…'); wlScanFromFile(files[0]); }
@@ -3424,6 +3443,7 @@ function render(){
   if(tc){
     if(view==='all' || view==='logged') tc.innerHTML = (listMode==='list' ? '' : chipRowHTML()) + modeToggleHTML() + (listMode==='browse'?cardSizeHTML():'');
     else if(view==='buy') tc.innerHTML = chipRowHTML() + cardSizeHTML();
+    else if(view==='cocktails') tc.innerHTML = cardSizeHTML();
     else tc.innerHTML = '';
   }
 
@@ -5363,11 +5383,13 @@ function friendsHTML(){
       const parts = [bottleNm, fav.addons, fav.method].filter(Boolean).map(esc);
       const spec = parts.length ? `<span class="fav-spec">${parts.join(' · ')}</span>` : '';
       if(!chip && !spec) return '';
-      return `<div class="fav-item">${chip||'<span class="fav-chip fav-txt">their pour</span>'}${spec}</div>`;
+      const dph = fav.photoUrl ? `<img src="${esc(fav.photoUrl)}" alt="" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--line);vertical-align:middle;margin-right:6px" onclick="event.stopPropagation();viewImage('${esc(fav.photoUrl)}')">` : '';
+      return `<div class="fav-item">${dph}${chip||'<span class="fav-chip fav-txt">their pour</span>'}${spec}</div>`;
     }).filter(Boolean).join('');
     const avoid = (f.avoid||[]).map(a=>`<span class="avoid-chip">⊘ ${esc(a)}</span>`).join('');
     return `<div class="friend-card" data-fid="${esc(f.id)}"${isAdmin()?` style="cursor:pointer" onclick="openFriendEditor('${f.id}')"`:''}>
       <div class="friend-top">
+        ${f.photoUrl?`<img src="${esc(f.photoUrl)}" alt="" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:1px solid var(--gold-dim);flex-shrink:0" onclick="event.stopPropagation();viewImage('${esc(f.photoUrl)}')">`:''}
         <span class="friend-name">${esc(f.name)}</span>
         ${ready?`<span class="friend-ready" title="Favorites you can pour right now">${ready} ready now</span>`:''}
         ${isAdmin()?`<button class="friend-edit" title="Edit" onclick="event.stopPropagation();openFriendEditor('${f.id}')">✏️</button>`:''}
@@ -5410,14 +5432,23 @@ function frOrderRowHTML(o){
   // Glass is a property of the recipe (shown in the cocktail's detail), not a
   // per-friend choice — so it isn't edited here. Any legacy value rides along.
   const glassKeep = o.glass ? `<input type="hidden" class="fo-glass" value="${esc(o.glass)}">` : '';
-  return `<div class="fav-order">
+  return `<div class="fav-order" ondragover="event.preventDefault()" ondrop="frDrinkDrop(event)">
     <div class="fo-grid">
       <input class="fo-drink" placeholder="Drink — e.g. Whisky Sour" list="ckNames" value="${esc(drink)}">
       <input class="fo-spirit" placeholder="Preferred bottle — from your stock" list="bottleNames" value="${esc(bottle)}">
       <input class="fo-addons" placeholder="Add-ons — e.g. egg whites" value="${esc(o.addons||'')}">
       <select class="fo-method">${methodOpts}</select>
     </div>${glassKeep}
-    <button class="fo-del" title="Remove this drink" onclick="this.closest('.fav-order').remove()">✕ remove</button>
+    <input type="hidden" class="fo-phurl" value="${esc(o.photoUrl||'')}"><input type="hidden" class="fo-phpath" value="${esc(o.photoPath||'')}">
+    <div class="mrow" style="align-items:center;gap:8px;margin-top:6px">
+      <img class="fo-phprev" alt="" style="${o.photoUrl?'':'display:none;'}width:44px;height:44px;border-radius:6px;object-fit:cover;border:1px solid var(--line)" src="${esc(o.photoUrl||'')}">
+      <button class="pi-btn" onclick="this.nextElementSibling.click()">📷 Take photo</button>
+      <input type="file" accept="image/*" capture="environment" style="display:none" onchange="frDrinkPhoto(this)">
+      <button class="pi-btn" onclick="this.nextElementSibling.click()">🖼 Library</button>
+      <input type="file" accept="image/*" style="display:none" onchange="frDrinkPhoto(this)">
+      <span class="pi-btn dashed" style="font-size:10px">📋 Ctrl+V / drop here</span>
+      <button class="fo-del" title="Remove this drink" onclick="this.closest('.fav-order').remove()" style="margin-left:auto">✕ remove</button>
+    </div>
   </div>`;
 }
 function frRenderFavs(){
@@ -5433,6 +5464,9 @@ function frReadOrders(){
     const addons=(row.querySelector('.fo-addons').value||'').trim();
     const method=(row.querySelector('.fo-method').value||'').trim();
     const gEl=row.querySelector('.fo-glass'); const glass=(gEl&&gEl.value||'').trim();
+    const phu=(row.querySelector('.fo-phurl')||{value:''}).value.trim();
+    const php=(row.querySelector('.fo-phpath')||{value:''}).value.trim();
+    const pend=row.dataset.pendingPhoto||'';
     const o={};
     const ck=frMatchCocktail(drink);
     if(ck) o.ck=ck; else if(drink) o.txt=drink;
@@ -5440,9 +5474,39 @@ function frReadOrders(){
     if(addons) o.addons=addons;
     if(method) o.method=method;
     if(glass) o.glass=glass;
-    return (o.ck||o.txt||o.bottleName||o.addons||o.method||o.glass) ? o : null;
+    if(phu) o.photoUrl=phu; if(php) o.photoPath=php;
+    if(pend) o._pending=pend;
+    return (o.ck||o.txt||o.bottleName||o.addons||o.method||o.glass||o.photoUrl||o._pending) ? o : null;
   }).filter(Boolean);
 }
+let frPhoto = null;   // avatar: {dataUrl} pending upload | {url,path} existing
+async function frApplyAvatarFile(f){
+  if(!f || !f.type || !f.type.startsWith('image/')) return;
+  try{
+    const raw = await compressImage(f, 500, 0.85);
+    frPhoto = { dataUrl: raw };
+    const img=document.getElementById('fr-ava'); img.src=raw; img.style.display='';
+    document.getElementById('fr-ava-ph').style.display='none';
+  }catch(e){ showToast('Could not read that photo'); }
+}
+async function frApplyDrinkFile(row, f){
+  if(!row || !f || !f.type || !f.type.startsWith('image/')) return;
+  try{
+    const raw = await compressImage(f, 800, 0.82);
+    row.dataset.pendingPhoto = raw;
+    const prev=row.querySelector('.fo-phprev'); if(prev){ prev.src=raw; prev.style.display=''; }
+  }catch(e){ showToast('Could not read that photo'); }
+}
+window.frAvatarDrop = function(e){ e.preventDefault(); const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; frApplyAvatarFile(f); };
+window.frDrinkDrop = function(e){ e.preventDefault(); frApplyDrinkFile(e.currentTarget, e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]); };
+// Ctrl+V while the friend editor is open: into the drink row your cursor is in,
+// otherwise the avatar.
+window.frPastePhoto = function(f){
+  const row = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.fav-order') : null;
+  if(row) frApplyDrinkFile(row, f); else frApplyAvatarFile(f);
+};
+window.frAvatarPick = function(input){ const f=(input.files||[])[0]; input.value=''; frApplyAvatarFile(f); };
+window.frDrinkPhoto = function(input){ const f=(input.files||[])[0]; input.value=''; frApplyDrinkFile(input.closest('.fav-order'), f); };
 window.openFriendEditor = function(id){
   if(!isAdmin()){ showToast('Admins can add friends'); return; }
   document.getElementById('ckNames').innerHTML = cocktailArr().map(c=>`<option>${esc(c.name)}</option>`).join('');
@@ -5451,6 +5515,10 @@ window.openFriendEditor = function(id){
   const f = id ? friends[id] : null;
   document.getElementById('fr-title').textContent = f ? 'Edit friend' : 'Add a friend';
   document.getElementById('fr-name').value = f ? (f.name||'') : '';
+  frPhoto = (f && f.photoUrl) ? { url:f.photoUrl, path:f.photoPath||null } : null;
+  { const img=document.getElementById('fr-ava'), ph=document.getElementById('fr-ava-ph');
+    if(frPhoto){ img.src=frPhoto.url; img.style.display=''; ph.style.display='none'; }
+    else { img.style.display='none'; ph.style.display='flex'; } }
   document.getElementById('fr-avoid').value = f ? (f.avoid||[]).join(', ') : '';
   document.getElementById('fr-notes').value = f ? (f.notes||'') : '';
   frFavs = f && Array.isArray(f.favorites) ? f.favorites.map(x=>({...x})) : [];
@@ -5468,9 +5536,10 @@ window.saveFriend = async function(){
   if(!name){ st.textContent='Give them a name first.'; document.getElementById('fr-name').focus(); return; }
   let id = frEditId;
   if(!id){ const base = ckSlug(name) || 'friend'; id = base; let n=2; while(friends[id]) id = base+'_'+(n++); }
+  const favorites = frReadOrders();
   const rec = {
     name,
-    favorites: frReadOrders(),
+    favorites,
     avoid: (document.getElementById('fr-avoid').value||'').split(',').map(t=>t.trim()).filter(Boolean),
     notes: (document.getElementById('fr-notes').value||'').trim(),
     addedBy: (auth.currentUser&&auth.currentUser.uid)||''
@@ -5480,6 +5549,12 @@ window.saveFriend = async function(){
   rec.editedAt = Date.now();
   try{
     st.textContent='⏳ Saving…';
+    // Upload any newly-picked photos (avatar + per-drink) before writing.
+    if(frPhoto && frPhoto.dataUrl){ const up = await uploadLabel('friend_'+id, frPhoto.dataUrl); rec.photoUrl=up.url; rec.photoPath=up.path; }
+    else if(frPhoto && frPhoto.url){ rec.photoUrl=frPhoto.url; rec.photoPath=frPhoto.path||null; }
+    for(const o of favorites){
+      if(o._pending){ const up = await uploadLabel('friend_'+id+'_drink', o._pending); o.photoUrl=up.url; o.photoPath=up.path; delete o._pending; }
+    }
     await dbSet('cellar/friends/'+id, rec);
     closeFriendEditor();
     showToast((frEditId?'Updated ':'Added ')+name);
