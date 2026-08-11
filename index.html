@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.18</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.19</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -309,6 +309,10 @@
   .rack-grid.z1 .ch-cat{display:none}
   .rack-colhead.editable .ch-num{background:rgba(201,163,92,0.18)}
   .rack-colhead.editable:hover .ch-cat{color:var(--gold)}
+  .rack-colhead.movable[draggable="true"]{cursor:grab}
+  .rack-colhead.movable[draggable="true"]:active{cursor:grabbing}
+  .rack-colhead.col-drop-hi{box-shadow:inset 0 3px 0 var(--gold),inset 3px 0 0 var(--gold)}
+  .rack-colhead.col-drop-hi .ch-num{background:var(--gold);color:#1a1206}
   .rack-corner{display:flex;align-items:center;justify-content:center;font-size:13px;font-family:'Cormorant Garamond',serif;color:var(--gold-dim);height:22px;background:rgba(201,163,92,0.08);border-bottom:1px solid var(--line);align-self:start;position:sticky;top:0;left:0;z-index:4}
   .rack-rowhead{font-family:'Cormorant Garamond',serif;font-size:12px;font-weight:600;color:var(--parch);display:flex;align-items:center;justify-content:center;position:sticky;left:0;background:#160a0c;z-index:3}
   .colfocus{max-width:760px;margin:2px auto 0}
@@ -687,7 +691,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.18</div>  </div>
+    <div class="auth-rev">Rev 3.19</div>  </div>
 </div>
 
 <div class="wrap">
@@ -805,7 +809,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.18</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.19</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -3982,8 +3986,12 @@ function rackHTML(){
     const label = colHeaderLabel(c);
     const inEdit = rackEdit && admin;                         // rename only while "Edit labels" is on
     const hClick = inEdit ? `rackEditColLabel(${c})` : `rackFocusColumn(${c})`;
-    const hTitle = inEdit ? `Rename column ${c}` : `Column ${c} — ${esc(label)} · tap to view this column`;
-    grid += `<div class="rack-colhead${inEdit?' editable':''}" title="${hTitle}" onclick="${hClick}"><span class="ch-num">${c}</span><span class="ch-cat">${esc(label)}</span></div>`;
+    const hTitle = inEdit ? `Rename column ${c}`
+      : (admin ? `Column ${c} — ${esc(label)} · tap to view · drag to reorder · right-click to rename / move`
+               : `Column ${c} — ${esc(label)} · tap to view this column`);
+    // Admins can drag a header to reorder columns (bottles follow) or right-click for a menu.
+    const dnd = admin ? ` draggable="true" ondragstart="colDragStart(event,${c})" ondragover="colDragOver(event,${c})" ondragleave="colDragLeave(event)" ondrop="colDrop(event,${c})" ondragend="colDragEnd(event)"` : '';
+    grid += `<div class="rack-colhead${inEdit?' editable':''}${admin?' movable':''}" data-col="${c}"${dnd} title="${hTitle}" onclick="${hClick}"><span class="ch-num">${c}</span><span class="ch-cat">${esc(label)}</span></div>`;
   }
   for(let r=1;r<=d.rows;r++){
     grid += `<div class="rack-rowhead">${r}</div>`;
@@ -4122,9 +4130,9 @@ window.rcBuy = async function(id){
   try{ await dbUpdate('cellar/bottles/'+id, { buyAgain: !w.buyAgain }); showToast((!w.buyAgain?'Flagged Buy again — ':'Removed Buy-again flag — ') + (w.name||'bottle')); }
   catch(e){ showToast('Update failed'); }
 };
-window.rackDragOver = function(e){ if(rackEdit) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(_){} e.currentTarget.classList.add('drop-hi'); };
+window.rackDragOver = function(e){ if(rackEdit || colDragFrom!=null) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(_){} e.currentTarget.classList.add('drop-hi'); };
 window.rackDragLeave = function(e){ e.currentTarget.classList.remove('drop-hi'); };
-window.rackDrop = function(e, col, row){ e.preventDefault(); e.currentTarget.classList.remove('drop-hi'); const id = dragId || (e.dataTransfer && e.dataTransfer.getData('text/plain')); dragId = null; if(id) placeBottle(id, col, row); };
+window.rackDrop = function(e, col, row){ if(colDragFrom!=null){ e.currentTarget.classList.remove('drop-hi'); return; } e.preventDefault(); e.currentTarget.classList.remove('drop-hi'); const id = dragId || (e.dataTransfer && e.dataTransfer.getData('text/plain')); dragId = null; if(id) placeBottle(id, col, row); };
 // Drop a PLACED bottle onto the Unplaced tray → pull it off the rack.
 window.rackTrayOver = function(e){ if(rackEdit) return; const w = dragId && bottles[dragId]; if(!(w && w.rackCol && w.rackRow)) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(_){} e.currentTarget.classList.add('tray-hi'); };
 window.rackTrayLeave = function(e){ e.currentTarget.classList.remove('tray-hi'); };
@@ -4184,6 +4192,78 @@ window.rackEditCell = async function(col, row){
   try{ await dbSet('cellar/racks/'+curRack+'/cells/'+col+'_'+row, v ? { label:v } : null); showToast('Slot ' + slotCode(col,row) + ' labelled'); }
   catch(e){ showToast('Could not save label'); }
 };
+
+// ── COLUMN REORDER (Wine Wall): right-click header for Rename / Move, or drag ──
+// A column carries its per-cell labels AND every bottle placed in it. We rebuild
+// the whole cells map + remap each affected bottle's rackCol in one atomic write.
+let colDragFrom = null;
+// Effective label of a cell WITHOUT the generic "Col N" fallback (so seeded main
+// columns still carry their real labels when we materialise them on a move).
+function cellLabelRaw(col,row){
+  const v = curDef().cells[col+'_'+row];
+  if(v && v.label) return v.label;
+  if(curRack==='main'){ const s = seededCellLabel(col,row); if(s) return s; if(DEFAULT_COL_LABELS[col]) return DEFAULT_COL_LABELS[col]; }
+  return '';
+}
+window.reorderColumn = async function(from, to){
+  if(!isAdmin()){ showToast('Admins only'); return; }
+  const d = curDef(), C = d.cols, R = d.rows;
+  from = Number(from); to = Number(to);
+  if(!(from>=1 && from<=C && to>=1 && to<=C) || from===to) return;
+  // New column order: pull `from` out, drop it in at position `to`.
+  const order = []; for(let c=1;c<=C;c++){ if(c!==from) order.push(c); }
+  order.splice(to-1, 0, from);
+  const oldToNew = {}; order.forEach((oldC,idx)=>{ oldToNew[oldC] = idx+1; });
+  // Rebuild the entire cells map at the new column positions.
+  const newCells = {};
+  for(let oldC=1;oldC<=C;oldC++){
+    const nc = oldToNew[oldC];
+    for(let r=1;r<=R;r++){ const lbl = cellLabelRaw(oldC,r); if(lbl) newCells[nc+'_'+r] = { label:lbl }; }
+  }
+  const updates = {};
+  updates['cellar/racks/'+curRack+'/cells'] = Object.keys(newCells).length ? newCells : null;
+  // Every bottle on this rack follows its column to the new index.
+  let moved = 0;
+  activeArr().forEach(w=>{
+    if(onShelf(w) && bRack(w)===curRack && w.rackCol){
+      const nc = oldToNew[Number(w.rackCol)];
+      if(nc && nc!==Number(w.rackCol)){ updates['cellar/bottles/'+w.id+'/rackCol'] = nc; moved++; }
+    }
+  });
+  try{
+    await dbUpdate('/', updates);
+    if(rackFocusCol) rackFocusCol = oldToNew[Number(rackFocusCol)] || rackFocusCol;
+    showToast('Column moved'+(moved?(' — '+moved+' bottle'+(moved>1?'s':'')+' followed'):''));
+  }catch(e){ showToast('Could not move column'); }
+};
+// Drag a header onto another to drop it there.
+window.colDragStart = function(e, col){ if(!isAdmin()) return; colDragFrom = Number(col); try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain','col:'+col); }catch(_){} };
+window.colDragOver = function(e, col){ if(colDragFrom==null || Number(col)===colDragFrom) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(_){} e.currentTarget.classList.add('col-drop-hi'); };
+window.colDragLeave = function(e){ e.currentTarget.classList.remove('col-drop-hi'); };
+window.colDrop = function(e, col){ e.preventDefault(); e.currentTarget.classList.remove('col-drop-hi'); const from = colDragFrom; colDragFrom = null; if(from!=null && Number(col)!==from) reorderColumn(from, Number(col)); };
+window.colDragEnd = function(){ colDragFrom = null; document.querySelectorAll('.col-drop-hi').forEach(el=>el.classList.remove('col-drop-hi')); };
+// Right-click a column header → Rename · Move left · Move right.
+const colCtx = document.createElement('div');
+colCtx.className = 'dd-panel';
+colCtx.style.cssText = 'position:fixed;z-index:210;display:none';
+document.body.appendChild(colCtx);
+function hideColCtx(){ colCtx.style.display='none'; }
+document.addEventListener('click', hideColCtx);
+document.addEventListener('contextmenu', (e)=>{
+  const t = e.target.closest ? e.target.closest('.rack-colhead[data-col]') : null;
+  if(!t){ hideColCtx(); return; }
+  if(!isAdmin()) return;
+  e.preventDefault(); e.stopPropagation();
+  const c = Number(t.dataset.col), C = curDef().cols;
+  colCtx.innerHTML =
+    `<button class="dd-opt" onclick="rackEditColLabel(${c})">✏️ Rename column</button>` +
+    `<button class="dd-opt" ${c<=1?'disabled':''} onclick="reorderColumn(${c},${c-1})">← Move left</button>` +
+    `<button class="dd-opt" ${c>=C?'disabled':''} onclick="reorderColumn(${c},${c+1})">→ Move right</button>`;
+  colCtx.style.display='block';
+  const r = colCtx.getBoundingClientRect();
+  colCtx.style.left = Math.min(e.clientX, window.innerWidth - r.width - 8) + 'px';
+  colCtx.style.top  = Math.min(e.clientY, window.innerHeight - r.height - 8) + 'px';
+}, true);
 
 // ── RACK MANAGEMENT: switch · settings (rename/resize) · add · delete ────────
 // ── Right-click a rack chip (Cellar tab): Rename · Move left · Move right ──
