@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.29</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.30</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -714,7 +714,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.29</div>  </div>
+    <div class="auth-rev">Rev 3.30</div>  </div>
 </div>
 
 <div class="wrap">
@@ -832,7 +832,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.29</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.30</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -5309,7 +5309,7 @@ function friendsHTML(){
         const can = st.rank<=1; if(can) ready++;
         const cls = can?'fav-can':(st.state==='one'?'fav-one':'fav-cant');
         const ic  = can?'✓':(st.state==='one'?'●':'✕');
-        chip = `<button class="fav-chip ${cls}" onclick="openCocktail('${fav.ck}')" title="${st.state==='one'?'One bottle away':(can?'You can pour this now':'Missing '+st.missing.length)}">${ic} ${esc(c.name)}</button>`;
+        chip = `<button class="fav-chip ${cls}" onclick="event.stopPropagation();openCocktail('${fav.ck}')" title="${st.state==='one'?'One bottle away':(can?'You can pour this now':'Missing '+st.missing.length)}">${ic} ${esc(c.name)}</button>`;
       } else {
         const txt = fav.txt || fav.ck || '';
         if(txt) chip = `<span class="fav-chip fav-txt">${esc(txt)}</span>`;
@@ -5322,11 +5322,11 @@ function friendsHTML(){
       return `<div class="fav-item">${chip||'<span class="fav-chip fav-txt">their pour</span>'}${spec}</div>`;
     }).filter(Boolean).join('');
     const avoid = (f.avoid||[]).map(a=>`<span class="avoid-chip">⊘ ${esc(a)}</span>`).join('');
-    return `<div class="friend-card" data-fid="${esc(f.id)}">
+    return `<div class="friend-card" data-fid="${esc(f.id)}"${isAdmin()?` style="cursor:pointer" onclick="openFriendEditor('${f.id}')"`:''}>
       <div class="friend-top">
         <span class="friend-name">${esc(f.name)}</span>
         ${ready?`<span class="friend-ready" title="Favorites you can pour right now">${ready} ready now</span>`:''}
-        ${isAdmin()?`<button class="friend-edit" title="Edit" onclick="openFriendEditor('${f.id}')">✏️</button>`:''}
+        ${isAdmin()?`<button class="friend-edit" title="Edit" onclick="event.stopPropagation();openFriendEditor('${f.id}')">✏️</button>`:''}
       </div>
       ${favs?`<div class="fav-row">${favs}</div>`:'<div class="friend-empty">No drinks tagged yet.</div>'}
       ${avoid?`<div class="avoid-row">${avoid}</div>`:''}
