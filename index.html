@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.40</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.42</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -433,6 +433,33 @@
   .meta .notes{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--parch-dim);margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .buy-yes{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--green)}
   .qtybadge{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--gold);border:1px solid var(--line);border-radius:20px;padding:2px 8px}
+  .qtybadge.low{color:var(--gold);border-color:var(--gold-dim);background:rgba(201,163,92,.1)}
+  .qtybadge.out{color:#e09a9a;border-color:rgba(201,106,106,.5);background:rgba(201,106,106,.1)}
+  /* ── BOTTLE JOURNEY (detail-page stock strip) ── */
+  .bj{border:1px solid var(--line);border-radius:10px;padding:13px 14px;margin:0 0 12px;background:rgba(236,227,210,.03)}
+  .bj-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .bj-count{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--parch)}
+  .bj-step{display:flex;align-items:center;gap:5px;margin-left:auto}
+  .bj-step button{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:none;color:var(--parch-dim);font-size:14px;line-height:1;cursor:pointer}
+  .bj-step button:hover{border-color:var(--gold-dim);color:var(--parch)}
+  .bj-sub{font-size:11.5px;color:var(--parch-dim);width:100%;margin:3px 0 9px}
+  .bj-sub .ck-loc{margin-left:2px;padding:2px 5px;font-size:11px}
+  .bj-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .bj-btn{font-family:inherit;font-size:13px;font-weight:700;border-radius:8px;padding:9px 13px;cursor:pointer;border:1px solid var(--line);background:rgba(236,227,210,.05);color:var(--parch);transition:.12s}
+  .bj-btn:hover{border-color:var(--gold-dim)}
+  .bj-btn.primary{background:var(--gold);border-color:var(--gold);color:#1a1206}
+  .bj-btn.primary:hover{filter:brightness(1.08)}
+  .bj-reorder{display:flex;align-items:center;gap:8px;margin-top:11px;padding-top:11px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--parch);flex-wrap:wrap}
+  .bj-toggle{width:34px;height:19px;border-radius:12px;border:1px solid var(--line);background:rgba(236,227,210,.08);position:relative;flex-shrink:0;cursor:pointer;transition:.15s}
+  .bj-toggle::after{content:'';position:absolute;left:2px;top:1.5px;width:14px;height:14px;border-radius:50%;background:var(--parch-dim);transition:.15s}
+  .bj-toggle.on{background:var(--gold);border-color:var(--gold)}
+  .bj-toggle.on::after{left:16px;background:#1a1206}
+  .bj-par{font-family:inherit;font-size:12px;font-weight:700;color:var(--parch);border:1px solid var(--line);border-radius:6px;background:rgba(236,227,210,.05);padding:2px 5px;cursor:pointer}
+  .bj-flash{border:1px solid rgba(122,176,106,.45);background:rgba(122,176,106,.08);border-radius:8px;padding:9px 11px;margin-top:10px;font-size:12.5px;color:#8fe08a}
+  .bj-out{display:flex;align-items:center;gap:6px;border:1px solid rgba(201,106,106,.5);background:rgba(201,106,106,.1);color:#e09a9a;border-radius:8px;padding:9px 11px;font-size:12.5px;font-weight:700;margin-top:10px}
+  .bj-last{border:1px solid var(--gold-dim);background:rgba(201,163,92,.06);border-radius:8px;padding:11px 12px;margin-top:10px}
+  .bj-last b{font-family:'Cormorant Garamond',serif;font-size:16px}
+  .bj-last .bj-actions{margin-top:8px}
   /* Wine cards only: one FIXED, uniform box (no flavor tags/notes on the card) so
      every wine tile is the same compact size — no wasted space, no ragged heights.
      Bourbon/other kinds are untouched (they never get the .w-wine class). */
@@ -723,7 +750,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.40</div>  </div></div>
+    <div class="auth-rev">Rev 3.42</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -840,7 +867,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.40</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.42</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -998,6 +1025,7 @@
       <input id="dt-vintage" class="dt-year" placeholder="Year">
       <select id="dt-status-sel" class="rt-jump dt-open" style="width:auto;margin-bottom:0" onchange="dtStatusChange(this)"></select>
     </div>
+    <div id="bjStrip"></div>
     <div class="dt-grid">
       <input id="dt-qty" placeholder="Qty on hand" title="Bottles on hand — bump it when you buy more" type="number" min="0" step="1">
       <input id="dt-price" placeholder="Price $" type="number" step="0.01" min="0">
@@ -1158,8 +1186,8 @@
     </div>
     <div class="dm-sec">
       <div class="dm-h">🍸 Cocktail Recipes</div>
-      <div class="dm-d">Curated recipe set behind the Cocktails tab. Download it to back up or bulk-edit.</div>
-      <button class="mbtn" onclick="downloadCocktailSeed()">⬇ Download cocktails.json</button>
+      <div class="dm-d">Your LIVE recipe set — including drinks you've added or edited. Download to back up or bulk-edit.</div>
+      <button class="mbtn" onclick="downloadCocktailSeed()">⬇ Download recipes (JSON)</button>
     </div>
     <div class="dm-sec">
       <div class="dm-h">🗄 Archived Bottles</div>
@@ -2303,7 +2331,7 @@ window.openDetail = function(id){
       s.innerHTML =
         `<option value="cellared" ${cur==='cellared'?'selected':''}>🍾 Cellared — sealed</option>` +
         `<option value="opened" ${cur==='opened'?'selected':''}>◐ Opened</option>` +
-        `<option value="archived">🏁 Finished — archive</option>` +
+        `<option value="archived">🗄 Archive — remove from collection</option>` +
         `<option value="rebuy">${w.buyAgain?'✓ On Re-Buy list — remove':'🔁 Add to Re-Buy list'}</option>` +
         `<option value="wishlist">🧾 Copy to Wishlist</option>`;
   } }
@@ -2328,7 +2356,10 @@ window.openDetail = function(id){
   document.getElementById('dt-notes').value = w.notes || '';
   document.getElementById('dt-vintage').value = w.vintage||'';
   document.getElementById('dt-price').value = (w.price==null?'':w.price);
-  { const q=document.getElementById('dt-qty'); if(q){ q.style.display = (w.status==='cellared')?'':'none'; q.value = (w.status==='cellared') ? (Number(w.qty)||1) : ''; } }
+  // Qty lives in the Bottle Journey strip now; the raw input stays hidden but
+  // synced so Save writes the same number the strip shows.
+  { const q=document.getElementById('dt-qty'); if(q){ q.style.display='none'; q.value = (w.status==='cellared') ? (Number(w.qty)||1) : ''; } }
+  bjRender(id);
   document.getElementById('dt-abv').value = w.abv||'';
   document.getElementById('dt-vendor').value = w.vendor||'';
   document.getElementById('dt-grape').value = w.grape||'';
@@ -2492,6 +2523,140 @@ window.boughtAgain = function(id){
 };
 window.dtToggleHalf = ()=>{ dtDraft.half=!dtDraft.half; document.getElementById('dtHalfbtn').classList.toggle('on',dtDraft.half); echo('dtScoreEcho',dtDraft); };
 window.dtToggleBuy = ()=>{ dtDraft.buy=!dtDraft.buy; document.getElementById('dtBuyflag').classList.toggle('on',dtDraft.buy); };
+
+// ── BOTTLE JOURNEY — stock, drinking & re-ordering, untangled ────────────────
+// One record still answers three questions, but each has its own control now:
+//   qty (sealed on hand) · finished (dated events, the drink log) · buyAgain +
+//   reorderAt (par level → auto-Buy). Archive is only ever a deliberate act.
+function bjFlash(msg, cls){ const f=document.getElementById('bjFlash'); if(f){ f.className=cls||'bj-flash'; f.innerHTML=msg; f.style.display=''; } }
+function bjRender(id){
+  const host = document.getElementById('bjStrip'); if(!host) return;
+  const w = bottles[id];
+  if(!w || w.status!=='cellared'){ host.innerHTML=''; return; }
+  const qty = Math.max(0, Number(w.qty)||0);
+  const fin = Math.max(0, Number(w.finished)||0);
+  const ra  = Math.max(0, Number(w.reorderAt)||0);
+  const bought = qty + fin;
+  const finTxt = fin ? (fin+' finished'+(w.lastFinishedAt?(' ('+new Date(w.lastFinishedAt).toLocaleDateString(undefined,{month:'short',day:'numeric'})+')'):'')) : '';
+  const slotTxt = (w.rackCol&&w.rackRow) ? (esc(slotOf(w))+' <button class="ck-loc" title="Show me in the cellar" onclick="dtGoRack(\''+id+'\')">📍</button>') : '';
+  const journey = [bought+' bought', finTxt, slotTxt].filter(Boolean).join(' · ');
+  const parOpts = [0,1,2,3].map(n=>`<option value="${n}" ${n===ra?'selected':''}>${n===0?'the last one':('down to '+n)}</option>`).join('');
+  let tail = '';
+  if(qty===0){
+    if(w.buyAgain) tail = `<div class="bj-out">🛒 OUT — on your Buy list${w.lastFinishedAt?(' · finished '+new Date(w.lastFinishedAt).toLocaleDateString(undefined,{month:'short',day:'numeric'})):''}</div>`;
+    else if(w.outDecision!=='keep') tail = `<div class="bj-last"><b>🎉 That was the last one — what now?</b>
+      <div class="bj-actions">
+        <button class="bj-btn primary" onclick="bjLastReorder('${id}')">🛒 Re-order</button>
+        <button class="bj-btn" onclick="bjLastArchive('${id}')">🏁 Archive</button>
+        <button class="bj-btn" style="color:var(--parch-dim)" onclick="bjLastKeep('${id}')">📦 Keep at 0</button>
+      </div></div>`;
+  }
+  host.innerHTML = `<div class="bj">
+    <div class="bj-top">
+      <span class="bj-count">🍾 ${qty} on hand</span>
+      <span class="bj-step" title="Fix a miscount — logged as an adjustment, not a drink">
+        <button onclick="bjAdjust('${id}',-1)">−</button><button onclick="bjAdjust('${id}',1)">＋</button>
+      </span>
+    </div>
+    <div class="bj-sub">${journey||'&nbsp;'}</div>
+    <div class="bj-actions">
+      <button class="bj-btn primary" ${qty?'' :'disabled style="opacity:.4;cursor:default"'} onclick="bjFinish('${id}')">🥂 Finished one</button>
+      <button class="bj-btn" onclick="bjBought('${id}')">＋ Bought more</button>
+    </div>
+    <div id="bjFlash" style="display:none"></div>
+    <div class="bj-reorder">
+      <span class="bj-toggle ${w.buyAgain?'on':''}" role="switch" aria-checked="${!!w.buyAgain}" onclick="bjToggleReorder('${id}')"></span>
+      <b>♻️ Re-order</b> when I finish
+      <select class="bj-par" onchange="bjSetReorderAt('${id}',this.value)">${parOpts}</select>
+      <span style="color:var(--parch-dim)">→ goes to the Buy list by itself</span>
+    </div>
+    ${tail}
+  </div>`;
+  const q = document.getElementById('dt-qty'); if(q) q.value = qty;   // keep Save honest
+}
+// Auto-add to the Buy list (deduped by name, linked back for restock).
+async function bjAutoBuy(w, id, left){
+  const nm = (w.name||'').trim(); if(!nm) return false;
+  const exists = asArr(buylist).some(b=>deburr((b.name||'').toLowerCase())===deburr(nm.toLowerCase()));
+  if(exists) return true;
+  const r = push(ref(db,'cellar/buylist'));
+  await set(r, { name:nm, region:w.region||'', note:'auto — down to '+left+' left', kind:kindOf(w),
+    desc:w.desc||'', producer:w.producer||'', vintage:w.vintage||'', abv:w.abv||'', grape:w.grape||'',
+    price:(w.price==null?null:w.price), photoUrl:w.photoUrl||null, photoPath:w.photoPath||null,
+    bottleId:id, addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now() });
+  return true;
+}
+window.bjFinish = async function(id){
+  const w = bottles[id]; if(!w || w.status!=='cellared') return;
+  const qty = Math.max(0, Number(w.qty)||0); if(!qty) return;
+  const left = qty-1, fin = (Number(w.finished)||0)+1, now = Date.now();
+  const up = { qty:left, finished:fin, lastFinishedAt:now };
+  if(left===0){ up.rackCol=null; up.rackRow=null; up.rackId=null; }   // last sealed bottle frees its slot
+  try{
+    await dbUpdate('cellar/bottles/'+id, up);
+    Object.assign(w, up);
+    logEvent('finished', { bottleId:id, name:w.name||'', vintage:w.vintage||'', left });
+    let msg = '🥂 Cheers! Logged — <b>'+left+' left</b>.';
+    if(w.buyAgain && left<=(Number(w.reorderAt)||0)){
+      try{ await bjAutoBuy(w, id, left); msg += ' Added to your <b>Buy list</b>.'; }catch(_){ }
+    }
+    if(left===0) msg = '🥂 Cheers! That was the last bottle.'+(w.buyAgain?' It’s on your <b>Buy list</b>.':'');
+    bjRender(id); bjFlash(msg);
+    showToast('🥂 '+(w.name||'bottle')+' — '+left+' left');
+  }catch(e){ showToast('Could not update'); }
+};
+window.bjBought = async function(id){
+  const w = bottles[id]; if(!w) return;
+  const qty = Math.max(0, Number(w.qty)||0)+1;
+  try{
+    await dbUpdate('cellar/bottles/'+id, { qty, outDecision:null });
+    Object.assign(w, { qty, outDecision:null });
+    logEvent('restocked', { bottleId:id, name:w.name||'', qty });
+    bjRender(id); bjFlash('🍾 Restocked — <b>'+qty+' on hand</b>.');
+  }catch(e){ showToast('Could not update'); }
+};
+window.bjAdjust = async function(id, d){
+  const w = bottles[id]; if(!w) return;
+  const qty = Math.max(0, (Number(w.qty)||0) + (d<0?-1:1));
+  try{
+    await dbUpdate('cellar/bottles/'+id, { qty });
+    Object.assign(w, { qty });
+    logEvent('adjusted', { bottleId:id, name:w.name||'', qty });   // NOT a drink — stats stay honest
+    bjRender(id); bjFlash('✏️ Count corrected — <b>'+qty+' on hand</b> (logged as an adjustment).');
+  }catch(e){ showToast('Could not update'); }
+};
+window.bjToggleReorder = async function(id){
+  const w = bottles[id]; if(!w) return;
+  const on = !w.buyAgain;
+  try{
+    await dbUpdate('cellar/bottles/'+id, { buyAgain:on });
+    w.buyAgain = on; dtDraft.buy = on;
+    const bf=document.getElementById('dtBuyflag'); if(bf) bf.classList.toggle('on', on);
+    bjRender(id);
+  }catch(e){ showToast('Could not update'); }
+};
+window.bjSetReorderAt = async function(id, v){
+  const w = bottles[id]; if(!w) return;
+  const ra = Math.max(0, Math.min(9, Number(v)||0));
+  try{ await dbUpdate('cellar/bottles/'+id, { reorderAt:ra }); w.reorderAt = ra; }
+  catch(e){ showToast('Could not update'); }
+};
+window.bjLastReorder = async function(id){
+  const w = bottles[id]; if(!w) return;
+  try{
+    await dbUpdate('cellar/bottles/'+id, { buyAgain:true });
+    w.buyAgain = true; dtDraft.buy = true;
+    const bf=document.getElementById('dtBuyflag'); if(bf) bf.classList.add('on');
+    await bjAutoBuy(w, id, 0);
+    bjRender(id); bjFlash('🛒 On the Buy list — it stays visible until you restock.');
+  }catch(e){ showToast('Could not update'); }
+};
+window.bjLastArchive = function(id){ archiveDetail(); };
+window.bjLastKeep = async function(id){
+  const w = bottles[id]; if(!w) return;
+  try{ await dbUpdate('cellar/bottles/'+id, { outDecision:'keep' }); w.outDecision='keep'; bjRender(id); }
+  catch(e){ showToast('Could not update'); }
+};
 window.saveDetail = async function(){
   const w = bottles[dtDraft.id]; if(!w){ closeDetail(); return; }
   const score = dtDraft.score==null ? null : dtDraft.score + (dtDraft.half?0.5:0);
@@ -3090,13 +3255,25 @@ function dlFile(name, text, type){
 // Grab it here so an admin can one-time Import-JSON it into cellar/cocktails.
 window.downloadCocktailSeed = async function(){
   const st = document.getElementById('dataStatus');
-  st.textContent = '⏳ Fetching cocktails.json…';
+  st.textContent = '⏳ Building your recipe export…';
   try{
+    // LIVE set first — everything you've added/edited/duplicated in-app,
+    // including glass choices and bottle picks. Keyed by slug (the DB shape),
+    // so Import-JSON under cellar/cocktails restores it 1:1.
+    const snap = await dbGet('cellar/cocktails');
+    const live = snap && snap.val ? (snap.val()||null) : null;
+    if(live && Object.keys(live).length){
+      const n = Object.keys(live).length;
+      dlFile('philinity-cocktails-'+new Date().toISOString().slice(0,10)+'.json', JSON.stringify(live, null, 2), 'application/json');
+      st.textContent = '✅ Exported your LIVE set — '+n+' recipes (incl. your custom drinks & edits).';
+      return;
+    }
+    // Nothing imported yet → fall back to the curated seed file.
     const res = await fetch('data/cocktails.json', {cache:'no-store'});
     if(!res.ok) throw new Error('HTTP '+res.status);
     const arr = await res.json();
     dlFile('cocktails.json', JSON.stringify(arr, null, 2), 'application/json');
-    st.textContent = '✅ Downloaded '+ (Array.isArray(arr)?arr.length:0) +' recipes — Import-JSON it under cellar/cocktails.';
+    st.textContent = '✅ Downloaded the curated seed ('+(Array.isArray(arr)?arr.length:0)+' recipes) — nothing imported yet, so this IS the latest.';
   }catch(e){ st.textContent = '❌ '+(e.message||e); }
 };
 window.dataBackup = async function(){
@@ -3590,6 +3767,14 @@ window.openWineGroup = function(id){
   openDetail(recs[0].id);
 };
 // Browse card — cellared bottles show a predicted band, scored bottles the openedCard.
+// Stock-health badge: ×N normally, "×N · low" at the re-order point, "OUT" at 0.
+function stockBadge(w){
+  if(w.status!=='cellared') return '';
+  const q = Math.max(0, Number(w.qty)||0), ra = Number(w.reorderAt)||0;
+  if(q===0) return '<span class="qtybadge out">Out</span>';
+  if(w.buyAgain && q<=ra) return `<span class="qtybadge low">×${q} · low</span>`;
+  return q>1 ? `<span class="qtybadge">×${q}</span>` : '';
+}
 function collectionCardHTML(w){
   if(w.status==='cellared'){
     const row2=[w.vintage,w.grape,w.region,fmtPrice(w.price)].filter(Boolean).join(' · ');
@@ -3601,9 +3786,8 @@ function collectionCardHTML(w){
       return `<div class="wine w-wine" onclick="openDetail('${w.id}')">${badge}<div class="wine-left">${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
     }
     // Non-wine (bourbon/tequila): unchanged.
-    const qty = Number(w.qty)||1;
     const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${esc(slotBadgeText(w))}</span>` : '';
-    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left">${cellaredScoreHTML(w)}${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(!w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${qty>1?`<span class="qtybadge">×${qty}</span>`:''}${tagChipsHTML(w)}</div></div></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left">${cellaredScoreHTML(w)}${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(!w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${stockBadge(w)}${tagChipsHTML(w)}</div></div></div>`;
   }
   return openedCardHTML(w);
 }
@@ -4855,7 +5039,8 @@ const NAME_SUBS = {
 };
 function normname(s){ return deburr(String(s||'').toLowerCase()).replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim(); }
 function nameHas(name, phrase){ const w = phrase.split(' ').filter(x=>x.length>1); return !!phrase && (name.includes(phrase) || (w.length && w.every(x=>name.includes(x)))); }
-function ownedBottles(){ return activeArr().filter(onShelf); }
+// A cellared record at qty 0 ("OUT — on the buy list") is not drinkable stock.
+function ownedBottles(){ return activeArr().filter(w=>onShelf(w) && !(w.status==='cellared' && (Number(w.qty)||0)===0)); }
 // One snapshot per render: each owned bottle + the tokens it provides + its name.
 function invSnapshot(){ return ownedBottles().map(b=>({ b, tokens: bottleTokens(b), name: normname(b.name) })); }
 // Which owned bottles satisfy an ingredient — directly, then via substitution
