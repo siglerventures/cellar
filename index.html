@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.37</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.38</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -721,7 +721,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.37</div>  </div></div>
+    <div class="auth-rev">Rev 3.38</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -838,7 +838,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.37</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.38</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -4877,9 +4877,11 @@ function ingCandidates(ing, inv, m){
   const item = ing.item, seen = new Set(), out = [];
   const add = b => { if(b && !seen.has(b.id)){ seen.add(b.id); out.push(b); } };
   m.direct.forEach(add); m.sub.forEach(s=>add(s.b));
-  const spiritIng = CANON_TOKENS.has(item) && (CK_BASE_TOKENS.has(item) || CK_LIQ_TOKENS.has(item) || FAMILY[item]);
-  if(!spiritIng) inv.forEach(e=>{ if(kindOf(e.b)==='mixer') add(e.b); });
-  return out;
+  // Base spirits offer only the qualifying bottles; liqueurs/juices/syrups (e.g.
+  // "orange liqueur") offer your whole Mixers shelf so you can pick your Cointreau.
+  const baseSpirit = ing.role==='base_spirit' || CK_BASE_TOKENS.has(item) || (FAMILY[item] && !CK_LIQ_TOKENS.has(item));
+  if(!baseSpirit) inv.forEach(e=>{ if(kindOf(e.b)==='mixer') add(e.b); });
+  return out.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));   // alphabetical
 }
 window.ckSetPick = async function(id, key, bottleId){
   const c = cocktails[id]; if(c){ c.picks = c.picks || {}; if(bottleId) c.picks[key] = bottleId; else delete c.picks[key]; }
@@ -5217,14 +5219,15 @@ window.saveRecipe = async function(){
     };
   }).filter(Boolean);
   if(!ingredients.length){ st.textContent='Add at least one ingredient.'; return; }
-  // Keep the id stable on edit; derive a fresh (collision-free) slug for new ones.
-  let id = rcEditId;
-  if(!id){
-    const base = ckSlug(name) || 'recipe';
-    id = base; let n=2;
-    while(cocktails[id]) id = base+'_'+(n++);
-  }
-  const rec = {
+  // Duplicate flow clears rcEditId, so a variant saves as its own new drink.
+  const editing = !!rcEditId;
+  let id;
+  if(editing){ id = rcEditId; }
+  else { const base = ckSlug(name) || 'recipe'; id = base; let n=2; while(cocktails[id]) id = base+'_'+(n++); }
+  // On edit, START from the existing recipe so we keep category/iba/picks/etc.
+  // (fields this form doesn't show); a brand-new recipe starts clean.
+  let prev = editing ? Object.assign({}, cocktails[id]||{}) : {};
+  const rec = Object.assign(prev, {
     name,
     glass: (document.getElementById('rc-glass').value||'').trim(),
     method: document.getElementById('rc-method').value||'',
@@ -5232,17 +5235,17 @@ window.saveRecipe = async function(){
     tags: (document.getElementById('rc-tags').value||'').split(',').map(t=>t.trim()).filter(Boolean),
     ingredients,
     custom: true,
-    addedBy: (auth.currentUser&&auth.currentUser.uid)||''
-  };
-  const prev = cocktails[id];
-  if(prev && prev.addedAt) rec.addedAt = prev.addedAt; else rec.addedAt = Date.now();
-  rec.editedAt = Date.now();
+    addedBy: prev.addedBy || (auth.currentUser&&auth.currentUser.uid) || '',
+    addedAt: prev.addedAt || Date.now(),
+    editedAt: Date.now()
+  });
+  if(!editing) delete rec.picks;   // a new/variant recipe shouldn't inherit bottle picks
   try{
     st.textContent = '⏳ Saving…';
     await dbSet('cellar/cocktails/'+id, rec);
     st.textContent = '✅ Saved';
     closeRecipeEditor();
-    showToast((rcEditId?'Updated ':'Added ')+name);
+    showToast((editing?'Updated ':'Added ')+name);
   }catch(e){ st.textContent = '❌ '+(e.message||e); }
 };
 window.deleteRecipe = async function(){
