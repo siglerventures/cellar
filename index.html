@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.38</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.39</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -721,7 +721,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.38</div>  </div></div>
+    <div class="auth-rev">Rev 3.39</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -838,7 +838,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.38</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.39</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -4742,7 +4742,7 @@ const INGREDIENT_KEYWORDS = [
   ['whiskey',       ['whiskey','whisky']],
   ['gin',           ['gin']],
   ['vodka',         ['vodka']],
-  ['white rum',     ['white rum','light rum','silver rum','blanco rum','rum']],
+  ['white rum',     ['white rum','light rum','silver rum','blanco rum']],
   ['aged rum',      ['aged rum','gold rum','anejo rum','reserva rum','rhum']],
   ['dark rum',      ['dark rum','black rum','spiced rum']],
   ['cachaça',       ['cachaca']],
@@ -4805,13 +4805,28 @@ function ingRequired(ing){ return !ing.optional; }
 
 // Tokens a single bottle provides.
 function bottleTokens(w){
-  const text = deburr(((w.name||'')+' '+(w.desc||'')+' '+(w.grape||'')+' '+(w.vintage||'')).toLowerCase());
+  // Spirit identity comes from the bottle's NAME (+ its collection). The desc
+  // is scanned too, but it can only add a BASE-SPIRIT token via an exact
+  // multi-word phrase ("white rum") and only when the bottle has no spirit
+  // identity yet — a rye "finished in rum casks" or a premix "made with rum,
+  // vodka…" must NOT become a Daiquiri rum.
+  const nameText = deburr((w.name||'').toLowerCase());
+  const descText = deburr(((w.desc||'')+' '+(w.grape||'')+' '+(w.vintage||'')).toLowerCase());
   const out = new Set();
   (KIND_DEFAULT_TOKENS[kindOf(w)]||[]).forEach(t=>out.add(t));
+  const hit = (kw,text) => new RegExp('(^|[^a-z])'+kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^a-z]|$)').test(text);
   INGREDIENT_KEYWORDS.forEach(([token,kws])=>{
+    for(const kw of kws){ if(hit(kw,nameText)){ out.add(token); break; } }
+  });
+  // Bare "Rum" in the NAME with no stated style → treat as white rum.
+  if(!out.has('white rum') && !out.has('dark rum') && !out.has('aged rum') && hit('rum',nameText)) out.add('white rum');
+  const hasBase = [...out].some(t=>CK_BASE_TOKENS.has(t));
+  INGREDIENT_KEYWORDS.forEach(([token,kws])=>{
+    if(out.has(token)) return;
+    const isBase = CK_BASE_TOKENS.has(token);
     for(const kw of kws){
-      const re = new RegExp('(^|[^a-z])'+kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^a-z]|$)');
-      if(re.test(text)){ out.add(token); break; }
+      if(isBase && (hasBase || !kw.includes(' '))) continue;   // desc can't re-type a spirit, nor mint one from a bare word
+      if(hit(kw,descText)){ out.add(token); break; }
     }
   });
   return out;
