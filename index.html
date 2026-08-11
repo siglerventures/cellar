@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.25</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.26</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -615,17 +615,20 @@
   .fo-drink,.fo-spirit,.fo-addons{grid-column:1/-1}
   .fo-del{margin-top:7px;background:none;border:none;color:var(--parch-dim);font-size:11px;cursor:pointer;padding:2px 0}
   .fo-del:hover{color:#c96a6a}
-  /* visual glass picker */
-  .glass-field{margin-top:8px}
-  .fo-lbl{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--parch-dim);margin-bottom:6px}
-  .glass-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px}
-  .glass-opt{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 3px 5px;background:rgba(236,227,210,.03);border:1px solid var(--line);border-radius:8px;color:var(--parch-dim);cursor:pointer;font-family:inherit;transition:.12s}
-  .glass-opt:hover{border-color:var(--gold-dim);color:var(--parch)}
-  .glass-opt.on{border-color:var(--gold);background:rgba(201,163,92,.12);color:var(--gold)}
-  .glass-opt .gsvg{width:26px;height:32px}
-  .glass-opt span{font-size:9.5px;line-height:1.1;text-align:center;letter-spacing:.02em}
+  /* glassware icons (inline SVG) */
   .gsvg{display:inline-block;vertical-align:middle}
   .gic-sm{width:11px;height:14px;margin-right:2px;opacity:.85}
+  .gic-md{width:15px;height:19px;margin-right:3px;opacity:.9;color:var(--gold-dim)}
+  .gic-lg{width:44px;height:52px;color:var(--gold)}
+  /* glass control beside the METHOD in a cocktail's detail */
+  .ck-method-row{display:flex;gap:14px;align-items:flex-start}
+  .ck-method-col{flex:1;min-width:0}
+  .ck-glassbox{flex-shrink:0;width:104px;display:flex;flex-direction:column;align-items:center;gap:7px;padding-top:20px}
+  .ck-glass-big{display:flex;align-items:center;justify-content:center;height:56px}
+  .ck-glass-dd{width:100%;font-family:inherit;font-size:12.5px;text-align:center;text-align-last:center;padding:5px 6px;color:var(--parch);background:rgba(236,227,210,.04);border:1px solid var(--line);border-radius:7px;cursor:pointer}
+  .ck-glass-dd:hover{border-color:var(--gold-dim)}
+  .ck-glass-name{font-size:12px;color:var(--parch-dim);text-align:center}
+  @media(max-width:520px){.ck-method-row{flex-direction:column-reverse}.ck-glassbox{flex-direction:row;width:auto;padding-top:0;align-self:flex-start;gap:10px}.ck-glass-big{height:auto}.ck-glass-dd{width:auto}}
   .fav-chip{font-family:inherit;font-size:12px;font-weight:600;border-radius:20px;padding:4px 11px;border:1px solid var(--line);background:rgba(236,227,210,.05);color:var(--parch);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:.12s}
   button.fav-chip:hover{border-color:var(--gold)}
   .fav-chip.fav-can{color:#8fe08a;border-color:rgba(122,176,106,.4);background:rgba(122,176,106,.1)}
@@ -653,13 +656,8 @@
   .ck-img.ck-cut{object-fit:contain;padding:8px;filter:drop-shadow(0 5px 12px rgba(0,0,0,.55))}
   .ck-glass{font-size:52px;opacity:.9;filter:drop-shadow(0 3px 8px rgba(0,0,0,.4))}
   /* spirit-family tints behind the placeholder glass */
-  .ck-fam-agave{background:radial-gradient(120% 120% at 50% 0,#2f4a2a,#141d12)}
-  .ck-fam-whiskey{background:radial-gradient(120% 120% at 50% 0,#5a3a1c,#231409)}
-  .ck-fam-vodka{background:radial-gradient(120% 120% at 50% 0,#2b3a46,#111820)}
-  .ck-fam-gin{background:radial-gradient(120% 120% at 50% 0,#274038,#101c18)}
-  .ck-fam-rum{background:radial-gradient(120% 120% at 50% 0,#6a4420,#26160a)}
-  .ck-fam-brandy{background:radial-gradient(120% 120% at 50% 0,#5c2f1e,#22110b)}
-  .ck-fam-other{background:radial-gradient(120% 120% at 50% 0,#5a1620,#1c0a0e)}
+  /* Placeholder backdrop — neutral (no spirit-family colour tint) */
+  .ck-fam-agave,.ck-fam-whiskey,.ck-fam-vodka,.ck-fam-gin,.ck-fam-rum,.ck-fam-brandy,.ck-fam-other{background:linear-gradient(180deg,#201619,#160e10)}
   /* status pill + IBA badge float on the photo */
   .ck-pill{position:absolute;left:8px;top:8px;font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:3px 8px;border-radius:20px;background:rgba(10,6,7,.72);backdrop-filter:blur(2px);border:1px solid rgba(255,255,255,.12)}
   .ck-can .ck-pill,.ck-sub .ck-pill{color:#8fe08a}
@@ -713,7 +711,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.25</div>  </div>
+    <div class="auth-rev">Rev 3.26</div>  </div>
 </div>
 
 <div class="wrap">
@@ -831,7 +829,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.25</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.26</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -1030,9 +1028,14 @@
     <div class="ck-d-status" id="ck-d-status"></div>
     <div class="qlabel" style="margin-top:14px">Ingredients</div>
     <div id="ck-d-ings" class="ck-d-ings"></div>
-    <div class="qlabel" style="margin-top:14px">Method</div>
-    <div id="ck-d-steps" class="ck-d-steps"></div>
-    <div class="ck-d-tags" id="ck-d-tags"></div>
+    <div class="ck-method-row">
+      <div class="ck-method-col">
+        <div class="qlabel" style="margin-top:14px">Method</div>
+        <div id="ck-d-steps" class="ck-d-steps"></div>
+        <div class="ck-d-tags" id="ck-d-tags"></div>
+      </div>
+      <div class="ck-glassbox" id="ck-d-glasssel"></div>
+    </div>
     <div class="ck-liked" id="ck-d-likedby"></div>
     <button class="mbtn ghost" id="ck-d-buybtn" style="display:none;margin-top:14px;width:100%"></button>
     <div id="ck-d-photowrap" style="display:none">
@@ -4948,8 +4951,11 @@ window.openCocktail = function(id){
   const have = new Set(map.keys());
   const st = cocktailStatus(c, have);
   document.getElementById('ck-d-name').textContent = c.name || 'Cocktail';
-  const metaBits = [c.category, c.glass, c.method?('shake'===c.method?'shaken':'stir'===c.method?'stirred':c.method):'', c.iba?'IBA official':''].filter(Boolean);
+  const methodLbl = c.method ? ('shake'===c.method?'shaken':'stir'===c.method?'stirred':c.method) : '';
+  const metaBits = [c.category, methodLbl, c.iba?'IBA official':''].filter(Boolean);
   document.getElementById('ck-d-meta').textContent = metaBits.join('  ·  ');
+  // Glass — defaults to the correct cup for this drink; a dropdown lets you change it.
+  document.getElementById('ck-d-glasssel').innerHTML = ckGlassSelHTML(id);
   // status banner
   const bn = document.getElementById('ck-d-status');
   bn.className = 'ck-d-status';
@@ -5177,8 +5183,8 @@ window.addMissingToBuy = async function(id){
   }catch(e){ st.textContent='❌ '+(e.message||e); }
 };
 
-// ── GLASSWARE ICONS (inline SVG, self-contained) — used by the friend order
-//    editor's visual glass picker and the friend-card spec line. ──
+// ── GLASSWARE ICONS (inline SVG, self-contained) — the recipe's glass is shown
+//    as the matching cup icon next to the method in a cocktail's detail. ──
 const GLASSES = ['Coupe','Rocks','Highball','Collins','Martini','Nick & Nora','Flute','Wine','Mug','Hurricane'];
 const GLASS_SVG = {
   'Coupe':      '<path d="M5 7h14M5 7a7 4.5 0 0 0 14 0M12 11.5V24M8 24h8"/>',
@@ -5192,10 +5198,42 @@ const GLASS_SVG = {
   'Mug':        '<path d="M6 7h10v18H6zM16 11c4 0 4 9 0 9"/>',
   'Hurricane':  '<path d="M9 5C7 11 10 13 10 17v6M15 5c2 6-1 8-1 12v6M9 5h6M9.5 23h5M8 26q4 2 8 0"/>'
 };
+// Map any recipe glass string (e.g. "Mule mug", "Coupe / rocks", "Wine glass")
+// to the closest known glass by keyword.
+function glassKey(name){
+  const s = deburr(String(name||'').toLowerCase());
+  if(/coupe/.test(s)) return 'Coupe';
+  if(/collins/.test(s)) return 'Collins';
+  if(/highball|tall|zombie/.test(s)) return 'Highball';
+  if(/nick|nora/.test(s)) return 'Nick & Nora';
+  if(/martini|cocktail glass|coupette/.test(s)) return 'Martini';
+  if(/flute|champagne/.test(s)) return 'Flute';
+  if(/wine|goblet/.test(s)) return 'Wine';
+  if(/mug|mule/.test(s)) return 'Mug';
+  if(/hurricane|poco|tiki|pina|colada/.test(s)) return 'Hurricane';
+  if(/rocks|old.?fashion|lowball|tumbler|double|julep|nick.?and.?nora|snifter/.test(s)) return 'Rocks';
+  return null;
+}
 function glassIcon(name, cls){
-  const p = GLASS_SVG[name] || '<path d="M8 6h8l-.5 20H8.5z"/>';  // generic tumbler fallback
+  const p = GLASS_SVG[glassKey(name)] || GLASS_SVG['Rocks'];  // generic tumbler fallback
   return `<svg class="gsvg ${cls||''}" viewBox="0 0 24 30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 }
+// Glass control shown beside the METHOD in a cocktail's detail: the correct cup
+// for the drink by default, with a dropdown (admins) to pick a different one.
+function ckGlassSelHTML(id){
+  const c = cocktails[id]; if(!c) return '';
+  const cur = c.glass || '';
+  const key = glassKey(cur) || 'Rocks';   // canonical glass for the icon + default selection
+  const big = `<span class="ck-glass-big" id="ck-d-glassic">${glassIcon(key,'gic-lg')}</span>`;
+  if(!isAdmin()) return big + `<span class="ck-glass-name">${esc(cur||key)}</span>`;
+  const opts = GLASSES.map(g=>`<option value="${esc(g)}" ${g===key?'selected':''}>${esc(g)}</option>`).join('');
+  return big + `<select class="ck-glass-dd" title="Glass — change it here" onchange="ckSetGlass('${id}',this.value)">${opts}</select>`;
+}
+window.ckSetGlass = async function(id, val){
+  const ic = document.getElementById('ck-d-glassic'); if(ic) ic.innerHTML = glassIcon(val,'gic-lg');
+  try{ await dbSet('cellar/cocktails/'+id+'/glass', val); showToast('Glass set — '+val); }
+  catch(e){ showToast('Could not save glass'); }
+};
 
 // ══════════════════════════════════════════════════════════════════════════
 // FRIENDS — who likes what, and what you can pour them tonight.
@@ -5232,10 +5270,9 @@ function friendsHTML(){
         const txt = fav.txt || fav.ck || '';
         if(txt) chip = `<span class="fav-chip fav-txt">${esc(txt)}</span>`;
       }
-      // Spec line: preferred bottle · add-ons · method · glass (with a glass icon).
+      // Spec line: preferred bottle · add-ons · method (glass lives on the recipe).
       const bottleNm = fav.bottleName || (fav.bottleId && bottles[fav.bottleId] ? bottles[fav.bottleId].name : '');
       const parts = [bottleNm, fav.addons, fav.method].filter(Boolean).map(esc);
-      if(fav.glass) parts.push(glassIcon(fav.glass,'gic-sm')+esc(fav.glass));
       const spec = parts.length ? `<span class="fav-spec">${parts.join(' · ')}</span>` : '';
       if(!chip && !spec) return '';
       return `<div class="fav-item">${chip||'<span class="fav-chip fav-txt">their pour</span>'}${spec}</div>`;
@@ -5282,21 +5319,16 @@ function frOrderRowHTML(o){
   const drink = o.ck && cocktails[o.ck] ? cocktails[o.ck].name : (o.txt||'');
   const bottle = o.bottleName || (o.bottleId && bottles[o.bottleId] ? bottles[o.bottleId].name : '');
   const methodOpts = ['<option value="">Method…</option>'].concat(FR_METHODS.map(m=>`<option ${((o.method||'')===m)?'selected':''}>${m}</option>`)).join('');
-  // Glass list = the known glasses + any custom/legacy value already saved.
-  const glassList = GLASSES.concat((o.glass && !GLASSES.includes(o.glass)) ? [o.glass] : []);
-  const glassBtns = glassList.map(g=>`<button type="button" class="glass-opt${(o.glass===g)?' on':''}" data-glass="${esc(g)}" onclick="frPickGlass(this)" title="${esc(g)}">${glassIcon(g)}<span>${esc(g)}</span></button>`).join('');
+  // Glass is a property of the recipe (shown in the cocktail's detail), not a
+  // per-friend choice — so it isn't edited here. Any legacy value rides along.
+  const glassKeep = o.glass ? `<input type="hidden" class="fo-glass" value="${esc(o.glass)}">` : '';
   return `<div class="fav-order">
     <div class="fo-grid">
       <input class="fo-drink" placeholder="Drink — e.g. Whisky Sour" list="ckNames" value="${esc(drink)}">
       <input class="fo-spirit" placeholder="Preferred bottle — from your stock" list="bottleNames" value="${esc(bottle)}">
       <input class="fo-addons" placeholder="Add-ons — e.g. egg whites" value="${esc(o.addons||'')}">
       <select class="fo-method">${methodOpts}</select>
-    </div>
-    <div class="glass-field">
-      <span class="fo-lbl">Glass</span>
-      <input type="hidden" class="fo-glass" value="${esc(o.glass||'')}">
-      <div class="glass-picker">${glassBtns}</div>
-    </div>
+    </div>${glassKeep}
     <button class="fo-del" title="Remove this drink" onclick="this.closest('.fav-order').remove()">✕ remove</button>
   </div>`;
 }
@@ -5305,14 +5337,6 @@ function frRenderFavs(){
   host.innerHTML = frFavs.length ? frFavs.map(frOrderRowHTML).join('') : '';
 }
 window.frAddOrder = function(){ document.getElementById('fr-favs').insertAdjacentHTML('beforeend', frOrderRowHTML({})); };
-// Pick (or toggle off) a glass in an order row's visual picker.
-window.frPickGlass = function(btn){
-  const wrap = btn.closest('.glass-field');
-  const was = btn.classList.contains('on');
-  wrap.querySelectorAll('.glass-opt').forEach(b=>b.classList.remove('on'));
-  wrap.querySelector('.fo-glass').value = was ? '' : btn.dataset.glass;
-  if(!was) btn.classList.add('on');
-};
 // Read the order rows back out of the DOM into stored objects.
 function frReadOrders(){
   return [...document.querySelectorAll('#fr-favs .fav-order')].map(row=>{
@@ -5320,7 +5344,7 @@ function frReadOrders(){
     const spirit=(row.querySelector('.fo-spirit').value||'').trim();
     const addons=(row.querySelector('.fo-addons').value||'').trim();
     const method=(row.querySelector('.fo-method').value||'').trim();
-    const glass=(row.querySelector('.fo-glass').value||'').trim();
+    const gEl=row.querySelector('.fo-glass'); const glass=(gEl&&gEl.value||'').trim();
     const o={};
     const ck=frMatchCocktail(drink);
     if(ck) o.ck=ck; else if(drink) o.txt=drink;
