@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.30</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.31</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -714,8 +713,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.30</div>  </div>
-</div>
+    <div class="auth-rev">Rev 3.31</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -832,8 +830,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.30</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
-    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.31</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -1040,7 +1037,7 @@
     <div class="mrow" style="margin-top:16px">
       <button class="mbtn ghost dt-close" onclick="closeCocktail()">Close</button>
       <button class="mbtn ghost" id="ck-d-editbtn" style="display:none" onclick="closeCocktail();openRecipeEditor(cocktailDetailId)">✏️ Edit recipe</button>
-      <button class="mbtn dt-save" id="ck-d-savebtn" style="display:none" onclick="saveCocktailPhotos(cocktailDetailId)">Save photos</button>
+      <button class="mbtn dt-save" id="ck-d-savebtn" style="display:none" onclick="saveCocktailAndClose(cocktailDetailId)">Save</button>
     </div>
     <div class="mstatus" id="ckStatus"></div>
   </div>
@@ -4802,34 +4799,65 @@ function barTokenMap(){
 }
 // ── REAL-INVENTORY MATCHING ──────────────────────────────────────────────────
 // Canonical tokens = spirits, liqueurs, and mixers the keyword map knows about.
-// A NON-canonical ingredient (fresh juice, syrup, bitters, garnish…) is matched
-// by NAME against your logged bottles — so "lemon juice" / "raspberry syrup" only
-// count once you've actually added them (to Mixers).
+// A NON-canonical ingredient (fresh juice, syrup, bitters…) is matched by NAME
+// against your logged bottles — so "lemon juice" only counts once you own it.
 const CANON_TOKENS = new Set(INGREDIENT_KEYWORDS.map(([t])=>t));
+// Name-based stand-ins for non-canonical ingredients — e.g. a bottle of
+// "sweet & sour" covers fresh lemon/lime juice. Patterns are normalized names.
+const NAME_SUBS = {
+  'lemon juice': ['sweet and sour','sour mix'],
+  'lime juice':  ['sweet and sour','sour mix'],
+  'simple syrup':['gomme','sugar syrup','rich syrup'],
+  'orgeat':      ['almond syrup']
+};
+function normname(s){ return deburr(String(s||'').toLowerCase()).replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim(); }
+function nameHas(name, phrase){ const w = phrase.split(' ').filter(x=>x.length>1); return !!phrase && (name.includes(phrase) || (w.length && w.every(x=>name.includes(x)))); }
 function ownedBottles(){ return activeArr().filter(onShelf); }
 // One snapshot per render: each owned bottle + the tokens it provides + its name.
-function invSnapshot(){ return ownedBottles().map(b=>({ b, tokens: bottleTokens(b), name: deburr(String(b.name||'').toLowerCase()) })); }
-// Which owned bottles satisfy an ingredient — directly, then (spirits/liqueurs)
-// via the substitution map. Returns {direct:[bottle], sub:[{b,use}]}.
+function invSnapshot(){ return ownedBottles().map(b=>({ b, tokens: bottleTokens(b), name: normname(b.name) })); }
+// Which owned bottles satisfy an ingredient — directly, then via substitution
+// (token subs for spirits/liqueurs; name subs like sweet&sour for juices).
 function ingMatch(ing, inv){
   inv = inv || invSnapshot();
-  const item = ing.item, direct = [];
-  if(CANON_TOKENS.has(item)){
+  const item = ing.item, canon = CANON_TOKENS.has(item), direct = [], sub = [];
+  if(canon){
     inv.forEach(e=>{ if(e.tokens.has(item)) direct.push(e.b); });          // by type (e.g. gin → your gins)
   }else{
-    const q = deburr(String(item||'').toLowerCase()).trim();               // by name (juice/syrup/bitters/…)
-    const words = q.split(/[^a-z0-9]+/).filter(w=>w.length>2);
-    inv.forEach(e=>{ if(q && (e.name.includes(q) || (words.length && words.every(w=>e.name.includes(w))))) direct.push(e.b); });
+    const q = normname(item);
+    inv.forEach(e=>{ if(nameHas(e.name, q)) direct.push(e.b); });          // by name (juice/syrup/bitters/…)
   }
-  const sub = [];
-  if(!direct.length && CANON_TOKENS.has(item)){
-    (COCKTAIL_SUBS[item]||[]).forEach(stk=>{ inv.forEach(e=>{ if(e.tokens.has(stk)) sub.push({ b:e.b, use:stk }); }); });
+  if(!direct.length){
+    if(canon){ (COCKTAIL_SUBS[item]||[]).forEach(stk=>{ inv.forEach(e=>{ if(e.tokens.has(stk)) sub.push({ b:e.b, use:stk }); }); }); }
+    else { (NAME_SUBS[item]||[]).forEach(pat=>{ inv.forEach(e=>{ if(nameHas(e.name, pat) && !sub.some(s=>s.b.id===e.b.id)) sub.push({ b:e.b, use:e.b.name }); }); }); }
   }
   return { direct, sub };
 }
-// Persisted "which bottle does this drink use" pick (when you own several).
-function ckPickFor(id, ing){ const c=cocktails[id]; const p=c&&c.picks; return (p&&p[ckSlug(ing.item)])||null; }
+// Resolve an ingredient to the specific bottle it uses, honoring a manual pick.
+function ingResolve(ing, inv, c){
+  const m = ingMatch(ing, inv);
+  const key = ckSlug(ing.item);
+  const pid = c && c.picks && c.picks[key];
+  const picked = pid ? ((inv.find(e=>e.b.id===pid)||{}).b || null) : null;
+  let chosen = null, via = 'miss';
+  if(m.direct.length){ chosen = (picked && m.direct.some(b=>b.id===picked.id)) ? picked : m.direct[0]; via = 'have'; }
+  else if(picked){ chosen = picked; via = 'sub'; }          // manual override satisfies the slot
+  else if(m.sub.length){ chosen = m.sub[0].b; via = 'sub'; }
+  return { m, key, chosen, via };
+}
+// Bottles offered in an ingredient's picker. Spirits → only the qualifying
+// bottles (choose which); juices/syrups → their subs + your Mixers (assign one).
+function ingCandidates(ing, inv, m){
+  m = m || ingMatch(ing, inv);
+  const item = ing.item, seen = new Set(), out = [];
+  const add = b => { if(b && !seen.has(b.id)){ seen.add(b.id); out.push(b); } };
+  m.direct.forEach(add); m.sub.forEach(s=>add(s.b));
+  const spiritIng = CANON_TOKENS.has(item) && (CK_BASE_TOKENS.has(item) || CK_LIQ_TOKENS.has(item) || FAMILY[item]);
+  if(!spiritIng) inv.forEach(e=>{ if(kindOf(e.b)==='mixer') add(e.b); });
+  return out;
+}
 window.ckSetPick = async function(id, key, bottleId){
+  const c = cocktails[id]; if(c){ c.picks = c.picks || {}; if(bottleId) c.picks[key] = bottleId; else delete c.picks[key]; }
+  ckRenderStatus(id);                                        // reflect the choice in the open modal now
   try{ await dbSet('cellar/cocktails/'+id+'/picks/'+key, bottleId||null); }
   catch(e){ showToast('Could not save that choice'); }
 };
@@ -4872,9 +4900,9 @@ function cocktailStatus(c, inv){
   const req = (c.ingredients||[]).filter(ingRequired);
   const missing = [], subs = [];
   for(const ing of req){
-    const m = ingMatch(ing, inv);
-    if(m.direct.length) continue;
-    if(m.sub.length) subs.push({ need:ing.item, use:m.sub[0].use });
+    const r = ingResolve(ing, inv, c);
+    if(r.via==='have') continue;
+    if(r.via==='sub') subs.push({ need:ing.item, use:(r.chosen&&r.chosen.name)||'' });
     else missing.push(ing.item);
   }
   let state;
@@ -4937,9 +4965,9 @@ function cocktailsHTML(){
     const tags = (c.tags||[]).slice(0,3).map(t=>`<span class="ck-tag">${esc(t)}</span>`).join('');
     // Hover peek: the full ingredient line, in-stock ✓ / sub ↔ / missing ✕, plus method.
     const peek = c.ingredients.map(ing=>{
-      const m = ingMatch(ing, inv);
-      const mk = m.direct.length ? '<span class="pk-y">✓</span>'
-               : m.sub.length ? '<span class="pk-y">↔</span>'
+      const r = ingResolve(ing, inv, c);
+      const mk = r.via==='have' ? '<span class="pk-y">✓</span>'
+               : r.via==='sub' ? '<span class="pk-y">↔</span>'
                : ing.optional ? '<span class="pk-o">○</span>'
                : '<span class="pk-n">✕</span>';
       return `<div class="pk-row">${mk} ${esc(ing.item)}${ing.optional?' <em>opt</em>':''}</div>`;
@@ -4977,48 +5005,70 @@ function cocktailPhotoCard(id, fam){
 }
 window.setCocktailFilter = function(k){ cocktailFilter=k; render(); };
 
-window.openCocktail = function(id){
+// Status banner + ingredient rows + Buy button for the open detail modal.
+// Split out so a bottle pick can refresh it live without reloading photos.
+function ckRenderStatus(id){
   const c = cocktails[id]; if(!c) return;
   const inv = invSnapshot();
   const st = cocktailStatus(c, inv);
+  const bn = document.getElementById('ck-d-status');
+  if(bn){
+    bn.className = 'ck-d-status';
+    if(st.state==='can'){ bn.classList.add('ck-can'); bn.textContent='✓ You can make this right now.'; }
+    else if(st.state==='sub'){ bn.classList.add('ck-sub'); bn.textContent='✓ Can make — using '+st.subs.map(s=>s.use+' for '+s.need).join(', ')+'.'; }
+    else if(st.state==='one'){ bn.classList.add('ck-one'); bn.textContent='● One bottle away — you\'re missing '+st.missing[0]+'.'; }
+    else { bn.classList.add('ck-cant'); bn.textContent='✕ Missing '+st.missing.length+': '+st.missing.join(', ')+'.'; }
+  }
+  const bLabel = b => esc(b.name||'bottle') + ((b.rackCol&&b.rackRow)?` <span class="ck-slot">${esc(slotCode(b.rackCol,b.rackRow))}</span>`:'');
+  const optHTML = (b,sel) => `<option value="${esc(b.id)}" ${sel?'selected':''}>${esc(b.name||'bottle')}${(b.rackCol&&b.rackRow)?(' · '+esc(slotCode(b.rackCol,b.rackRow))):''}</option>`;
+  const picker = (key,opts) => `<select class="ck-pick" onchange="ckSetPick('${id}','${key}',this.value)">${opts}</select>`;
+  const rows = (c.ingredients||[]).map(ing=>{
+    const amt = [ing.amount, ing.unit].filter(Boolean).join(' ');
+    const r = ingResolve(ing, inv, c);
+    let icon, rowcls, note='';
+    if(r.via==='have'){
+      icon='✓'; rowcls='ck-r-have';
+      note = r.m.direct.length>1
+        ? picker(r.key, r.m.direct.map(b=>optHTML(b, r.chosen&&b.id===r.chosen.id)).join(''))
+        : `<span class="ck-usebottle">${bLabel(r.chosen)}</span>`;
+    } else if(r.via==='sub'){
+      icon='↔'; rowcls='ck-r-sub';
+      const cands = ingCandidates(ing, inv, r.m);
+      note = cands.length>1
+        ? picker(r.key, cands.map(b=>optHTML(b, r.chosen&&b.id===r.chosen.id)).join(''))
+        : `<span class="ck-subnote">use ${bLabel(r.chosen)}</span>`;
+    } else if(ing.optional){
+      icon='○'; rowcls='ck-r-pantry'; note=`<span class="ck-subnote">optional — not owned</span>`;
+    } else {
+      icon='✕'; rowcls='ck-r-miss';
+      const cands = ingCandidates(ing, inv, r.m);
+      note = cands.length
+        ? picker(r.key, '<option value="">— use what you have —</option>'+cands.map(b=>optHTML(b,false)).join(''))
+        : `<span class="ck-subnote">not in your inventory</span>`;
+    }
+    return `<div class="ck-row ${rowcls}"><span class="ck-ic">${icon}</span><span class="ck-amt">${esc(amt)}</span><span class="ck-item">${esc(ing.item)}${ing.optional?' <em>(optional)</em>':''}</span>${note}</div>`;
+  }).join('');
+  const ingsEl = document.getElementById('ck-d-ings'); if(ingsEl) ingsEl.innerHTML = rows;
+  // "Add missing to Buy list" — only what you're truly short (subs/picks don't count).
+  const buyBtn = document.getElementById('ck-d-buybtn');
+  if(buyBtn){
+    const gaps = st.missing;
+    if(gaps.length && isAdmin()){ buyBtn.style.display=''; buyBtn.textContent='🛒 Add missing to Buy list ('+gaps.length+')'; buyBtn.onclick=()=>addMissingToBuy(id); }
+    else { buyBtn.style.display='none'; buyBtn.onclick=null; }
+  }
+}
+
+window.openCocktail = function(id){
+  const c = cocktails[id]; if(!c) return;
+  cocktailDetailId = id;
   document.getElementById('ck-d-name').textContent = c.name || 'Cocktail';
   const methodLbl = c.method ? ('shake'===c.method?'shaken':'stir'===c.method?'stirred':c.method) : '';
   const metaBits = [c.category, methodLbl, c.iba?'IBA official':''].filter(Boolean);
   document.getElementById('ck-d-meta').textContent = metaBits.join('  ·  ');
   // Glass — defaults to the correct cup for this drink; a dropdown lets you change it.
   document.getElementById('ck-d-glasssel').innerHTML = ckGlassSelHTML(id);
-  // status banner
-  const bn = document.getElementById('ck-d-status');
-  bn.className = 'ck-d-status';
-  if(st.state==='can'){ bn.classList.add('ck-can'); bn.textContent='✓ You can make this right now.'; }
-  else if(st.state==='sub'){ bn.classList.add('ck-sub'); bn.textContent='✓ Can make — using '+st.subs.map(s=>s.use+' for '+s.need).join(', ')+'.'; }
-  else if(st.state==='one'){ bn.classList.add('ck-one'); bn.textContent='● One bottle away — you\'re missing '+st.missing[0]+'.'; }
-  else { bn.classList.add('ck-cant'); bn.textContent='✕ Missing '+st.missing.length+': '+st.missing.join(', ')+'.'; }
-  // ingredient rows — real status; when you own several qualifying bottles, pick one
-  const rows = (c.ingredients||[]).map(ing=>{
-    const amt = [ing.amount, ing.unit].filter(Boolean).join(' ');
-    const m = ingMatch(ing, inv);
-    const bLabel = b => esc(b.name||'') + ((b.rackCol&&b.rackRow)?` <span class="ck-slot">${esc(slotCode(b.rackCol,b.rackRow))}</span>`:'');
-    let icon, note='', rowcls='';
-    if(m.direct.length){
-      icon='✓'; rowcls='ck-r-have';
-      if(m.direct.length>1){
-        const pick = ckPickFor(id, ing) || m.direct[0].id;
-        const opts = m.direct.map(b=>`<option value="${esc(b.id)}" ${b.id===pick?'selected':''}>${esc(b.name||'bottle')}${(b.rackCol&&b.rackRow)?(' · '+esc(slotCode(b.rackCol,b.rackRow))):''}</option>`).join('');
-        note = `<select class="ck-pick" title="Which one this drink uses" onchange="ckSetPick('${id}','${ckSlug(ing.item)}',this.value)">${opts}</select>`;
-      } else {
-        note = `<span class="ck-usebottle">${bLabel(m.direct[0])}</span>`;
-      }
-    } else if(m.sub.length){
-      icon='↔'; rowcls='ck-r-sub'; note=`<span class="ck-subnote">use ${bLabel(m.sub[0].b)}</span>`;
-    } else if(ing.optional){
-      icon='○'; rowcls='ck-r-pantry'; note=`<span class="ck-subnote">optional — not owned</span>`;
-    } else {
-      icon='✕'; rowcls='ck-r-miss'; note=`<span class="ck-subnote">not in your inventory</span>`;
-    }
-    return `<div class="ck-row ${rowcls}"><span class="ck-ic">${icon}</span><span class="ck-amt">${esc(amt)}</span><span class="ck-item">${esc(ing.item)}${ing.optional?' <em>(optional)</em>':''}</span>${note}</div>`;
-  }).join('');
-  document.getElementById('ck-d-ings').innerHTML = rows;
+  // Status banner + ingredient rows + Buy button — recomputed live on any pick.
+  ckRenderStatus(id);
   document.getElementById('ck-d-steps').textContent = c.instructions || '';
   document.getElementById('ck-d-tags').innerHTML = (c.tags||[]).map(t=>`<span class="ck-tag">${esc(t)}</span>`).join('');
 
@@ -5027,17 +5077,6 @@ window.openCocktail = function(id){
   document.getElementById('ck-d-likedby').innerHTML = likers.length
     ? '❤️ Liked by '+likers.map(f=>esc(f.name)).join(', ') : '';
 
-  // ── "Add missing to Buy list" — only the spirits/liqueurs you're short, and
-  //    only when you're actually short one or more (subs don't count as missing).
-  cocktailDetailId = id;
-  const buyBtn = document.getElementById('ck-d-buybtn');
-  const gaps = st.missing;   // canonical tokens you don't own and can't sub
-  if(gaps.length && isAdmin()){
-    buyBtn.style.display='';
-    buyBtn.textContent = '🛒 Add missing to Buy list ('+gaps.length+')';
-    buyBtn.onclick = ()=>addMissingToBuy(id);
-  } else { buyBtn.style.display='none'; buyBtn.onclick=null; }
-
   // ── Photos: load existing, wire the intake (camera / library / paste) ──
   const ph = cocktailPhotos[id];
   piStore.ck = (Array.isArray(ph) ? ph : (ph ? Object.values(ph) : [])).filter(p=>p&&p.url).map(p=>({path:p.path||null, url:p.url, cut:!!p.cut}));
@@ -5045,7 +5084,7 @@ window.openCocktail = function(id){
   const photoWrap = document.getElementById('ck-d-photowrap');
   const saveBtn = document.getElementById('ck-d-savebtn');
   const editBtn = document.getElementById('ck-d-editbtn');
-  if(isAdmin()){ photoWrap.style.display=''; saveBtn.style.display=''; saveBtn.onclick=()=>saveCocktailPhotos(id); editBtn.style.display=''; }
+  if(isAdmin()){ photoWrap.style.display=''; saveBtn.style.display=''; saveBtn.onclick=()=>saveCocktailAndClose(id); editBtn.style.display=''; }
   else { photoWrap.style.display='none'; saveBtn.style.display='none'; editBtn.style.display='none'; }
 
   document.getElementById('ckStatus').textContent='';
@@ -5153,13 +5192,18 @@ window.deleteRecipe = async function(){
 window.saveCocktailPhotos = async function(id){
   const st = document.getElementById('ckStatus');
   try{
-    st.textContent='⏳ Saving photos…';
+    st.textContent='⏳ Saving…';
     const ups = await uploadPhotos('cocktail_'+id, piStore.ck);
     // Carry the transparent-cutout flag through so the card knows to float it.
     const recs = ups.map((u,i)=>({ ...u, cut: !!(piStore.ck[i] && piStore.ck[i].cut) }));
     await dbSet('cellar/cocktail_photos/'+id, recs.length ? recs : null);
-    st.textContent = ups.length ? '✅ Saved '+ups.length+' photo'+(ups.length>1?'s':'') : '✅ Photos cleared';
-  }catch(e){ st.textContent = '❌ '+(e.message||e); }
+    st.textContent = '✅ Saved';
+    return true;
+  }catch(e){ st.textContent = '❌ '+(e.message||e); return false; }
+};
+window.saveCocktailAndClose = async function(id){
+  const ok = await saveCocktailPhotos(id);
+  if(ok) closeCocktail();
 };
 
 // Map a canonical ingredient token → a Buy-list item (name + best-fit collection).
