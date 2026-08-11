@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.27</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.28</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -714,7 +714,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.27</div>  </div>
+    <div class="auth-rev">Rev 3.28</div>  </div>
 </div>
 
 <div class="wrap">
@@ -832,7 +832,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.27</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.28</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -3321,7 +3321,7 @@ window.goHome = function(){
   setView('all');
   window.scrollTo({ top:0, behavior:'smooth' });
 };
-window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='palate'||v==='cellar'||v==='history'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = (hideSearch||v==='cocktails'||v==='friends') ? 'none' : ''; document.getElementById('kindRow').style.display = (v==='cellar'||v==='cocktails'||v==='friends') ? 'none' : ''; { const ar=document.getElementById('actionRow'); if(ar) ar.style.display = (v==='cellar')?'none':''; const tr=document.getElementById('tabsRow'); if(tr) tr.style.display = (v==='cellar')?'none':''; } render(); };
+window.setView = function(v){ view=v; if(v!=='cellar'){ placing=null; inspect=null; rackEdit=false; rackFocusCol=null; } document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); const hideSearch=(v==='cellar'); document.getElementById('searchrow').style.display = hideSearch ? 'none' : ''; document.getElementById('askwrap').style.display = (v==='palate'||v==='cellar'||v==='history'||v==='cocktails'||v==='friends') ? 'none' : ''; document.getElementById('kindRow').style.display = (v==='cellar'||v==='cocktails'||v==='friends') ? 'none' : ''; { const ar=document.getElementById('actionRow'); if(ar) ar.style.display = (v==='cellar')?'none':''; const tr=document.getElementById('tabsRow'); if(tr) tr.style.display = (v==='cellar')?'none':''; } render(); };
 // Strip accents/diacritics so "chateauneuf" matches "Châteauneuf", "rose" matches "rosé", etc.
 function deburr(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 window.onSearch = function(v){ search=deburr((v||'').trim().toLowerCase()); document.getElementById('searchclear').style.display = search ? '' : 'none'; render(); };
@@ -3432,6 +3432,9 @@ function render(){
 
   const c = document.getElementById('content');
   c.classList.remove('cs-s','cs-m','cs-l','cs-img'); c.classList.add('cs-'+cardSize);
+  // A live search spans EVERYTHING — bottles, cocktails, friends, wishlist —
+  // regardless of the tab you're on (the Cellar keeps its own Find box).
+  if(search && view!=='cellar'){ c.innerHTML = globalSearchHTML(); return; }
   if(view==='history'){ c.innerHTML = historyHTML(); return; }
 
   if(view==='palate'){ c.innerHTML = palateHTML(); return; }
@@ -5247,6 +5250,34 @@ window.ckSetGlass = async function(id, val){
 // cellar/friends/{id} = { name, favorites:[{ck}|{txt}], avoid:[…], notes }
 // ══════════════════════════════════════════════════════════════════════════
 function friendsArr(){ return asArr(friends).filter(f=>f && f.name); }
+// ── GLOBAL SEARCH: one query, every corner of the app ────────────────────────
+function globalSearchHTML(){
+  const q = search;
+  const hitB = applySort(activeArr().filter(matchSearch));
+  const hitC = cocktailArr().filter(cocktailMatchSearch);
+  const hitF = friendsArr().filter(f=>deburr(((f.name||'')+' '+(f.notes||'')+' '+((f.favorites||[]).map(x=>x&&(x.txt||(x.ck&&cocktails[x.ck]&&cocktails[x.ck].name)||'')).join(' '))).toLowerCase()).includes(q));
+  const hitW = asArr(buylist).filter(w=>deburr([w.name,w.desc,w.producer,w.region,w.note,w.vendor].filter(Boolean).join(' ').toLowerCase()).includes(q));
+  const typed = esc((document.getElementById('searchbar')||{value:''}).value.trim());
+  let html = `<div class="shead"><p>Results for “${typed}” — ${hitB.length} bottle${hitB.length===1?'':'s'} · ${hitC.length} cocktail${hitC.length===1?'':'s'} · ${hitF.length} friend${hitF.length===1?'':'s'} · ${hitW.length} wishlist.</p></div>`;
+  if(!(hitB.length||hitC.length||hitF.length||hitW.length)) return html + '<div class="empty"><p>Nothing anywhere matches that — try fewer letters.</p></div>';
+  if(hitB.length) html += '<h3 class="hist-h">🍾 Bottles</h3><div class="card-grid">' + hitB.map(collectionCardHTML).join('') + '</div>';
+  if(hitC.length){
+    html += '<h3 class="hist-h">🍸 Cocktails</h3><div class="card-grid">' + hitC.map(cc=>
+      `<div class="lb-row" onclick="openCocktail('${cc.id}')"><div class="rank">🍸</div><div class="lscore"></div><div><div class="lname">${esc(cc.name||'')}</div><div class="lmeta">${esc([cc.category,cc.glass,cc.iba?'IBA':''].filter(Boolean).join(' · '))}</div></div></div>`
+    ).join('') + '</div>';
+  }
+  if(hitF.length){
+    html += '<h3 class="hist-h">🧑‍🤝‍🧑 Friends</h3><div class="card-grid">' + hitF.map(f=>
+      `<div class="lb-row" onclick="setView('friends')"><div class="rank">🥂</div><div class="lscore"></div><div><div class="lname">${esc(f.name||'')}</div><div class="lmeta">${esc(((f.favorites||[]).map(x=>x&&(x.txt||(x.ck&&cocktails[x.ck]&&cocktails[x.ck].name)||'')).filter(Boolean).join(' · '))||'—')}</div></div></div>`
+    ).join('') + '</div>';
+  }
+  if(hitW.length){
+    html += '<h3 class="hist-h">🧾 Wishlist</h3><div class="card-grid">' + hitW.map(w=>
+      `<div class="lb-row" onclick="openWlDetail('${w.id}')"><div class="rank">${kindEmoji(kindOf(w))}</div><div class="lscore"></div><div><div class="lname">${esc(w.name||'')}</div><div class="lmeta">${esc([w.desc,w.region,fmtPrice(w.price)].filter(Boolean).join(' · '))}</div></div></div>`
+    ).join('') + '</div>';
+  }
+  return html;
+}
 // Friends who tagged a given cocktail id as a favorite.
 function friendsWhoLike(ckId){ return friendsArr().filter(f=>(f.favorites||[]).some(x=>x && x.ck===ckId)); }
 
