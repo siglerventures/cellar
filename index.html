@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.39</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.40</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -704,6 +704,8 @@
   .ck-pick:hover{border-color:var(--gold)}
   .ck-loc{flex-shrink:0;background:none;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-size:12px;line-height:1;padding:4px 6px;margin-left:6px}
   .ck-loc:hover{border-color:var(--gold);background:rgba(201,163,92,.1)}
+  .ck-buy1{flex-shrink:0;background:none;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-size:12px;line-height:1;padding:4px 6px;margin-left:6px}
+  .ck-buy1:hover{border-color:var(--gold);background:rgba(201,163,92,.1)}
   .ck-d-steps{font-size:13.5px;line-height:1.5;color:var(--parch)}
   .ck-d-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 </style>
@@ -721,7 +723,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.39</div>  </div></div>
+    <div class="auth-rev">Rev 3.40</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -838,7 +840,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.39</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.40</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -5074,8 +5076,12 @@ function ckRenderStatus(id){
   const bLabel = b => esc(b.name||'bottle') + ((b.rackCol&&b.rackRow)?` <span class="ck-slot">${esc(slotCode(b.rackCol,b.rackRow))}</span>`:'');
   const optHTML = (b,sel) => `<option value="${esc(b.id)}" ${sel?'selected':''}>${esc(b.name||'bottle')}${(b.rackCol&&b.rackRow)?(' · '+esc(slotCode(b.rackCol,b.rackRow))):''}</option>`;
   const picker = (key,opts) => `<select class="ck-pick" onchange="ckSetPick('${id}','${key}',this.value)">${opts}</select>`;
-  // 📍 jump-to-cellar for the bottle a slot uses (only when it's placed on a rack).
-  const locBtn = b => (b && b.rackCol && b.rackRow) ? `<button class="ck-loc" title="Find ${esc(b.name||'it')} in your cellar" onclick="ckLocate('${b.id}')">📍</button>` : '';
+  // 📍 jump-to-cellar for whichever bottle the row currently uses. Rendered for
+  // EVERY resolved row (pickers included — it follows the selected option);
+  // ckLocate handles unplaced bottles with a "not placed yet" toast.
+  const locBtn = b => b ? `<button class="ck-loc" title="Find ${esc(b.name||'it')} in your cellar" onclick="ckLocate('${b.id}')">📍</button>` : '';
+  // 🛒 one-tap Buy for a single missing ingredient.
+  const buyOne = item => isAdmin() ? `<button class="ck-buy1" title="Add ${esc(item)} to the Buy list" onclick="ckBuyOne('${id}',this.dataset.item)" data-item="${esc(item)}">🛒</button>` : '';
   const rows = (c.ingredients||[]).map(ing=>{
     const amt = [ing.amount, ing.unit].filter(Boolean).join(' ');
     const r = ingResolve(ing, inv, c);
@@ -5089,13 +5095,13 @@ function ckRenderStatus(id){
         : `<span class="ck-usebottle">${r.via==='sub'?'use ':''}${bLabel(r.chosen)}</span>`;
       note = control + locBtn(r.chosen);
     } else if(ing.optional){
-      icon='○'; rowcls='ck-r-pantry'; note=`<span class="ck-subnote">optional — not owned</span>`;
+      icon='○'; rowcls='ck-r-pantry'; note=`<span class="ck-subnote">optional — not owned</span>`+buyOne(ing.item);
     } else {
       icon='✕'; rowcls='ck-r-miss';
       const cands = ingCandidates(ing, inv, r.m);
-      note = cands.length
+      note = (cands.length
         ? picker(r.key, '<option value="">— use what you have —</option>'+cands.map(b=>optHTML(b,false)).join(''))
-        : `<span class="ck-subnote">not in your inventory</span>`;
+        : `<span class="ck-subnote">not in your inventory</span>`) + buyOne(ing.item);
     }
     return `<div class="ck-row ${rowcls}"><span class="ck-ic">${icon}</span><span class="ck-amt">${esc(amt)}</span><span class="ck-item">${esc(ing.item)}${ing.optional?' <em>(optional)</em>':''}</span>${note}</div>`;
   }).join('');
@@ -5302,6 +5308,23 @@ function tokenToBuyKind(tok){
   if(tok==='vodka') return 'vodka';
   return 'mixer';   // gin, rums, liqueurs, sparkling — the app has no gin/rum kind
 }
+// 🛒 one ingredient straight to the Buy list (row-level button).
+window.ckBuyOne = async function(id, item){
+  const c = cocktails[id];
+  const st = document.getElementById('ckStatus');
+  const name = String(item||'').replace(/(^|\s)\S/g,m=>m.toUpperCase()).trim();   // accent-safe title case ("crème de cassis" → "Crème De Cassis")
+  if(!name) return;
+  const existing = new Set(asArr(buylist).map(b=>deburr((b.name||'').toLowerCase())));
+  if(existing.has(deburr(name.toLowerCase()))){ if(st) st.textContent = name+' is already on your Buy list.'; return; }
+  try{
+    const r = push(ref(db,'cellar/buylist'));
+    await set(r, { name, region:'', note:'for '+((c&&c.name)||'a cocktail'), kind:tokenToBuyKind(String(item||'').toLowerCase()),
+      addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now(),
+      desc:'', vintage:'', abv:'', grape:'', producer:'', price:null });
+    if(st) st.textContent = '🛒 Added '+name+' to the Buy list.';
+    showToast('🛒 '+name+' → Buy list');
+  }catch(e){ if(st) st.textContent = '❌ '+(e.message||e); }
+};
 window.addMissingToBuy = async function(id){
   const c = cocktails[id]; if(!c) return;
   const st = document.getElementById('ckStatus');
