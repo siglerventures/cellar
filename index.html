@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.23</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.24</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -713,7 +713,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.23</div>  </div>
+    <div class="auth-rev">Rev 3.24</div>  </div>
 </div>
 
 <div class="wrap">
@@ -831,7 +831,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.23</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.24</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -1037,6 +1037,14 @@
     <div id="ck-d-photowrap" style="display:none">
       <div class="qlabel" style="margin-top:16px">Your photos — first is the card image</div>
       <div class="pintake" id="ck-intake" ondragover="piDragOver(event,'ck')" ondragleave="piDragLeave(event,'ck')" ondrop="piDrop(event,'ck')"></div>
+      <div id="ckAdjust" style="display:none">
+        <div class="qlabel" style="margin-top:10px">Adjust image — how the card frames it</div>
+        <div class="mrow" style="align-items:center;gap:10px;flex-wrap:nowrap">
+          <img id="ckAdjPrev" alt="" style="width:84px;height:63px;border:1px solid var(--line);border-radius:4px;flex-shrink:0;object-fit:cover;background:#160a0c">
+          <button class="pi-btn" id="ckFitBtn" onclick="ckToggleFit()" style="white-space:nowrap">⬜ Fill (crop)</button>
+          <input type="range" id="ckPosY" min="0" max="100" step="1" style="flex:1;min-width:0" oninput="ckPosInput(this.value)" title="Slide the crop up / down">
+        </div>
+      </div>
     </div>
     <div class="mrow" style="margin-top:16px">
       <button class="mbtn ghost dt-close" onclick="closeCocktail()">Close</button>
@@ -4916,7 +4924,13 @@ function cocktailPhotoRec(id){
 function cocktailPhotoCard(id, fam){
   const rec = cocktailPhotoRec(id);
   // A cut-out (transparent) shot floats on the family gradient; a full scene covers.
-  if(rec) return `<img class="ck-img ${rec.cut?'ck-cut':''}" src="${esc(rec.url)}" alt="" loading="lazy">`;
+  if(rec){
+    // Same per-photo framing as bottles: fit 'contain' shows the whole shot on a
+    // dark letterbox; posY slides the cover crop.
+    const adj = (rec.fit || rec.posY!=null)
+      ? ` style="object-fit:${rec.fit==='contain'?'contain':'cover'};object-position:50% ${rec.posY==null?50:Math.max(0,Math.min(100,Number(rec.posY)||0))}%;background:#160a0c"` : '';
+    return `<img class="ck-img ${rec.cut?'ck-cut':''}"${adj} src="${esc(rec.url)}" alt="" loading="lazy">`;
+  }
   return `<span class="ck-glass">${FAMILY_GLASS[fam]||'🍸'}</span>`;
 }
 window.setCocktailFilter = function(k){ cocktailFilter=k; render(); };
@@ -4975,6 +4989,7 @@ window.openCocktail = function(id){
   const ph = cocktailPhotos[id];
   piStore.ck = (Array.isArray(ph) ? ph : (ph ? Object.values(ph) : [])).filter(p=>p&&p.url).map(p=>({path:p.path||null, url:p.url, cut:!!p.cut}));
   piRender('ck');
+  ckAdjustInit(id);
   const photoWrap = document.getElementById('ck-d-photowrap');
   const saveBtn = document.getElementById('ck-d-savebtn');
   const editBtn = document.getElementById('ck-d-editbtn');
@@ -5083,6 +5098,29 @@ window.deleteRecipe = async function(){
 };
 
 // Persist the drink's photos to cellar/cocktail_photos/{id} (separate from recipes).
+// Framing state for the cocktail modal's "Adjust image" (saved with the photos).
+let ckAdj = { fit:'cover', posY:50 };
+function ckAdjustApply(){
+  const img=document.getElementById('ckAdjPrev'); if(!img) return;
+  img.style.objectFit = ckAdj.fit==='contain' ? 'contain' : 'cover';
+  img.style.objectPosition = '50% ' + ckAdj.posY + '%';
+  const b=document.getElementById('ckFitBtn'); if(b) b.textContent = ckAdj.fit==='contain' ? '🔳 Fit (whole image)' : '⬜ Fill (crop)';
+  const s=document.getElementById('ckPosY'); if(s) s.disabled = ckAdj.fit==='contain';
+}
+function ckAdjustInit(id){
+  const box=document.getElementById('ckAdjust'); if(!box) return;
+  const rec = cocktailPhotoRec(id);
+  const url = (rec && rec.url) || (piStore.ck[0] && (piStore.ck[0].url || piStore.ck[0].dataUrl));
+  ckAdj.fit = (rec && rec.fit==='contain') ? 'contain' : 'cover';
+  ckAdj.posY = (rec && rec.posY!=null) ? Math.max(0,Math.min(100,Number(rec.posY)||0)) : 50;
+  if(!url){ box.style.display='none'; return; }
+  box.style.display='';
+  document.getElementById('ckAdjPrev').src = url;
+  document.getElementById('ckPosY').value = ckAdj.posY;
+  ckAdjustApply();
+}
+window.ckToggleFit = function(){ ckAdj.fit = ckAdj.fit==='contain' ? 'cover' : 'contain'; ckAdjustApply(); };
+window.ckPosInput = function(v){ ckAdj.posY = Math.max(0, Math.min(100, Number(v)||0)); ckAdjustApply(); };
 window.saveCocktailPhotos = async function(id){
   const st = document.getElementById('ckStatus');
   try{
@@ -5090,6 +5128,7 @@ window.saveCocktailPhotos = async function(id){
     const ups = await uploadPhotos('cocktail_'+id, piStore.ck);
     // Carry the transparent-cutout flag through so the card knows to float it.
     const recs = ups.map((u,i)=>({ ...u, cut: !!(piStore.ck[i] && piStore.ck[i].cut) }));
+    if(recs[0]){ recs[0].fit = ckAdj.fit; recs[0].posY = ckAdj.posY; }   // framing rides on the card photo
     await dbSet('cellar/cocktail_photos/'+id, recs.length ? recs : null);
     st.textContent = ups.length ? '✅ Saved '+ups.length+' photo'+(ups.length>1?'s':'') : '✅ Photos cleared';
   }catch(e){ st.textContent = '❌ '+(e.message||e); }
