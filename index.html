@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.16</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<title>The Cellar Ledger — Rev 3.17</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -576,7 +575,22 @@
     #content.cs-l .card-grid{grid-template-columns:repeat(auto-fill,minmax(430px,1fr))}
   }
   /* ── COCKTAILS ── */
+  .ck-shead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .ck-addbtn{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--gold);background:rgba(201,163,92,.08);border:1px solid var(--gold-dim);border-radius:20px;padding:7px 14px;cursor:pointer;white-space:nowrap;transition:.15s}
+  .ck-addbtn:hover{background:var(--gold);color:#1a1206;border-color:var(--gold)}
   .ck-chips{margin-bottom:16px}
+  /* recipe editor rows */
+  .rc-hint{color:var(--parch-dim);font-weight:400;font-size:11px;text-transform:none;letter-spacing:0}
+  .rc-row{display:grid;grid-template-columns:52px 74px 1fr auto auto;gap:6px;align-items:center;margin-bottom:6px}
+  .rc-row input[type=text],.rc-row .rc-amt,.rc-row .rc-unit,.rc-row .rc-item{margin:0}
+  .rc-opt{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--parch-dim);white-space:nowrap}
+  .rc-opt input{width:auto;margin:0}
+  .rc-del{background:none;border:none;color:var(--parch-dim);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:4px}
+  .rc-del:hover{color:#c96a6a;background:rgba(201,106,106,.1)}
+  .rc-addrow{font-family:inherit;font-size:12px;color:var(--gold);background:none;border:1px dashed var(--gold-dim);border-radius:6px;padding:7px 12px;cursor:pointer;margin-top:2px}
+  .rc-addrow:hover{background:rgba(201,163,92,.08)}
+  .mbtn.danger{color:#c96a6a;border-color:rgba(201,106,106,.4)}
+  .mbtn.danger:hover{background:rgba(201,106,106,.14)}
   .ck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
   .ck-card{text-align:left;font-family:inherit;color:var(--parch);background:var(--glass);border:1px solid var(--line);border-radius:8px;padding:0;cursor:pointer;transition:.15s;overflow:hidden;display:flex;flex-direction:column}
   .ck-card:hover{border-color:var(--gold);transform:translateY(-2px)}
@@ -585,6 +599,7 @@
   /* photo / placeholder area */
   .ck-photo{position:relative;aspect-ratio:4/3;overflow:hidden;display:flex;align-items:center;justify-content:center}
   .ck-img{width:100%;height:100%;object-fit:cover;display:block}
+  .ck-img.ck-cut{object-fit:contain;padding:8px;filter:drop-shadow(0 5px 12px rgba(0,0,0,.55))}
   .ck-glass{font-size:52px;opacity:.9;filter:drop-shadow(0 3px 8px rgba(0,0,0,.4))}
   /* spirit-family tints behind the placeholder glass */
   .ck-fam-agave{background:radial-gradient(120% 120% at 50% 0,#2f4a2a,#141d12)}
@@ -647,8 +662,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.16</div>
-  </div>
+    <div class="auth-rev">Rev 3.17</div>  </div>
 </div>
 
 <div class="wrap">
@@ -765,8 +779,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.16</span>
-    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.17</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
@@ -966,11 +979,45 @@
     </div>
     <div class="mrow" style="margin-top:16px">
       <button class="mbtn ghost dt-close" onclick="closeCocktail()">Close</button>
+      <button class="mbtn ghost" id="ck-d-editbtn" style="display:none" onclick="closeCocktail();openRecipeEditor(cocktailDetailId)">✏️ Edit recipe</button>
       <button class="mbtn dt-save" id="ck-d-savebtn" style="display:none" onclick="saveCocktailPhotos(cocktailDetailId)">Save photos</button>
     </div>
     <div class="mstatus" id="ckStatus"></div>
   </div>
 </div>
+
+<!-- ── RECIPE EDITOR (add / edit a cocktail) ── -->
+<div class="modal" id="recipeModal">
+  <div class="modal-card">
+    <h3 id="rc-title" style="margin-bottom:12px">Add a recipe</h3>
+    <input id="rc-name" placeholder="Cocktail name">
+    <div class="mgrid" style="margin-top:8px">
+      <input id="rc-glass" placeholder="Glass — e.g. Coupe, Rocks" list="rcGlasses">
+      <select id="rc-method">
+        <option value="">Method…</option>
+        <option value="shake">Shaken</option>
+        <option value="stir">Stirred</option>
+        <option value="build">Built in glass</option>
+        <option value="blend">Blended</option>
+      </select>
+    </div>
+    <div class="qlabel" style="margin-top:14px">Ingredients <span class="rc-hint">— amount · unit · what it is</span></div>
+    <div id="rc-ings"></div>
+    <button class="rc-addrow" onclick="rcAddRow()">＋ add ingredient</button>
+    <div class="qlabel" style="margin-top:14px">Method</div>
+    <textarea id="rc-steps" placeholder="Stir with ice and strain over a large cube; orange peel."></textarea>
+    <input id="rc-tags" placeholder="Tags — comma separated, e.g. boozy, citrusy, classic" style="margin-top:8px">
+    <div class="mstatus" id="rcStatus"></div>
+    <div class="mrow" style="margin-top:14px">
+      <button class="mbtn ghost" onclick="closeRecipeEditor()">Cancel</button>
+      <button class="mbtn danger" id="rc-delbtn" style="display:none" onclick="deleteRecipe()">Delete</button>
+      <button class="mbtn dt-save" onclick="saveRecipe()">Save recipe</button>
+    </div>
+  </div>
+</div>
+<datalist id="rcItems"></datalist>
+<datalist id="rcUnits"><option>oz</option><option>ml</option><option>dash</option><option>dashes</option><option>barspoon</option><option>tsp</option><option>splash</option><option>part</option><option>cube</option><option>wedge</option><option>slice</option><option>leaves</option><option>piece</option><option>top</option></datalist>
+<datalist id="rcGlasses"><option>Coupe</option><option>Rocks</option><option>Highball</option><option>Collins</option><option>Martini</option><option>Nick &amp; Nora</option><option>Flute</option><option>Wine</option><option>Mug</option><option>Hurricane</option></datalist>
 
 <!-- ── ARCHIVE HISTORY ── -->
 <!-- ── BARCODE SCANNER ── -->
@@ -2448,11 +2495,12 @@ async function piAddFiles(ctx, files){
     if(piStore[ctx].length >= PI_MAX[ctx]){ showToast('Max '+PI_MAX[ctx]+' photos here — remove one first'); break; }
     try{
       const raw = await compressImage(f);
-      // Cut the bottle out of white/gray backdrops NOW, while the image is
+      // Cut the subject out of white/gray backdrops NOW, while the image is
       // local (no CORS) — the transparent PNG is what gets stored & shown.
-      // Cocktail photos ('ck') are full scenes, not bottles — keep them intact.
-      const cut = (ctx==='ck') ? null : await scrapeLocal(raw);
-      piStore[ctx].push({ dataUrl: cut || raw });
+      // Track whether a cut actually happened so cocktail cards can float the
+      // transparent glass on their tinted background (vs. cover-cropping a scene).
+      const cut = await scrapeLocal(raw);
+      piStore[ctx].push({ dataUrl: cut || raw, cut: !!cut });
       piRender(ctx);
       draftQueue(ctx);
       // Scan from the untouched original — the model reads it more reliably.
@@ -4464,6 +4512,25 @@ function cocktailFamily(c){
   const b = c.ingredients.find(i=>i.role==='base_spirit' && !i.optional) || c.ingredients.find(i=>i.role==='base_spirit');
   return (b && FAMILY[b.item]) || 'other';
 }
+// A custom recipe's ingredients need roles so "can I make it?" works. Infer them
+// from the canonical token: spirits are the base, vermouth/amari/liqueurs count
+// as required liqueurs, everything else is an assumed pantry staple.
+const CK_BASE_TOKENS = new Set(['mezcal','tequila','rye whiskey','scotch','bourbon','whiskey','gin','vodka','white rum','aged rum','dark rum','cachaça','cachaca','cognac']);
+const CK_LIQ_TOKENS  = new Set(['drambuie','lillet blanc','orange liqueur','sweet vermouth','dry vermouth','campari','aperol','amaro','maraschino liqueur','green chartreuse','crème de cassis','crème de cacao','crème de violette','coffee liqueur','amaretto','cherry liqueur']);
+function inferRole(item){
+  const it = deburr(String(item||'').toLowerCase().trim());
+  if(CK_BASE_TOKENS.has(item) || CK_BASE_TOKENS.has(it)) return 'base_spirit';
+  if(CK_LIQ_TOKENS.has(item)  || CK_LIQ_TOKENS.has(it))  return 'liqueur';
+  return '';
+}
+function ckSlug(n){ return deburr(String(n||'')).toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''); }
+// Every ingredient string used across the recipe set — the datalist vocabulary.
+function allIngredientItems(){
+  const s = new Set();
+  INGREDIENT_KEYWORDS.forEach(([tok])=>s.add(tok));
+  cocktailArr().forEach(c=>(c.ingredients||[]).forEach(i=>{ if(i.item) s.add(i.item); }));
+  return [...s].sort();
+}
 // Compute makeable status for a recipe against an owned-token set.
 function cocktailStatus(c, have){
   const req = c.ingredients.filter(ingRequired);
@@ -4516,9 +4583,10 @@ function cocktailsHTML(){
   shown.sort((a,b)=> a.st.rank-b.st.rank || a.c.name.localeCompare(b.c.name));
 
   const barEmpty = have.size===0;
-  const head = `<div class="shead"><p>${barEmpty
+  const head = `<div class="shead ck-shead"><p>${barEmpty
       ? 'Add a few bottles to your shelves and the cocktails you can pour rise to the top.'
-      : '<b>'+canN+'</b> of '+rows.length+' cocktails are within reach of your bar right now.'}</p></div>
+      : '<b>'+canN+'</b> of '+rows.length+' cocktails are within reach of your bar right now.'}</p>${
+      isAdmin()?'<button class="ck-addbtn" onclick="openRecipeEditor()">➕ Recipe</button>':''}</div>
     <div class="chiprow ck-chips">${chips}</div>`;
 
   if(!shown.length) return head + '<div class="empty"><p>No cocktails match — try a different filter or search.</p></div>';
@@ -4552,15 +4620,15 @@ function cocktailsHTML(){
 }
 // Card image: the user's first uploaded photo, or a spirit-tinted glass placeholder.
 const FAMILY_GLASS = { agave:'🍹', whiskey:'🥃', vodka:'🍸', gin:'🍸', rum:'🍹', brandy:'🥃', other:'🍷' };
-function cocktailPhotoMain(id){
+function cocktailPhotoRec(id){
   const ph = cocktailPhotos[id];
   const arr = Array.isArray(ph) ? ph : (ph ? Object.values(ph) : []);
-  const first = arr.find(p=>p && p.url);
-  return first ? first.url : '';
+  return arr.find(p=>p && p.url) || null;
 }
 function cocktailPhotoCard(id, fam){
-  const url = cocktailPhotoMain(id);
-  if(url) return `<img class="ck-img" src="${esc(url)}" alt="" loading="lazy">`;
+  const rec = cocktailPhotoRec(id);
+  // A cut-out (transparent) shot floats on the family gradient; a full scene covers.
+  if(rec) return `<img class="ck-img ${rec.cut?'ck-cut':''}" src="${esc(rec.url)}" alt="" loading="lazy">`;
   return `<span class="ck-glass">${FAMILY_GLASS[fam]||'🍸'}</span>`;
 }
 window.setCocktailFilter = function(k){ cocktailFilter=k; render(); };
@@ -4612,17 +4680,114 @@ window.openCocktail = function(id){
 
   // ── Photos: load existing, wire the intake (camera / library / paste) ──
   const ph = cocktailPhotos[id];
-  piStore.ck = (Array.isArray(ph) ? ph : (ph ? Object.values(ph) : [])).filter(p=>p&&p.url).map(p=>({path:p.path||null, url:p.url}));
+  piStore.ck = (Array.isArray(ph) ? ph : (ph ? Object.values(ph) : [])).filter(p=>p&&p.url).map(p=>({path:p.path||null, url:p.url, cut:!!p.cut}));
   piRender('ck');
   const photoWrap = document.getElementById('ck-d-photowrap');
   const saveBtn = document.getElementById('ck-d-savebtn');
-  if(isAdmin()){ photoWrap.style.display=''; saveBtn.style.display=''; saveBtn.onclick=()=>saveCocktailPhotos(id); }
-  else { photoWrap.style.display='none'; saveBtn.style.display='none'; }
+  const editBtn = document.getElementById('ck-d-editbtn');
+  if(isAdmin()){ photoWrap.style.display=''; saveBtn.style.display=''; saveBtn.onclick=()=>saveCocktailPhotos(id); editBtn.style.display=''; }
+  else { photoWrap.style.display='none'; saveBtn.style.display='none'; editBtn.style.display='none'; }
 
   document.getElementById('ckStatus').textContent='';
   document.getElementById('cocktailModal').classList.add('open');
 };
 window.closeCocktail = ()=>document.getElementById('cocktailModal').classList.remove('open');
+
+// ── RECIPE EDITOR ──────────────────────────────────────────────────────────
+let rcEditId = null;   // slug being edited, or null for a brand-new recipe
+function rcRowHTML(ing){
+  ing = ing || {};
+  return `<div class="rc-row">
+    <input class="rc-amt" placeholder="1" value="${esc(ing.amount!=null?ing.amount:'')}">
+    <input class="rc-unit" placeholder="oz" list="rcUnits" value="${esc(ing.unit||'')}">
+    <input class="rc-item" placeholder="ingredient" list="rcItems" value="${esc(ing.item||'')}">
+    <label class="rc-opt" title="Optional / garnish"><input type="checkbox" ${ing.optional?'checked':''}>opt</label>
+    <button class="rc-del" title="Remove" onclick="this.closest('.rc-row').remove()">✕</button>
+  </div>`;
+}
+window.rcAddRow = function(ing){
+  document.getElementById('rc-ings').insertAdjacentHTML('beforeend', rcRowHTML(ing));
+};
+window.openRecipeEditor = function(id){
+  if(!isAdmin()){ showToast('Admins can add recipes'); return; }
+  // Fill the ingredient datalist from the current vocabulary.
+  document.getElementById('rcItems').innerHTML = allIngredientItems().map(t=>`<option>${esc(t)}</option>`).join('');
+  rcEditId = id || null;
+  const c = id ? cocktails[id] : null;
+  document.getElementById('rc-title').textContent = c ? 'Edit recipe' : 'Add a recipe';
+  document.getElementById('rc-name').value = c ? (c.name||'') : '';
+  document.getElementById('rc-glass').value = c ? (c.glass||'') : '';
+  document.getElementById('rc-method').value = c ? (c.method||'') : '';
+  document.getElementById('rc-steps').value = c ? (c.instructions||'') : '';
+  document.getElementById('rc-tags').value = c ? (c.tags||[]).join(', ') : '';
+  const host = document.getElementById('rc-ings'); host.innerHTML='';
+  const ings = (c && c.ingredients && c.ingredients.length) ? c.ingredients : [{},{},{}];
+  ings.forEach(i=>rcAddRow(i));
+  document.getElementById('rc-delbtn').style.display = c ? '' : 'none';
+  document.getElementById('rcStatus').textContent = '';
+  document.getElementById('recipeModal').classList.add('open');
+  document.getElementById('rc-name').focus();
+};
+window.closeRecipeEditor = ()=>document.getElementById('recipeModal').classList.remove('open');
+window.saveRecipe = async function(){
+  const st = document.getElementById('rcStatus');
+  const name = (document.getElementById('rc-name').value||'').trim();
+  if(!name){ st.textContent='Give it a name first.'; document.getElementById('rc-name').focus(); return; }
+  const ingredients = [...document.querySelectorAll('#rc-ings .rc-row')].map(row=>{
+    const item = (row.querySelector('.rc-item').value||'').trim();
+    if(!item) return null;
+    const amtRaw = (row.querySelector('.rc-amt').value||'').trim();
+    const amtNum = parseFloat(amtRaw);
+    return {
+      amount: amtRaw==='' ? '' : (isNaN(amtNum) ? amtRaw : amtNum),
+      unit: (row.querySelector('.rc-unit').value||'').trim(),
+      item,
+      optional: row.querySelector('.rc-opt input').checked,
+      role: inferRole(item)
+    };
+  }).filter(Boolean);
+  if(!ingredients.length){ st.textContent='Add at least one ingredient.'; return; }
+  // Keep the id stable on edit; derive a fresh (collision-free) slug for new ones.
+  let id = rcEditId;
+  if(!id){
+    const base = ckSlug(name) || 'recipe';
+    id = base; let n=2;
+    while(cocktails[id]) id = base+'_'+(n++);
+  }
+  const rec = {
+    name,
+    glass: (document.getElementById('rc-glass').value||'').trim(),
+    method: document.getElementById('rc-method').value||'',
+    instructions: (document.getElementById('rc-steps').value||'').trim(),
+    tags: (document.getElementById('rc-tags').value||'').split(',').map(t=>t.trim()).filter(Boolean),
+    ingredients,
+    custom: true,
+    addedBy: (auth.currentUser&&auth.currentUser.uid)||''
+  };
+  const prev = cocktails[id];
+  if(prev && prev.addedAt) rec.addedAt = prev.addedAt; else rec.addedAt = Date.now();
+  rec.editedAt = Date.now();
+  try{
+    st.textContent = '⏳ Saving…';
+    await dbSet('cellar/cocktails/'+id, rec);
+    st.textContent = '✅ Saved';
+    closeRecipeEditor();
+    showToast((rcEditId?'Updated ':'Added ')+name);
+  }catch(e){ st.textContent = '❌ '+(e.message||e); }
+};
+window.deleteRecipe = async function(){
+  if(!rcEditId) return;
+  const c = cocktails[rcEditId];
+  if(!confirm('Delete "'+((c&&c.name)||'this recipe')+'"? This removes it for everyone.')) return;
+  const st = document.getElementById('rcStatus');
+  try{
+    st.textContent = '⏳ Deleting…';
+    await dbSet('cellar/cocktails/'+rcEditId, null);
+    await dbSet('cellar/cocktail_photos/'+rcEditId, null);
+    closeRecipeEditor();
+    showToast('Deleted');
+  }catch(e){ st.textContent = '❌ '+(e.message||e); }
+};
 
 // Persist the drink's photos to cellar/cocktail_photos/{id} (separate from recipes).
 window.saveCocktailPhotos = async function(id){
@@ -4630,7 +4795,9 @@ window.saveCocktailPhotos = async function(id){
   try{
     st.textContent='⏳ Saving photos…';
     const ups = await uploadPhotos('cocktail_'+id, piStore.ck);
-    await dbSet('cellar/cocktail_photos/'+id, ups.length ? ups : null);
+    // Carry the transparent-cutout flag through so the card knows to float it.
+    const recs = ups.map((u,i)=>({ ...u, cut: !!(piStore.ck[i] && piStore.ck[i].cut) }));
+    await dbSet('cellar/cocktail_photos/'+id, recs.length ? recs : null);
     st.textContent = ups.length ? '✅ Saved '+ups.length+' photo'+(ups.length>1?'s':'') : '✅ Photos cleared';
   }catch(e){ st.textContent = '❌ '+(e.message||e); }
 };
