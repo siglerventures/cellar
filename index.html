@@ -1139,7 +1139,11 @@
     <h3 id="rm-title">Rack settings</h3>
     <div class="msub" id="rm-sub">Name and size — the map redraws instantly on save.</div>
     <div class="qlabel">Name</div>
-    <input id="rm-name" placeholder="e.g. Wine Wall, Bourbon Shelf, Humidor">
+    <input id="rm-name" placeholder="e.g. Wine Wall, Bar Top Shelf, Cabinets, Humidor">
+    <select id="rm-type" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="rmTypeChange()">
+      <option value="grid">🔲 Grid — columns × rows</option>
+      <option value="shelf">📏 Shelf — one left-to-right row</option>
+    </select>
     <div class="mgrid">
       <div><div class="qlabel">Columns</div><div class="rm-step"><button onclick="rmStep('cols',-1)">−</button><input id="rm-cols" type="number" min="1" max="40" oninput="rmNote()"><button onclick="rmStep('cols',1)">＋</button></div></div>
       <div><div class="qlabel">Rows</div><div class="rm-step"><button onclick="rmStep('rows',-1)">−</button><input id="rm-rows" type="number" min="1" max="60" oninput="rmNote()"><button onclick="rmStep('rows',1)">＋</button></div></div>
@@ -1699,7 +1703,7 @@ async function ensureRackLayout(){
 function subscribe(){
   if(subscribed) return;
   subscribed = true;
-  onValue(ref(db, 'cellar/bottles'), snap => { bottles = snap.val() || {}; render(); if(document.getElementById('archiveModal').classList.contains('open')) renderArchiveList(); });
+  onValue(ref(db, 'cellar/bottles'), snap => { bottles = snap.val() || {}; ensureLocations(); render(); if(document.getElementById('archiveModal').classList.contains('open')) renderArchiveList(); });
   onValue(ref(db, 'cellar/buylist'), snap => { buylist = snap.val() || {}; render(); });
   onValue(ref(db, 'cellar/cocktails'), snap => { cocktails = snap.val() || {}; if(view==='cocktails') render(); });
   onValue(ref(db, 'cellar/cocktail_photos'), snap => { cocktailPhotos = snap.val() || {}; if(view==='cocktails') render(); });
@@ -1707,7 +1711,7 @@ function subscribe(){
   onValue(ref(db, 'cellar/history'), snap => { histLog = snap.val() || {}; if(view==='history') render(); });
   onValue(ref(db, 'cellar/ask_history'), snap => { askLog = snap.val() || {}; const el=document.getElementById('askHist'); if(el && el.style.display!=='none') renderAskHistory(); });
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
-  onValue(ref(db, 'cellar/racks'), snap => { racks = snap.val() || {}; if(!racks[curRack] && Object.keys(racks).length) curRack = rackIds()[0]; if(view==='cellar') render(); });
+  onValue(ref(db, 'cellar/racks'), snap => { racks = snap.val() || {}; ensureLocations(); if(!racks[curRack] && Object.keys(racks).length) curRack = rackIds()[0]; if(view==='cellar') render(); });
   onValue(ref(db, 'cellar/type_notes'), snap => { typeNotes = snap.val() || {}; });
   onValue(ref(db, 'cellar/kind_prefs'), snap => { kindPrefs = snap.val() || {}; renderKindRow(); });
   onValue(ref(db, 'cellar/custom_tags'), snap => {
@@ -4349,6 +4353,8 @@ window.openRackModal = function(mode){
   document.getElementById('rm-name').value = rmMode==='new' ? '' : d.name;
   document.getElementById('rm-cols').value = rmMode==='new' ? 6 : d.cols;
   document.getElementById('rm-rows').value = rmMode==='new' ? 4 : d.rows;
+  { const t=document.getElementById('rm-type'); if(t) t.value = (rmMode==='new' ? 'grid' : (d.type==='shelf'?'shelf':'grid')); }
+  rmTypeChange();
   document.getElementById('rm-delete').style.display = (rmMode==='edit' && curRack!=='main') ? '' : 'none';
   document.getElementById('rm-status').textContent = '';
   rmNote();
@@ -4362,10 +4368,17 @@ window.rmStep = function(which, delta){
   el.value = Math.max(1, Math.min(max, (Math.round(Number(el.value))||1) + delta));
   rmNote();
 };
+function rmType(){ const t=document.getElementById('rm-type'); return (t && t.value==='shelf') ? 'shelf' : 'grid'; }
+window.rmTypeChange = function(){
+  const shelf = rmType()==='shelf';
+  const r = document.getElementById('rm-rows');
+  if(r){ if(shelf) r.value = 1; r.disabled = shelf; }
+  rmNote();
+};
 function rmDims(){
   return {
     C: Math.max(1, Math.min(40, Math.round(Number(document.getElementById('rm-cols').value))||1)),
-    R: Math.max(1, Math.min(60, Math.round(Number(document.getElementById('rm-rows').value))||1))
+    R: rmType()==='shelf' ? 1 : Math.max(1, Math.min(60, Math.round(Number(document.getElementById('rm-rows').value))||1))
   };
 }
 function rmOutside(C,R){
@@ -4381,6 +4394,38 @@ window.rmNote = function(){
     if(n) el.textContent += ' — ⚠ ' + n + ' placed bottle' + (n===1?'':'s') + ' would move to the tray (nothing deleted)';
   }
 };
+// ── LOCATION SAFETY NET (runs once per session, admin only, purely ADDITIVE) ──
+// 1) Migration: every placed bottle gets an explicit rackId (implicit "main"
+//    becomes written "main" — the exact rack it is already on; slots untouched).
+// 2) Any kind that HAS bottles but no location gets its 5×5 shelf auto-created
+//    (this is what gives Gin its shelf even though it was added pre-3.15).
+let locationsEnsured = false;
+async function ensureLocations(){
+  if(locationsEnsured) return;
+  if(!isAdmin()) return;
+  if(!Object.keys(bottles).length || !Object.keys(racks).length) return;
+  locationsEnsured = true;
+  try{
+    const updates = {};
+    let migrated = 0;
+    activeArr().forEach(w=>{
+      if(w.rackCol && w.rackRow && !w.rackId){ updates['cellar/bottles/'+w.id+'/rackId']='main'; migrated++; }
+    });
+    if(migrated) await dbUpdate('/', updates);
+    const present = new Set(activeArr().map(kindOf));
+    let made = [];
+    for(const k of present){
+      if(k==='wine' || rackForKind(k)) continue;
+      const name = kindLabel(k);
+      await dbSet('cellar/racks/r' + Date.now().toString(36) + Math.floor(Math.random()*100), { name, cols:5, rows:5, order:rackIds().length + made.length, createdAt:Date.now() });
+      made.push(name);
+    }
+    if(migrated || made.length){
+      console.log('[Cellar] ensureLocations: migrated', migrated, 'placement(s); created', made);
+      if(made.length) showToast('Created shelves: ' + made.join(', '));
+    }
+  }catch(e){ console.warn('[Cellar] ensureLocations failed:', e); }
+}
 // ➕ Add a collection: select it AND auto-create its 5×5 shelf (named after the
 // kind so the tray/suggestion routing recognizes it) when none exists yet.
 window.addCollection = async function(k){
@@ -4401,7 +4446,7 @@ window.rmSave = async function(){
   try{
     if(rmMode==='new'){
       const id = 'r' + Date.now().toString(36);
-      await dbSet('cellar/racks/'+id, { name, cols:C, rows:R, order:rackIds().length, createdAt:Date.now() });
+      await dbSet('cellar/racks/'+id, { name, cols:C, rows:R, type:rmType(), order:rackIds().length, createdAt:Date.now() });
       curRack = id;
       closeRackModal(); render();
       showToast('Rack added — ' + name);
@@ -4412,6 +4457,7 @@ window.rmSave = async function(){
       updates['cellar/racks/'+curRack+'/name'] = name;
       updates['cellar/racks/'+curRack+'/cols'] = C;
       updates['cellar/racks/'+curRack+'/rows'] = R;
+      updates['cellar/racks/'+curRack+'/type'] = rmType();
       outside.forEach(w=>{ updates['cellar/bottles/'+w.id+'/rackCol']=null; updates['cellar/bottles/'+w.id+'/rackRow']=null; updates['cellar/bottles/'+w.id+'/rackId']=null; });
       await dbUpdate('/', updates);
       closeRackModal();
@@ -4421,11 +4467,20 @@ window.rmSave = async function(){
 };
 window.rmDelete = async function(){
   if(curRack==='main'){ showToast('The main wall can’t be deleted'); return; }
-  const occupied = activeArr().some(w=>onShelf(w) && bRack(w)===curRack && w.rackCol && w.rackRow);
-  if(occupied){ document.getElementById('rm-status').textContent='⚠ Move its bottles off first.'; return; }
   const d = curDef();
-  if(!confirm('Delete rack "' + d.name + '"?')) return;
-  try{ await dbRemove('cellar/racks/'+curRack); curRack='main'; closeRackModal(); render(); showToast('Rack deleted'); }
+  const occupants = activeArr().filter(w=>onShelf(w) && bRack(w)===curRack && w.rackCol && w.rackRow);
+  const msg = occupants.length
+    ? 'Delete "' + d.name + '"?\n\nIts ' + occupants.length + ' placed bottle' + (occupants.length===1?'':'s') + ' will move to the Unplaced tray — nothing is deleted.'
+    : 'Delete rack "' + d.name + '"?';
+  if(!confirm(msg)) return;
+  try{
+    const updates = {};
+    occupants.forEach(w=>{ updates['cellar/bottles/'+w.id+'/rackCol']=null; updates['cellar/bottles/'+w.id+'/rackRow']=null; updates['cellar/bottles/'+w.id+'/rackId']=null; });
+    updates['cellar/racks/'+curRack] = null;
+    await dbUpdate('/', updates);
+    curRack='main'; closeRackModal(); render();
+    showToast('Rack deleted' + (occupants.length?(' — '+occupants.length+' bottle(s) moved to the tray'):''));
+  }
   catch(e){ document.getElementById('rm-status').textContent='❌ Could not delete.'; }
 };
 
