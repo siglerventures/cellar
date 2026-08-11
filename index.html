@@ -653,13 +653,8 @@
   .ck-img.ck-cut{object-fit:contain;padding:8px;filter:drop-shadow(0 5px 12px rgba(0,0,0,.55))}
   .ck-glass{font-size:52px;opacity:.9;filter:drop-shadow(0 3px 8px rgba(0,0,0,.4))}
   /* spirit-family tints behind the placeholder glass */
-  .ck-fam-agave{background:radial-gradient(120% 120% at 50% 0,#2f4a2a,#141d12)}
-  .ck-fam-whiskey{background:radial-gradient(120% 120% at 50% 0,#5a3a1c,#231409)}
-  .ck-fam-vodka{background:radial-gradient(120% 120% at 50% 0,#2b3a46,#111820)}
-  .ck-fam-gin{background:radial-gradient(120% 120% at 50% 0,#274038,#101c18)}
-  .ck-fam-rum{background:radial-gradient(120% 120% at 50% 0,#6a4420,#26160a)}
-  .ck-fam-brandy{background:radial-gradient(120% 120% at 50% 0,#5c2f1e,#22110b)}
-  .ck-fam-other{background:radial-gradient(120% 120% at 50% 0,#5a1620,#1c0a0e)}
+  /* Placeholder backdrop — neutral (no spirit-family colour tint) */
+  .ck-fam-agave,.ck-fam-whiskey,.ck-fam-vodka,.ck-fam-gin,.ck-fam-rum,.ck-fam-brandy,.ck-fam-other{background:linear-gradient(180deg,#201619,#160e10)}
   /* status pill + IBA badge float on the photo */
   .ck-pill{position:absolute;left:8px;top:8px;font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:3px 8px;border-radius:20px;background:rgba(10,6,7,.72);backdrop-filter:blur(2px);border:1px solid rgba(255,255,255,.12)}
   .ck-can .ck-pill,.ck-sub .ck-pill{color:#8fe08a}
