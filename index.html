@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.14</title>
+<title>The Cellar Ledger — Rev 3.15</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -647,7 +647,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.14</div>
+    <div class="auth-rev">Rev 3.15</div>
   </div>
 </div>
 
@@ -765,7 +765,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.14</span>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.15</span>
     <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>
     <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
@@ -1203,7 +1203,7 @@ function renderKindRow(){
   const missing = kindsOrdered().filter(k=>!present.has(k[0]) && k[0]!=='wine' && k[0]!==kindFilter);
   const addChip = missing.length
     ? `<span class="dd"><button class="sortchip" onclick="ddToggle(event,this)">➕ Add</button><span class="dd-panel">` +
-      missing.map(k=>`<button class="dd-opt" onclick="setKind('${k[0]}')">${esc(k[1])}</button>`).join('') + `</span></span>`
+      missing.map(k=>`<button class="dd-opt" onclick="addCollection('${k[0]}')">${esc(k[1])}</button>`).join('') + `</span></span>`
     : '';
   // data-kind on the collection chips → admins right-click for Edit / Move left / right.
   el.innerHTML = chips.map(k=>`<button class="sortchip ${kindFilter===k[0]?'on':''}"${k[0]==='all'?'':` data-kind="${k[0]}"`} onclick="setKind('${k[0]}')">${esc(k[1])}</button>`).join('') + addChip;
@@ -4126,6 +4126,18 @@ window.rmNote = function(){
     const n = rmOutside(C,R).length;
     if(n) el.textContent += ' — ⚠ ' + n + ' placed bottle' + (n===1?'':'s') + ' would move to the tray (nothing deleted)';
   }
+};
+// ➕ Add a collection: select it AND auto-create its 5×5 shelf (named after the
+// kind so the tray/suggestion routing recognizes it) when none exists yet.
+window.addCollection = async function(k){
+  setKind(k);
+  if(k==='all' || rackForKind(k)) return;
+  const name = kindLabel(k).replace(/^[^\p{L}\p{N}]+\s*/u,'');   // "🫒 Gin" → "Gin"
+  try{
+    const id = 'r' + Date.now().toString(36);
+    await dbSet('cellar/racks/'+id, { name, cols:5, rows:5, order:rackIds().length, createdAt:Date.now() });
+    showToast('Created a 5×5 ' + name + ' shelf — resize it any time in Rack settings');
+  }catch(e){ console.warn('[Cellar] auto-shelf failed:', e); }
 };
 window.rmSave = async function(){
   const name = document.getElementById('rm-name').value.trim();
