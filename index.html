@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.42</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.43</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -435,6 +435,13 @@
   .qtybadge{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--gold);border:1px solid var(--line);border-radius:20px;padding:2px 8px}
   .qtybadge.low{color:var(--gold);border-color:var(--gold-dim);background:rgba(201,163,92,.1)}
   .qtybadge.out{color:#e09a9a;border-color:rgba(201,106,106,.5);background:rgba(201,106,106,.1)}
+  /* varietal chips (detail) + share badge (cards, while a grape filter is on) */
+  .dt-vchips{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .dt-vchips:empty{display:none}
+  .vch-lbl{font-size:13px}
+  .vchip{font-family:inherit;font-size:11.5px;font-weight:600;color:var(--parch);background:rgba(122,62,110,.18);border:1px solid rgba(160,95,150,.45);border-radius:20px;padding:3px 10px;cursor:pointer;transition:.12s}
+  .vchip:hover{border-color:var(--gold);color:#fff}
+  .vshare{font-size:10.5px;font-weight:700;color:#d8a7d0;border:1px solid rgba(160,95,150,.45);background:rgba(122,62,110,.15);border-radius:20px;padding:2px 8px}
   /* ── BOTTLE JOURNEY (detail-page stock strip) ── */
   .bj{border:1px solid var(--line);border-radius:10px;padding:13px 14px;margin:0 0 12px;background:rgba(236,227,210,.03)}
   .bj-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -750,7 +757,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.42</div>  </div></div>
+    <div class="auth-rev">Rev 3.43</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -867,7 +874,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.42</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.43</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -1037,6 +1044,7 @@
       <input id="dt-url" placeholder="Product URL (https://…)" style="grid-column:1/-1">
       <input id="dt-desc" placeholder="Description — e.g. Kentucky Straight Rye Whiskey" style="grid-column:1/-1">
     </div>
+    <div id="dtVarietals" class="dt-vchips"></div>
     <div class="qlabel" style="margin-top:14px">Notes / comments</div>
     <textarea id="dt-notes" placeholder="Tasting notes, where you had it, who you shared it with…"></textarea>
     <div class="mrow">
@@ -2078,14 +2086,16 @@ window.setSort = function(m){ sortMode = m; render(); };
 // ── VARIETALS: parsed live from the free-text grape field ────────────────────
 // Understands "Grenache blend", "Tempranillo + Graciano", "Cab/Merlot", and full
 // breakdowns like "65% Grenache Noir, 15% Mourvèdre, 15% Syrah, others 5%".
-const GRAPE_FAMILIES = ['grenache','syrah','shiraz','mourvedre','cinsault','carignan','counoise','clairette','pinot noir','pinot gris','pinot grigio','pinot','merlot','cabernet franc','cabernet','cab','tempranillo','graciano','sangiovese','nebbiolo','barbera','corvina','rondinella','zinfandel','primitivo','malbec','petit verdot','petite sirah','mencia','listan','chardonnay','riesling','sauvignon blanc','viognier','marsanne','roussanne'];
+const GRAPE_FAMILIES = ['grenache','garnacha','syrah','shiraz','mourvedre','monastrell','cinsault','carignan','counoise','clairette','pinot noir','pinot gris','pinot grigio','pinot','merlot','cabernet franc','cabernet','cab','tempranillo','graciano','sangiovese','nebbiolo','barbera','corvina','rondinella','zinfandel','primitivo','malbec','petit verdot','petite sirah','mencia','listan','gamay','carmenere','pinotage','touriga','chardonnay','riesling','sauvignon blanc','viognier','marsanne','roussanne','chenin','albarino','vermentino','verdejo','semillon','gewurztraminer','moscato','muscat','torrontes'];
 function deacc(t){ return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+const FAM_CANON = { shiraz:'syrah', primitivo:'zinfandel', cab:'cabernet', 'pinot grigio':'pinot gris', garnacha:'grenache', monastrell:'mourvedre', muscat:'moscato' };
 function famOf(name){
   const n = deacc(name).trim();
-  for(const f of GRAPE_FAMILIES){ if(n.includes(f)) return (f==='shiraz')?'syrah':(f==='primitivo')?'zinfandel':(f==='cab')?'cabernet':(f==='pinot grigio')?'pinot gris':f; }
+  for(const f of GRAPE_FAMILIES){ if(n.includes(f)) return FAM_CANON[f] || f; }
   const cleaned = n.replace(/\b(blend|noir|rouge|led|and|others?)\b/g,'').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
   return cleaned.length>2 ? cleaned : '';
 }
+function knownFam(f){ return GRAPE_FAMILIES.some(g=>(FAM_CANON[g]||g)===f); }
 function parseVarietals(text){
   const out = [];
   deacc(text).split(/[,;+\/]|\band\b/).forEach(seg=>{
@@ -2112,7 +2122,14 @@ const SPIRIT_STYLES = {
 };
 function typesOf(w){
   const kind = kindOf(w);
-  if(kind==='wine') return parseVarietals(w.grape);
+  if(kind==='wine'){
+    let v = parseVarietals(w.grape);
+    // No grape field? Read the DESCRIPTION — label scans often carry the blend
+    // there ("GRAPE VARIETIES: 65% Grenache Noir, 15% Mourvèdre…"). Strict mode:
+    // only KNOWN grape names count, so prose can't invent varietals.
+    if(!v.length && (w.desc||w.notes)) v = parseVarietals([w.desc,w.notes].filter(Boolean).join(', ')).filter(x=>knownFam(x.fam));
+    return v;
+  }
   const styles = SPIRIT_STYLES[kind] || [];
   const text = deacc([w.name, w.vintage, w.grape, w.notes].filter(Boolean).join(' '));
   const out = [];
@@ -2124,6 +2141,15 @@ function pctOf(w, fam){ const v = typesOf(w).find(x=>x.fam===fam); return v ? (v
 function vMatch(w){ return !varietalFilter || pctOf(w, varietalFilter) >= 0; }
 function fMatch(w){ return !flavorFilter || bottleTags(w).includes(flavorFilter); }
 window.setVarietal = function(v){ varietalFilter = v; render(); };
+// From a bottle's varietal chip: close the modal and filter the list by that grape.
+window.dtVarietal = function(fam){ closeDetail(); varietalFilter = fam; render(); window.scrollTo({top:0,behavior:'smooth'}); };
+// Card badge while a grape filter is on: this bottle's share of that grape.
+function vShareBadge(w){
+  if(!varietalFilter) return '';
+  const v = typesOf(w).find(x=>x.fam===varietalFilter);
+  if(!v) return '';
+  return `<span class="vshare">🍇 ${v.pct!=null ? (v.pct+'%') : '✓'}</span>`;
+}
 window.setFlavor = function(v){ flavorFilter = v; render(); };
 // Custom dark dropdown — Android renders native <select> as a bright system
 // sheet that ignores page CSS, so we draw our own panel.
@@ -2360,6 +2386,14 @@ window.openDetail = function(id){
   // synced so Save writes the same number the strip shows.
   { const q=document.getElementById('dt-qty'); if(q){ q.style.display='none'; q.value = (w.status==='cellared') ? (Number(w.qty)||1) : ''; } }
   bjRender(id);
+  // Parsed varietals / styles as tappable chips — tap one to filter the list by
+  // that grape (dominance-ordered: most Grenache first).
+  { const host=document.getElementById('dtVarietals'); if(host){
+      const vs = typesOf(w);
+      host.innerHTML = vs.length
+        ? '<span class="vch-lbl">🍇</span>'+vs.map(v=>`<button class="vchip" title="Show every bottle with ${esc(v.fam)}, most first" onclick="dtVarietal('${esc(v.fam)}')">${esc(v.fam.replace(/\b\w/g,c=>c.toUpperCase()))}${v.pct!=null?(' '+v.pct+'%'):''}</button>`).join('')
+        : '';
+  } }
   document.getElementById('dt-abv').value = w.abv||'';
   document.getElementById('dt-vendor').value = w.vendor||'';
   document.getElementById('dt-grape').value = w.grape||'';
@@ -3745,7 +3779,7 @@ function groupedCardHTML(recs){
     const inner = latest ? `${fmt(latest.score)}`
       : (()=>{ const pn=predNum({predLow:pick(r=>r.predLow),predHigh:pick(r=>r.predHigh)}); return pn!=null?`${fmt(pn)}<i>est</i>`:''; })();
     const badge = wineScoreBadge(latest?scoreClass(latest.score):'s-pred', inner);
-    return `<div class="wine wine-group w-wine" onclick="openWineGroup('${id0}')">${badge}<div class="wine-left">${cardPhotoHTML(photoRec)}</div><div class="meta"><div class="name">${esc(nm)}</div>${producer?`<div class="producer">${esc(producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
+    return `<div class="wine wine-group w-wine" onclick="openWineGroup('${id0}')">${badge}<div class="wine-left">${cardPhotoHTML(photoRec)}</div><div class="meta"><div class="name">${esc(nm)}</div>${producer?`<div class="producer">${esc(producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${vShareBadge(w)}</div></div></div>`;
   }
   const scoreBlock = latest
     ? `<div class="score ${scoreClass(latest.score)}"><b>${fmt(latest.score)}</b></div>`
@@ -3783,11 +3817,11 @@ function collectionCardHTML(w){
     if(kindOf(w)==='wine'){
       const pn = predNum(w);
       const badge = wineScoreBadge('s-pred', pn!=null ? `${fmt(pn)}<i>est</i>` : '');
-      return `<div class="wine w-wine" onclick="openDetail('${w.id}')">${badge}<div class="wine-left">${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
+      return `<div class="wine w-wine" onclick="openDetail('${w.id}')">${badge}<div class="wine-left">${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${vShareBadge(w)}</div></div></div>`;
     }
     // Non-wine (bourbon/tequila): unchanged.
     const badge = (w.rackCol && w.rackRow) ? `<span class="slot-badge">${esc(slotBadgeText(w))}</span>` : '';
-    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left">${cellaredScoreHTML(w)}${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(!w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${stockBadge(w)}${tagChipsHTML(w)}</div></div></div>`;
+    return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left">${cellaredScoreHTML(w)}${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(!w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}${badge}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${stockBadge(w)}${vShareBadge(w)}${tagChipsHTML(w)}</div></div></div>`;
   }
   return openedCardHTML(w);
 }
@@ -4023,7 +4057,7 @@ function openedCardHTML(w){
   // Wine: score badge floated on the photo; clean name/producer/meta, no tags/notes.
   if(kindOf(w)==='wine'){
     const badge = wineScoreBadge(scoreClass(w.score), `${fmt(w.score)}`);
-    return `<div class="wine w-wine" onclick="openDetail('${w.id}')">${badge}<div class="wine-left">${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}</div></div></div>`;
+    return `<div class="wine w-wine" onclick="openDetail('${w.id}')">${badge}<div class="wine-left">${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${vShareBadge(w)}</div></div></div>`;
   }
   return `<div class="wine" onclick="openDetail('${w.id}')"><div class="wine-left"><div class="score ${scoreClass(w.score)}"><b>${fmt(w.score)}</b></div>${cardPhotoHTML(w)}</div><div class="meta"><div class="name">${(!w.photoUrl)?kindEmoji(kindOf(w))+' ':''}${esc(w.name)}</div>${w.producer?`<div class="producer">${esc(w.producer)}</div>`:''}<div class="row2">${row2?`<span>${row2}</span>`:''}${tagChipsHTML(w)}</div>${w.notes?`<div class="notes">${esc(w.notes)}</div>`:''}</div></div>`;
 }
