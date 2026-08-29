@@ -38,6 +38,14 @@ Realtime Database backend, Google sign-in), hosted on GitHub Pages
 - `emailKey`: lowercase, dots → underscores via chained `.split('.').join('_')`
   (RTDB rules `.replace` is first-occurrence-only — sanitize fully in app code).
 
+## Phil's deploy environment (give commands exactly this way)
+- Windows PowerShell; his clone lives at `C:\Users\philp\Documents\cellar-deploy\cellar`.
+- Always give deploy steps as individual copy/paste blocks using that REAL path —
+  never placeholders like `C:\path\to\...`:
+  `cd C:\Users\philp\Documents\cellar-deploy\cellar` → `git pull origin main` →
+  `cd functions` → `npm install` → `cd ..` →
+  `firebase deploy --only functions:cellar:<name> --project philinity-893d2`
+
 ## Bot coordination (two CodeBots ship daily — avoid collisions)
 - Rev numbers: check main AND open PRs before claiming one; if in doubt, skip
   a number. We have collided on 2.16/2.19/2.37/2.38/2.44.
