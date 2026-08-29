@@ -164,6 +164,11 @@ exports.cellarScanMenu = onCall(
     let summaryJson = JSON.stringify(summary.slice(0, 500));
     if (summaryJson.length > 40000) summaryJson = summaryJson.slice(0, 40000);
     const livePalate = String((request.data && request.data.palate) || '').slice(0, 4000);
+    const followup = String((request.data && request.data.followup) || '').slice(0, 500);
+    let previous = (request.data && request.data.previous) || [];
+    if (!Array.isArray(previous)) previous = [];
+    let previousJson = JSON.stringify(previous.slice(0, 20));
+    if (previousJson.length > 6000) previousJson = previousJson.slice(0, 6000);
 
     const prompt = [
       "These photo(s) show a RESTAURANT MENU/DRINKS LIST or a STORE SHELF — usually",
@@ -175,6 +180,16 @@ exports.cellarScanMenu = onCall(
       "actual 1-10 ratings) — prefer styles like their proven wins, downrank known",
       "misses. For a collection with no palate section, judge on quality, typicity,",
       "proof/age statements and reputation.",
+      "BE PRICE-AWARE: read the printed prices. If a much cheaper bottle predicts",
+      "nearly as well as the top pick, call that out in its verdict as the value play.",
+      followup ? [
+        "",
+        "THE TASTER'S FOLLOW-UP REQUEST — apply it STRICTLY when filtering and ranking",
+        "(e.g. a stated budget means only bottles at or near that price):",
+        followup,
+        previous.length ? "You previously read these bottles off this same list: " + previousJson : "",
+        "Answer for THIS request: the summary names the best pick FOR THE REQUEST and why."
+      ].filter(Boolean).join('\n') : "",
       "Respond with ONLY a JSON object (no markdown, no backticks):",
       '{"context":"menu" or "shelf",',
       ' "summary": one sentence naming the single top pick and why it fits,',

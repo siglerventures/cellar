@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.43</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.44</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -757,7 +757,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.43</div>  </div></div>
+    <div class="auth-rev">Rev 3.44</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -874,7 +874,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.43</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.44</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -1876,37 +1876,79 @@ window.actionWineScan = function(){
   if(p.classList.contains('show')) p.scrollIntoView({behavior:'smooth', block:'start'});
 };
 let lastWsWines = [];
-window.wsScan = async function(){
+window.wsScan = function(){ wsRun(''); };
+// Follow-up after a scan — "find one around $150", "something lighter", … The
+// same photos go back with the request so the AI re-ranks the actual list.
+window.wsFollowUp = function(){
+  const inp = document.getElementById('ws-follow');
+  const q = (inp && inp.value || '').trim();
+  if(!q){ showToast('Type a follow-up first — e.g. “find one around $150”'); return; }
+  wsRun(q);
+};
+async function wsRun(followup){
   const shots = piStore.ws.filter(p=>p.dataUrl);
   if(!shots.length){ showToast('Add a photo of the list or shelf first'); return; }
   const btn = document.getElementById('wsGo'); btn.disabled = true;
-  setScanStatus('ws', 'Reading every wine on there — a long list can take ~20 seconds…', '');
-  document.getElementById('wsResults').innerHTML = '';
+  setScanStatus('ws', followup ? '↩ Re-ranking the list for: “'+followup+'”…' : 'Reading every wine on there — a long list can take ~20 seconds…', '');
+  if(!followup) document.getElementById('wsResults').innerHTML = '';
   try{
     const images = shots.map(p=>({ base64:p.dataUrl.split(',')[1], mediaType:(p.dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg' }));
-    const res = await scanMenuFn({ images, collectionSummary: collectionSummary(), palate: livePalateText() });
+    const payload = { images, collectionSummary: collectionSummary(), palate: livePalateText() };
+    if(followup){
+      payload.followup = followup;
+      if(lastWsWines.length) payload.previous = lastWsWines.map(w=>({name:w.name, vintage:w.vintage, price:w.price}));
+    }
+    const res = await scanMenuFn(payload);
     const r = res && res.data;
     if(!r || !r.ok){ setScanStatus('ws', (r && r.error) || 'Couldn’t read that one — try a closer, straighter shot.', 'err'); return; }
     setScanStatus('ws', '', '');
-    renderWsResults(r.data);
+    renderWsResults(r.data, followup);
   }catch(e){
     console.warn('[Cellar] cellarScanMenu failed:', e);
     setScanStatus('ws', 'Scan isn’t available yet — the cellarScanMenu function may still need deploying.', 'err');
   }finally{ btn.disabled = false; }
-};
-function renderWsResults(d){
+}
+function renderWsResults(d, followup){
   const wines = (d && Array.isArray(d.wines)) ? d.wines : [];
   lastWsWines = wines;
   const el = document.getElementById('wsResults');
   if(!wines.length){ el.innerHTML = '<div class="empty"><p>No wines recognized — try a closer, straighter shot.</p></div>'; return; }
-  const where = d.context==='shelf' ? 'On this shelf' : 'On this list';
-  let html = d.summary ? `<div class="scout-verdict" style="margin:12px 0 8px">${esc(where)}: ${esc(d.summary)}</div>` : '';
-  html += wines.map((w,i)=>{
-    const band = (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : '—';
-    const fit = ['love','like','maybe','pass'].includes(w.fit) ? w.fit : 'maybe';
-    const meta = [w.vintage, w.price].filter(Boolean).join(' · ');
-    return `<div class="lb-row ${i===0?'top':''}" style="cursor:default"><div class="rank">${i+1}</div><div class="lscore" style="font-size:24px">${esc(band)}</div><div><div class="lname">${w.kind&&w.kind!=='wine'?kindEmoji(w.kind)+' ':''}${esc(w.name)}</div>${meta?`<div class="lmeta">${esc(meta)}</div>`:''}<div class="lmeta" style="margin-top:4px"><span class="scout-fit fit-${fit}" style="font-size:9.5px;padding:2px 8px">${FIT_LABEL[fit]||'Toss-up'}</span> ${esc(w.verdict||'')}</div></div><span style="display:flex;flex-direction:column;gap:6px;align-self:center"><button class="scout-btn" style="white-space:nowrap" onclick="wsToCellar(${i})">＋ Own it</button><button class="scout-btn ghost" style="white-space:nowrap" onclick="wsToWishlist(${i})">＋ Wishlist</button></span></div>`;
-  }).join('');
+  const where = d.context==='shelf' ? 'shelf' : 'list';
+  const bandOf = w => (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : null;
+  const fitOf  = w => ['love','like','maybe','pass'].includes(w.fit) ? w.fit : 'maybe';
+  const chip   = w => `<span class="scout-fit fit-${fitOf(w)}" style="font-size:9.5px;padding:2px 8px">${FIT_LABEL[fitOf(w)]||'Toss-up'}</span>`;
+  const btns   = i => `<button class="scout-btn" style="white-space:nowrap" onclick="wsToCellar(${i})">＋ Own it</button><button class="scout-btn ghost" style="white-space:nowrap" onclick="wsToWishlist(${i})">＋ Wishlist</button>`;
+
+  // 🥇 Hero card — THE pick, unmissable: name big, price big, why, est. score labeled.
+  const h = wines[0], hb = bandOf(h);
+  let html = `<div style="border:1px solid var(--gold-dim);border-radius:10px;padding:12px 14px;margin:12px 0 10px;background:rgba(200,164,90,.07)">
+    <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700">🥇 Top pick for you${followup?` — “${esc(followup)}”`:''}</div>
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:5px 0 2px">
+      <span style="font-size:18px;font-weight:700">${h.kind&&h.kind!=='wine'?kindEmoji(h.kind)+' ':''}${esc(h.name)}</span>
+      ${h.price?`<span style="font-size:17px;font-weight:700;color:var(--gold)">${esc(h.price)}</span>`:''}
+      ${h.vintage?`<span class="lmeta">${esc(h.vintage)}</span>`:''}
+    </div>
+    ${h.verdict?`<div class="lmeta" style="margin-top:3px">${chip(h)} ${esc(h.verdict)}</div>`:''}
+    ${hb?`<div class="lmeta" style="margin-top:5px">Est. score for <b>your</b> palate: <b style="color:var(--gold)">${esc(hb)}</b> / 10</div>`:''}
+    <div style="display:flex;gap:8px;margin-top:9px">${btns(0)}</div>
+  </div>`;
+  if(d.summary) html += `<div class="scout-verdict" style="margin:0 0 10px">${esc(d.summary)}</div>`;
+
+  // The rest, ranked, with price bold and the score band labeled — no mystery numbers.
+  if(wines.length>1){
+    html += `<div class="qlabel" style="margin:2px 0 6px">Also on this ${where}, best → worst for you:</div>`;
+    html += wines.slice(1).map((w,j)=>{
+      const i=j+1, band=bandOf(w);
+      const meta=[w.vintage, w.price?`<b style="color:var(--gold)">${esc(w.price)}</b>`:''].filter(Boolean).join(' · ');
+      return `<div class="lb-row" style="cursor:default"><div class="rank">${i+1}</div><div style="align-self:center;text-align:center;min-width:52px">${band?`<div class="lscore" style="font-size:19px">${esc(band)}</div><div class="lmeta" style="font-size:8.5px;letter-spacing:.08em;text-transform:uppercase">est. for you</div>`:''}</div><div><div class="lname">${w.kind&&w.kind!=='wine'?kindEmoji(w.kind)+' ':''}${esc(w.name)}</div>${meta?`<div class="lmeta">${meta}</div>`:''}<div class="lmeta" style="margin-top:4px">${chip(w)} ${esc(w.verdict||'')}</div></div><span style="display:flex;flex-direction:column;gap:6px;align-self:center">${btns(i)}</span></div>`;
+    }).join('');
+  }
+
+  // ↩ Follow-up bar — ask the sommelier to re-rank: budget, style, food pairing…
+  html += `<div class="mrow" style="margin-top:12px;gap:8px">
+    <input id="ws-follow" placeholder="Follow-up — e.g. “find one around $150” or “something lighter”" style="flex:1" onkeydown="if(event.key==='Enter')wsFollowUp()">
+    <button class="mbtn" style="white-space:nowrap" onclick="wsFollowUp()">↩ Ask</button>
+  </div>`;
   el.innerHTML = html;
 }
 // "＋ Own it" — turn a scanner recommendation into a prefilled Add-a-bottle.
