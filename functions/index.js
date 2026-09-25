@@ -123,6 +123,42 @@ function livePalateBlock(livePalate) {
   ].join('\n');
 }
 
+// Parse the model's JSON reply, surviving the real-world failure modes:
+// markdown fences, prose before/after the object, and — the big one — a reply
+// TRUNCATED mid-array by max_tokens (the old "Expected ',' or ']' after array
+// element at position N" the Drink Scanner surfaced to users). Strategy:
+// exact parse → balanced-prefix parse (drops trailing prose) → truncation
+// repair (rewind to the last complete value, close every open bracket).
+function repairTruncatedJson(s) {
+  let inStr = false, esc = false;
+  const stack = [];
+  let safe = -1, safeStack = [];
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') { inStr = false; safe = i + 1; safeStack = stack.slice(); }
+      continue;
+    }
+    if (ch === '"') { inStr = true; continue; }
+    if (ch === '{' || ch === '[') { stack.push(ch); continue; }
+    if (ch === '}' || ch === ']') { stack.pop(); safe = i + 1; safeStack = stack.slice(); continue; }
+    if (ch === ',') { safe = i; safeStack = stack.slice(); }
+  }
+  if (safe < 0) return null;
+  const close = (st) => st.slice().reverse().map((c) => (c === '{' ? '}' : ']')).join('');
+  let body = s.slice(0, safe).replace(/[\s,]+$/, '');
+  const c1 = body + close(safeStack);
+  try { JSON.parse(c1); return c1; } catch (_) {}
+  // Likely ends on a dangling KEY ("name" with no value) — drop it and retry.
+  const body2 = body.replace(/[,\s]*"(?:[^"\\]|\\.)*"\s*:?\s*$/, '');
+  if (body2 !== body) {
+    const c2 = body2.replace(/[\s,]+$/, '') + close(safeStack);
+    try { JSON.parse(c2); return c2; } catch (_) {}
+  }
+  return null;
+}
 function parseModelJson(message) {
   const text = (message.content || [])
     .filter((b) => b.type === 'text')
@@ -130,9 +166,25 @@ function parseModelJson(message) {
     .join('')
     .trim();
   let cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-  const match = cleaned.match(/\{[\s\S]*\}/);
-  if (match) cleaned = match[0];
-  return JSON.parse(cleaned);
+  const start = cleaned.indexOf('{');
+  if (start > 0) cleaned = cleaned.slice(start);
+  try { return JSON.parse(cleaned); } catch (_) {}
+  // Balanced prefix — handles prose AFTER a complete object.
+  {
+    let inStr = false, esc = false, depth = 0;
+    for (let i = 0; i < cleaned.length; i++) {
+      const ch = cleaned[i];
+      if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; continue; }
+      if (ch === '"') inStr = true;
+      else if (ch === '{') depth++;
+      else if (ch === '}') { depth--; if (depth === 0) { try { return JSON.parse(cleaned.slice(0, i + 1)); } catch (_) {} break; } }
+    }
+  }
+  const repaired = repairTruncatedJson(cleaned);
+  if (repaired) return JSON.parse(repaired);
+  const e = new Error('READBACK_MALFORMED');
+  e.code = 'READBACK_MALFORMED';
+  throw e;
 }
 
 function coerceScore(v) {
@@ -214,7 +266,7 @@ exports.cellarScanMenu = onCall(
     try {
       const message = await client.messages.create({
         model: MODEL,
-        max_tokens: 2048,
+        max_tokens: 8000,
         messages: [{ role: 'user', content }]
       });
       const parsed = parseModelJson(message);
@@ -238,7 +290,10 @@ exports.cellarScanMenu = onCall(
       };
     } catch (err) {
       console.error('[cellarScanMenu] failed:', err);
-      return { ok: false, error: (err && err.message) || 'Scan failed — try a closer shot.' };
+      const parseErr = err && (err.code === 'READBACK_MALFORMED' || err instanceof SyntaxError);
+      return { ok: false, error: parseErr
+        ? 'That list overwhelmed one read — tap “What should I get?” again (or crop to one page).'
+        : (err && err.message) || 'Scan failed — try a closer shot.' };
     }
   }
 );
@@ -270,7 +325,7 @@ exports.cellarAskAI = onCall(
     try {
       const message = await client.messages.create({
         model: MODEL,
-        max_tokens: 1024,
+        max_tokens: 2048,
         messages: [{
           role: 'user',
           content: [
@@ -342,7 +397,7 @@ exports.scanLabel = onCall(
     try {
       const message = await client.messages.create({
         model: MODEL,
-        max_tokens: 1024,
+        max_tokens: 2048,
         messages: [
           {
             role: 'user',
