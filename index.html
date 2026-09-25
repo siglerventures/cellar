@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.44</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.45</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -40,8 +40,11 @@
   .actionrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
   /* ── MOBILE COMPACTION: everything on its intended single row ── */
   @media(max-width:640px){
-    .actionrow{flex-wrap:nowrap;gap:6px}
-    .act{flex:1 1 0;min-width:0;font-size:9.5px;letter-spacing:.03em;padding:11px 4px;gap:4px;white-space:nowrap}
+    /* Phones: the three actions stack as full-width rows — icon + clear label,
+       comfortable tap height — instead of squeezing onto one cramped line. */
+    .actionrow{flex-direction:column;flex-wrap:nowrap;gap:8px}
+    .actionrow .act{flex:none;width:100%;justify-content:flex-start;padding:14px 16px;font-size:12.5px;letter-spacing:.09em;gap:12px;white-space:nowrap;border-radius:8px}
+    .actionrow .act svg{width:19px;height:19px}
     .tabs{gap:2px}
     .vtab{font-size:10.5px;letter-spacing:.04em;padding:9px 5px;white-space:nowrap}
     .tabctrls{flex-basis:100%;margin-left:0;gap:8px;row-gap:6px}
@@ -757,7 +760,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.44</div>  </div></div>
+    <div class="auth-rev">Rev 3.45</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -874,7 +877,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.44</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.45</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
