@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.45</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.46</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -760,7 +760,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.45</div>  </div></div>
+    <div class="auth-rev">Rev 3.46</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -791,6 +791,7 @@
 
   <div class="quick" id="quickPanel">
     <div class="qhead"><h3>Log a pour</h3><button class="qclose" title="Close" onclick="closeLogPanel()">✕</button></div>
+    <div id="qScanTag" style="display:none;font-size:12px;color:var(--gold);border:1px solid var(--gold-dim);border-radius:6px;padding:7px 10px;margin:0 0 10px;background:rgba(200,164,90,.07)"></div>
     <input class="qname" id="q-name" placeholder="Name">
     <select id="q-kind" class="rt-jump" style="width:100%;margin-bottom:12px" onchange="applyKindFields('q')"><option value="wine">🍷 Wine</option><option value="bourbon">🥃 Bourbon</option><option value="tequila">🌵 Tequila</option><option value="vodka">🍸 Vodka</option><option value="gin">🫒 Gin</option><option value="rum">🍹 Rum</option><option value="whiskey">🥂 Whiskey/Scotch</option><option value="brandy">🍯 Brandy/Cognac</option><option value="liqueur">🍅 Liqueur/Aperitivo</option><option value="sparkling">🍾 Champagne/Sparkling</option><option value="cigar">🚬 Cigar</option><option value="mixer">🧉 Mixer</option></select>
     <div class="qlabel">Photos — the first is scanned for details &amp; used as the card image</div>
@@ -830,13 +831,16 @@
   <!-- ── WINE SCAN: menu / shelf → "what should I get?" ── -->
   <div class="quick" id="wsPanel">
     <div class="qhead"><h3>Drink Scanner</h3><button class="qclose" title="Close" onclick="closeWsPanel()">✕</button></div>
-    <div class="qlabel">Recommendations only — nothing is saved. Snap a menu, wine list, or liquor shelf (up to 4 photos)</div>
+    <div class="qlabel">Snap a menu, wine list, or liquor shelf (up to 4 photos) — every scan lands in 🕘 Past scans, so you can review what you drank later</div>
+    <input id="ws-venue" placeholder="Where are you? — restaurant / shop (optional)" style="font-family:'Inter';font-size:13px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:8px 10px;width:100%;margin:0 0 10px">
     <div class="pintake" id="ws-intake" ondragover="piDragOver(event,'ws')" ondragleave="piDragLeave(event,'ws')" ondrop="piDrop(event,'ws')"></div>
-    <div class="mrow">
+    <div class="mrow" style="gap:8px">
       <button class="mbtn" id="wsGo" onclick="wsScan()">🍷 What should I get?</button>
+      <button class="mbtn" style="flex:0 0 auto" onclick="wsToggleHistory()">🕘 Past scans</button>
     </div>
     <div class="scanstatus" id="ws-scanstatus"></div>
     <div id="wsResults" style="margin-top:6px"></div>
+    <div id="wsHistory" style="display:none;margin-top:10px"></div>
   </div>
 
   <!-- ── SEARCH + ASK AI ── -->
@@ -877,7 +881,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.45</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.46</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -1320,6 +1324,9 @@ let cocktailFilter = 'can';  // 'all' | 'can' | 'one' | family key ('agave'|'whi
 let buylist = {};   // id -> item
 let histLog = {};   // id -> activity event (cellar/history)
 let askLog = {};    // id -> {q,a,at,by} Ask-AI conversation history (cellar/ask_history)
+let scans = {};     // id -> saved Drink-Scanner scans (cellar/scans)
+let curScanId = null;          // scan record the open scanner session writes to
+let pendingScanReview = null;  // {scanId, idx, name} — Log-a-Pour review linked to a scan
 let view = 'all';
 let sortMode = 'newest';   // 'rating' | 'newest' | 'az' — sort chips on All Bottles / Buy-Again
 let varietalFilter = '';   // 🍇 filter — e.g. 'grenache'; list orders by that grape's share
@@ -1787,6 +1794,7 @@ function subscribe(){
   onValue(ref(db, 'cellar/friends'), snap => { friends = snap.val() || {}; if(view==='friends'||view==='cocktails') render(); });
   onValue(ref(db, 'cellar/history'), snap => { histLog = snap.val() || {}; if(view==='history') render(); });
   onValue(ref(db, 'cellar/ask_history'), snap => { askLog = snap.val() || {}; const el=document.getElementById('askHist'); if(el && el.style.display!=='none') renderAskHistory(); });
+  onValue(ref(db, 'cellar/scans'), snap => { scans = snap.val() || {}; const el=document.getElementById('wsHistory'); if(el && el.style.display!=='none') renderScanHistory(); });
   onValue(ref(db, 'cellar/rack_layout'), snap => { rackLayout = snap.val() || {}; if(view==='cellar') render(); });
   onValue(ref(db, 'cellar/racks'), snap => { racks = snap.val() || {}; ensureLocations(); if(!racks[curRack] && Object.keys(racks).length) curRack = rackIds()[0]; if(view==='cellar') render(); });
   onValue(ref(db, 'cellar/type_notes'), snap => { typeNotes = snap.val() || {}; });
@@ -1866,7 +1874,7 @@ window.toggleLogPanel = function(){
   closeWsPanel();
   const p = document.getElementById('quickPanel');
   p.classList.toggle('show');
-  if(p.classList.contains('show')) p.scrollIntoView({behavior:'smooth', block:'start'});
+  if(p.classList.contains('show')){ wsReviewUnlink(); p.scrollIntoView({behavior:'smooth', block:'start'}); } // manual open = not a scan review
 };
 // Wine Scan — the "what should I get?" panel: photograph a restaurant wine list
 // or a shop shelf (camera / library / drag-drop / paste), and cellarScanMenu
@@ -1906,6 +1914,7 @@ async function wsRun(followup){
     if(!r || !r.ok){ setScanStatus('ws', (r && r.error) || 'Couldn’t read that one — try a closer, straighter shot.', 'err'); return; }
     setScanStatus('ws', '', '');
     renderWsResults(r.data, followup);
+    saveScan(r.data, followup);
   }catch(e){
     console.warn('[Cellar] cellarScanMenu failed:', e);
     setScanStatus('ws', 'Scan isn’t available yet — the cellarScanMenu function may still need deploying.', 'err');
@@ -1974,6 +1983,139 @@ window.wsToWishlist = async function(i){
     await set(r, { name:[w.name, w.vintage].filter(Boolean).join(' '), region:'', note:w.verdict||'', kind:(w.kind&&KINDS.some(k=>k[0]===w.kind))?w.kind:'wine', addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now() });
     showToast('Added to wishlist — ' + w.name);
   }catch(e){ showToast('Could not add to wishlist'); }
+};
+
+// ── SCAN JOURNAL: every scan is saved to cellar/scans so you can come back,
+//    see what was on the list, and review the one you ended up drinking.
+function scanWineLite(w){
+  return {
+    name:String(w.name||'').slice(0,140),
+    vintage:w.vintage?String(w.vintage).slice(0,20):null,
+    price:w.price?String(w.price).slice(0,24):null,
+    kind:(w.kind&&KINDS.some(k=>k[0]===w.kind))?w.kind:'wine',
+    fit:['love','like','maybe','pass'].includes(w.fit)?w.fit:'maybe',
+    verdict:String(w.verdict||'').slice(0,300),
+    predLow:(w.predLow!=null&&isFinite(Number(w.predLow)))?Number(w.predLow):null,
+    predHigh:(w.predHigh!=null&&isFinite(Number(w.predHigh)))?Number(w.predHigh):null
+  };
+}
+async function saveScan(d, followup){
+  const wines = (d && Array.isArray(d.wines) ? d.wines : []).slice(0,40).map(scanWineLite);
+  if(!wines.length) return;
+  const venue = (document.getElementById('ws-venue')||{value:''}).value.trim().slice(0,120);
+  try{
+    if(followup && curScanId){
+      // A follow-up re-ranks the same list — update the record, remember the ask.
+      const upd = { wines, at:Date.now() };
+      if(venue) upd.venue = venue;
+      await dbUpdate('cellar/scans/' + curScanId, upd);
+      const fr = push(ref(db, 'cellar/scans/' + curScanId + '/followups'));
+      await set(fr, String(followup).slice(0,200));
+    }else{
+      const r = push(ref(db, 'cellar/scans'));
+      curScanId = r.key;
+      await set(r, {
+        at:Date.now(), by:(auth.currentUser&&auth.currentUser.uid)||'',
+        context:(d.context==='shelf')?'shelf':'list',
+        venue:venue||null,
+        summary:String(d.summary||'').slice(0,400),
+        wines
+      });
+    }
+  }catch(e){ console.warn('[Cellar] saveScan failed:', e); }
+}
+let wsOpenScan = null; // which journal entry is expanded
+window.wsToggleHistory = function(){
+  const el = document.getElementById('wsHistory');
+  const show = el.style.display==='none' || !el.style.display;
+  el.style.display = show ? 'block' : 'none';
+  if(show) renderScanHistory();
+};
+window.wsScanExpand = function(id){ wsOpenScan = (wsOpenScan===id) ? null : id; renderScanHistory(); };
+function renderScanHistory(){
+  const el = document.getElementById('wsHistory'); if(!el) return;
+  const list = Object.entries(scans).map(([id,s])=>({id,...s})).sort((a,b)=>(b.at||0)-(a.at||0));
+  if(!list.length){ el.innerHTML = '<div class="empty"><p>No scans yet — your saved scans will show up here.</p></div>'; return; }
+  const chip = w => `<span class="scout-fit fit-${w.fit}" style="font-size:9.5px;padding:2px 8px">${FIT_LABEL[w.fit]||'Toss-up'}</span>`;
+  el.innerHTML = '<div class="qlabel" style="margin:2px 0 6px">🕘 Past scans — tap one to reopen it</div>' + list.map(s=>{
+    const when = s.at ? new Date(s.at).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : '';
+    const wines = Array.isArray(s.wines) ? s.wines : [];
+    const top = wines[0];
+    const open = wsOpenScan===s.id;
+    const drank = s.drank && s.drank.name ? s.drank : null;
+    let html = `<div style="border:1px solid ${open?'var(--gold-dim)':'var(--line)'};border-radius:10px;padding:10px 12px;margin:8px 0;background:${open?'rgba(200,164,90,.05)':'var(--glass)'}">`;
+    html += `<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;cursor:pointer" onclick="wsScanExpand('${s.id}')">
+      <span style="font-weight:600">${s.context==='shelf'?'🏪':'🍽️'} ${esc(s.venue||'Somewhere')}</span>
+      <span class="lmeta">${when} · ${wines.length} read${s.followups?' · ↩':''}</span>
+      ${drank?`<span class="lmeta" style="color:var(--gold)">🍷 You had: ${esc(drank.name)}${drank.score!=null?' — <b>'+drank.score+'</b>/10':''}</span>`
+             :(top?`<span class="lmeta">🥇 ${esc(top.name)}</span>`:'')}
+      <span style="margin-left:auto;color:var(--parch-dim)">${open?'▾':'▸'}</span>
+    </div>`;
+    if(open){
+      if(s.summary) html += `<div class="scout-verdict" style="margin:8px 0 6px">${esc(s.summary)}</div>`;
+      html += wines.map((w,i)=>{
+        const isDrank = drank && drank.idx===i;
+        const meta = [w.vintage, w.price?`<b style="color:var(--gold)">${esc(w.price)}</b>`:''].filter(Boolean).join(' · ');
+        const band = (w.predLow!=null&&w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : null;
+        return `<div class="lb-row" style="cursor:default${isDrank?';border-color:var(--gold-dim);background:rgba(200,164,90,.07)':''}">
+          <div class="rank">${i+1}</div>
+          <div style="align-self:center;text-align:center;min-width:52px">${band?`<div class="lscore" style="font-size:17px">${esc(band)}</div><div class="lmeta" style="font-size:8.5px;letter-spacing:.08em;text-transform:uppercase">est. for you</div>`:''}</div>
+          <div><div class="lname">${w.kind&&w.kind!=='wine'?kindEmoji(w.kind)+' ':''}${esc(w.name)}</div>
+            ${meta?`<div class="lmeta">${meta}</div>`:''}
+            <div class="lmeta" style="margin-top:4px">${chip(w)} ${esc(w.verdict||'')}</div>
+            ${isDrank?`<div class="lmeta" style="margin-top:4px;color:var(--gold)">✓ You drank this${drank.score!=null?' — rated <b>'+drank.score+'</b>/10':''}${drank.bottleId?` <button class="scout-btn ghost" style="font-size:10px;padding:2px 8px" onclick="openDetail('${drank.bottleId}')">open review</button>`:''}</div>`:''}
+          </div>
+          <span style="display:flex;flex-direction:column;gap:6px;align-self:center">
+            ${isDrank?'':`<button class="scout-btn" style="white-space:nowrap" onclick="wsReviewWine('${s.id}',${i})">🍷 I drank this</button>`}
+            <button class="scout-btn ghost" style="white-space:nowrap" onclick="wsScanWish('${s.id}',${i})">＋ Wishlist</button>
+          </span>
+        </div>`;
+      }).join('');
+      html += `<div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="scout-btn ghost" style="font-size:10px" onclick="wsScanDel('${s.id}')">🗑 Delete scan</button></div>`;
+    }
+    return html + '</div>';
+  }).join('');
+}
+// "🍷 I drank this" → prefilled Log a Pour; saving links the review back to the scan.
+window.wsReviewWine = function(scanId, idx){
+  const s = scans[scanId]; const w = s && Array.isArray(s.wines) && s.wines[idx];
+  if(!w || !w.name) return;
+  pendingScanReview = { scanId, idx, name:w.name };
+  closeWsPanel();
+  openLogPanel();
+  document.getElementById('q-name').value = w.name;
+  if(w.vintage) document.getElementById('q-vintage').value = w.vintage;
+  const ke = document.getElementById('q-kind');
+  if(ke && KINDS.some(k=>k[0]===w.kind)){ ke.value = w.kind; applyKindFields('q'); }
+  const pn = Number(String(w.price||'').replace(/[^0-9.]/g,''));
+  if(isFinite(pn) && pn>0) document.getElementById('q-price').value = pn;
+  if(s.venue) document.getElementById('q-vendor').value = s.venue;
+  document.getElementById('moregrid').classList.add('show');
+  const tag = document.getElementById('qScanTag');
+  if(tag){
+    tag.style.display = 'block';
+    tag.innerHTML = '🔗 This review will attach to your scan' + (s.venue ? ' at <b>'+esc(s.venue)+'</b>' : '') +
+      ' <button class="scout-btn ghost" style="font-size:10px;padding:2px 8px;margin-left:6px" onclick="wsReviewUnlink()">✕ unlink</button>';
+  }
+  document.getElementById('quickPanel').scrollIntoView({behavior:'smooth', block:'start'});
+};
+window.wsReviewUnlink = function(){
+  pendingScanReview = null;
+  const t = document.getElementById('qScanTag'); if(t){ t.style.display='none'; t.innerHTML=''; }
+};
+window.wsScanWish = async function(scanId, idx){
+  const s = scans[scanId]; const w = s && Array.isArray(s.wines) && s.wines[idx];
+  if(!w || !w.name) return;
+  try{
+    const r = push(ref(db, 'cellar/buylist'));
+    await set(r, { name:[w.name, w.vintage].filter(Boolean).join(' '), region:'', note:w.verdict||'', kind:w.kind||'wine', addedBy:(auth.currentUser&&auth.currentUser.uid)||'', addedAt:Date.now() });
+    showToast('Added to wishlist — ' + w.name);
+  }catch(e){ showToast('Could not add to wishlist'); }
+};
+window.wsScanDel = async function(id){
+  if(!confirm('Delete this scan from the journal? Any pour you logged from it stays.')) return;
+  try{ await remove(ref(db, 'cellar/scans/' + id)); if(wsOpenScan===id) wsOpenScan=null; renderScanHistory(); }
+  catch(e){ showToast('Could not delete scan'); }
 };
 
 // ── ASK AI (server-side only — question + compact collection summary → askAI Cloud Function) ──
@@ -3257,6 +3399,12 @@ window.logPour = async function(){
       photos: ups.length?ups:null,
       addedBy:uid, addedAt:now, openedAt:now
     });
+    if(pendingScanReview){
+      const pr = pendingScanReview;
+      dbUpdate('cellar/scans/' + pr.scanId, { drank:{ idx:pr.idx, name, bottleId:r.key, score:draft.score+(draft.half?0.5:0), at:now } })
+        .catch(e=>console.warn('[Cellar] scan review link failed:', e));
+      wsReviewUnlink();
+    }
     resetQuickLog();
     closeLogPanel();
     logEvent('logged', { bottleId:r.key, name, vintage:document.getElementById('q-vintage').value.trim(), qty:1, price:parsePriceInput('q-price'), vendor:document.getElementById('q-vendor').value.trim() });
