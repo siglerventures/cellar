@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.49</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.50</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -34,6 +34,7 @@
   .stat:hover{background:rgba(201,163,92,0.09);border-color:var(--line)}
   .stat b{display:block;font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;color:var(--gold);line-height:1}
   .stat span{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--parch-dim)}
+  .themetog{font-size:19px;line-height:1;align-self:center;padding:8px 10px}
   @media(max-width:820px){.topbar{grid-template-columns:1fr;gap:10px;text-align:center}.brand,.toptitle,.stats{justify-self:center}.stats{justify-content:center}.toptitle{white-space:normal}}
   .quick{display:none;background:var(--glass);border:1px solid var(--line);border-radius:4px;padding:18px clamp(14px,3vw,22px);margin-bottom:30px}
   .quick.show{display:block}
@@ -757,7 +758,7 @@
     if(wasLight) document.documentElement.removeAttribute('data-theme');
     else document.documentElement.setAttribute('data-theme','light');
     try{ localStorage.setItem('cellar_theme', wasLight?'dark':'light'); }catch(e){}
-    var b=document.getElementById('themeBtn'); if(b) b.textContent = wasLight ? '☀️ Light' : '🌙 Dark';
+    var b=document.getElementById('themeBtn'); if(b) b.textContent = wasLight ? '☀️' : '🌙';
   };
 </script>
 </head>
@@ -774,13 +775,15 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.49</div>  </div></div>
+    <div class="auth-rev">Rev 3.50</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
     <a class="brand" href="#" onclick="hardHome();return false;" title="Philinity Wines — fresh start">Philinity Wines <span class="brand-emoji" title="Back to All Bottles" onclick="event.stopPropagation();event.preventDefault();goHome()">🍷</span></a>
     <h1 class="toptitle">The Cellar <span class="amp">&</span> Ledger</h1>
     <div class="stats">
+      <button class="stat themetog" id="themeBtn" onclick="toggleTheme()" title="Switch light / dark mode">☀️</button>
+      <script>try{ if(localStorage.getItem('cellar_theme')==='light'){ document.getElementById('themeBtn').textContent='🌙'; } }catch(e){}</script>
       <button class="stat" onclick="setView('logged')" title="See every wine you've logged &amp; scored"><b id="st-count">0</b><span>Logged</span></button>
       <button class="stat" onclick="setView('buy')" title="See your Buy-Again list"><b id="st-buy">0</b><span>Buy Again</span></button>
       <button class="stat" onclick="setView('logged');setSort('rating')" title="See all scored wines ranked by score"><b id="st-avg">—</b><span>Avg Score</span></button>
@@ -896,8 +899,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.49</span>    <button id="themeBtn" onclick="toggleTheme()">☀️ Light</button>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
-    <script>try{ if(localStorage.getItem('cellar_theme')==='light'){ var _tb=document.getElementById('themeBtn'); if(_tb) _tb.textContent='🌙 Dark'; } }catch(e){}</script>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.50</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
