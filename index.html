@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.46</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.47</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -760,7 +760,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.46</div>  </div></div>
+    <div class="auth-rev">Rev 3.47</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -811,11 +811,13 @@
     <div class="halfrow"><button class="half" id="halfbtn" onclick="toggleHalf()">+ ½ point</button><span class="scoreEcho" id="scoreEcho"></span></div>
     <div class="qlabel">Flavor tags — pick any that apply</div>
     <div class="tags" id="tags"></div>
+    <div class="qlabel">Notes</div>
+    <textarea id="q-notes" rows="2" placeholder="Tasting notes — nose, palate, the moment, who you shared it with…" style="font-family:'Inter';font-size:13px;color:var(--parch);background:rgba(236,227,210,0.05);border:1px solid var(--line);border-radius:3px;padding:8px 10px;width:100%;resize:vertical;min-height:44px;margin:0 0 12px"></textarea>
     <div class="qbottom">
       <button class="buyflag" id="buyflag" onclick="toggleBuy()"><span class="dot"></span> Buy again</button>
       <button class="logbtn" onclick="logPour()">Log it</button>
     </div>
-    <button class="moretoggle" onclick="toggleMore()">+ view / edit detail (producer, region, vintage, note)</button>
+    <button class="moretoggle" onclick="toggleMore()">+ view / edit detail (producer, region, vintage, price, vendor)</button>
     <div class="moregrid" id="moregrid">
       <input id="q-prod" placeholder="Producer">
       <input id="q-region" placeholder="Region">
@@ -824,7 +826,6 @@
       <input id="q-abv" placeholder="ABV %">
       <input id="q-price" placeholder="Price $">
       <input id="q-vendor" placeholder="Vendor / where bought" list="vendorList">
-      <input id="q-notes" placeholder="Quick note">
     </div>
   </div>
 
@@ -881,7 +882,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.46</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.47</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -3436,7 +3437,7 @@ window.logPour = async function(){
     closeLogPanel();
     logEvent('logged', { bottleId:r.key, name, vintage:document.getElementById('q-vintage').value.trim(), qty:1, price:parsePriceInput('q-price'), vendor:document.getElementById('q-vendor').value.trim() });
     showToast('Logged — ' + name);
-    setView('all');
+    setView('logged');  // land on your pour history so the new entry is right there
   }catch(e){ showToast('Save failed: ' + (e.message||e)); }
 };
 function resetQuickLog(){
