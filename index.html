@@ -1884,7 +1884,7 @@ window.actionWineScan = function(){
   closeLogPanel();
   const p = document.getElementById('wsPanel');
   p.classList.toggle('show');
-  if(p.classList.contains('show')) p.scrollIntoView({behavior:'smooth', block:'start'});
+  if(p.classList.contains('show')){ wsAutoLocate(); p.scrollIntoView({behavior:'smooth', block:'start'}); }
 };
 let lastWsWines = [];
 window.wsScan = function(){ wsRun(''); };
@@ -1987,6 +1987,31 @@ window.wsToWishlist = async function(i){
 
 // ── SCAN JOURNAL: every scan is saved to cellar/scans so you can come back,
 //    see what was on the list, and review the one you ended up drinking.
+// 📍 Auto-locate: when the scanner opens, phone GPS fills the venue (editable).
+//    Coordinates are stored on the scan; the place NAME comes from a one-shot
+//    OpenStreetMap reverse-geocode of those coords. Fails silent — venue stays blank.
+let wsGeo = null; // {lat,lng,name} for the current scanner session
+function wsAutoLocate(){
+  const inp = document.getElementById('ws-venue');
+  if(!inp || inp.value.trim() || !navigator.geolocation) return;
+  const oldPh = inp.placeholder;
+  inp.placeholder = '📍 Figuring out where you are…';
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const lat = +pos.coords.latitude.toFixed(5), lng = +pos.coords.longitude.toFixed(5);
+    wsGeo = { lat, lng };
+    try{
+      const r = await fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=jsonv2&zoom=17');
+      const d = await r.json();
+      const a = d.address || {};
+      const name = [d.name || a.amenity || a.tourism || a.leisure || a.shop || a.building || a.road,
+                    a.city || a.town || a.village || a.hamlet,
+                    a.state].filter(Boolean).slice(0,3).join(', ');
+      if(name && !inp.value.trim()){ wsGeo.name = name; inp.value = name.slice(0,120); }
+    }catch(e){ /* offline / blocked — keep coords only */ }
+    if(!inp.value.trim()) inp.value = lat + ', ' + lng;
+    inp.placeholder = oldPh;
+  }, ()=>{ inp.placeholder = oldPh; }, { enableHighAccuracy:false, timeout:8000, maximumAge:300000 });
+}
 function scanWineLite(w){
   return {
     name:String(w.name||'').slice(0,140),
@@ -2018,6 +2043,7 @@ async function saveScan(d, followup){
         at:Date.now(), by:(auth.currentUser&&auth.currentUser.uid)||'',
         context:(d.context==='shelf')?'shelf':'list',
         venue:venue||null,
+        loc:(wsGeo&&isFinite(wsGeo.lat))?{lat:wsGeo.lat,lng:wsGeo.lng}:null,
         summary:String(d.summary||'').slice(0,400),
         wines
       });
@@ -2046,6 +2072,7 @@ function renderScanHistory(){
     let html = `<div style="border:1px solid ${open?'var(--gold-dim)':'var(--line)'};border-radius:10px;padding:10px 12px;margin:8px 0;background:${open?'rgba(200,164,90,.05)':'var(--glass)'}">`;
     html += `<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;cursor:pointer" onclick="wsScanExpand('${s.id}')">
       <span style="font-weight:600">${s.context==='shelf'?'🏪':'🍽️'} ${esc(s.venue||'Somewhere')}</span>
+      ${s.loc&&isFinite(s.loc.lat)?`<a href="https://maps.google.com/?q=${s.loc.lat},${s.loc.lng}" target="_blank" rel="noopener" title="Open in Maps" onclick="event.stopPropagation()" style="text-decoration:none">📍</a>`:''}
       <span class="lmeta">${when} · ${wines.length} read${s.followups?' · ↩':''}</span>
       ${drank?`<span class="lmeta" style="color:var(--gold)">🍷 You had: ${esc(drank.name)}${drank.score!=null?' — <b>'+drank.score+'</b>/10':''}</span>`
              :(top?`<span class="lmeta">🥇 ${esc(top.name)}</span>`:'')}
