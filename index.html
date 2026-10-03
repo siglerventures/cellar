@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cellar Ledger — Rev 3.50</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>The Cellar Ledger — Rev 3.51</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -775,7 +775,7 @@
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
-    <div class="auth-rev">Rev 3.50</div>  </div></div>
+    <div class="auth-rev">Rev 3.51</div>  </div></div>
 
 <div class="wrap">
   <div class="topbar">
@@ -899,7 +899,7 @@
   <div id="content"></div>
 
   <footer>
-    <span class="rev">🍷 Philinity Wines ©️ Rev 3.50</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
+    <span class="rev">🍷 Philinity Wines ©️ Rev 3.51</span>    <button id="footerPeople" onclick="openAccessModal()" style="display:none">👥 Access</button>    <button onclick="openDataModal()">📦 Data</button>
     <button onclick="signOutUser()">🚪 Sign Out</button>
   </footer>
 </div>
@@ -1921,7 +1921,8 @@ async function wsRun(followup){
   setScanStatus('ws', followup ? '↩ Re-ranking the list for: “'+followup+'”…' : 'Reading every wine on there — a long list can take ~20 seconds…', '');
   if(!followup) document.getElementById('wsResults').innerHTML = '';
   try{
-    const images = shots.map(p=>({ base64:p.dataUrl.split(',')[1], mediaType:(p.dataUrl.match(/^data:([^;]+)/)||[])[1]||'image/jpeg' }));
+    // Always read from the untouched original — a background-cut copy is unreadable to the model.
+    const images = shots.map(p=>{ const src=p.raw||p.dataUrl; return { base64:src.split(',')[1], mediaType:(src.match(/^data:([^;]+)/)||[])[1]||'image/jpeg' }; });
     const payload = { images, collectionSummary: collectionSummary(), palate: livePalateText() };
     if(followup){
       payload.followup = followup;
@@ -1947,7 +1948,7 @@ function renderWsResults(d, followup){
   const bandOf = w => (w.predLow!=null && w.predHigh!=null) ? fmt(w.predLow)+'–'+fmt(w.predHigh) : null;
   const fitOf  = w => ['love','like','maybe','pass'].includes(w.fit) ? w.fit : 'maybe';
   const chip   = w => `<span class="scout-fit fit-${fitOf(w)}" style="font-size:9.5px;padding:2px 8px">${FIT_LABEL[fitOf(w)]||'Toss-up'}</span>`;
-  const btns   = i => `<button class="scout-btn" style="white-space:nowrap" onclick="wsToCellar(${i})">＋ Own it</button><button class="scout-btn ghost" style="white-space:nowrap" onclick="wsToWishlist(${i})">＋ Wishlist</button>`;
+  const btns   = i => `<button class="scout-btn" style="white-space:nowrap" onclick="wsDrinking(${i})">🍷 Drinking it</button><button class="scout-btn ghost" style="white-space:nowrap" onclick="wsToCellar(${i})">＋ Own it</button><button class="scout-btn ghost" style="white-space:nowrap" onclick="wsToWishlist(${i})">＋ Wishlist</button>`;
 
   // 🥇 Hero card — THE pick, unmissable: name big, price big, why, est. score labeled.
   const h = wines[0], hb = bandOf(h);
@@ -2122,27 +2123,42 @@ function renderScanHistory(){
   }).join('');
 }
 // "🍷 I drank this" → prefilled Log a Pour; saving links the review back to the scan.
-window.wsReviewWine = function(scanId, idx){
-  const s = scans[scanId]; const w = s && Array.isArray(s.wines) && s.wines[idx];
+// Shared prefill: a scanned wine → Log a Pour, optionally 🔗-linked to its saved scan.
+function wsPourFrom(w, venue, scanId, idx){
   if(!w || !w.name) return;
-  pendingScanReview = { scanId, idx, name:w.name };
+  pendingScanReview = scanId ? { scanId, idx, name:w.name } : null;
   closeWsPanel();
   openLogPanel();
   document.getElementById('q-name').value = w.name;
   if(w.vintage) document.getElementById('q-vintage').value = w.vintage;
   const ke = document.getElementById('q-kind');
   if(ke && KINDS.some(k=>k[0]===w.kind)){ ke.value = w.kind; applyKindFields('q'); }
-  const pn = Number(String(w.price||'').replace(/[^0-9.]/g,''));
+  // Menu prices read like "$13 glass / $35 bottle" — take the FIRST number (the glass you ordered).
+  const pn = Number((String(w.price||'').match(/\d+(?:\.\d+)?/)||[])[0]);
   if(isFinite(pn) && pn>0) document.getElementById('q-price').value = pn;
-  if(s.venue) document.getElementById('q-vendor').value = s.venue;
+  if(venue) document.getElementById('q-vendor').value = venue;
   document.getElementById('moregrid').classList.add('show');
   const tag = document.getElementById('qScanTag');
   if(tag){
-    tag.style.display = 'block';
-    tag.innerHTML = '🔗 This review will attach to your scan' + (s.venue ? ' at <b>'+esc(s.venue)+'</b>' : '') +
-      ' <button class="scout-btn ghost" style="font-size:10px;padding:2px 8px;margin-left:6px" onclick="wsReviewUnlink()">✕ unlink</button>';
+    if(pendingScanReview){
+      tag.style.display = 'block';
+      tag.innerHTML = '🔗 This review will attach to your scan' + (venue ? ' at <b>'+esc(venue)+'</b>' : '') +
+        ' <button class="scout-btn ghost" style="font-size:10px;padding:2px 8px;margin-left:6px" onclick="wsReviewUnlink()">✕ unlink</button>';
+    }else{ tag.style.display='none'; tag.innerHTML=''; }
   }
   document.getElementById('quickPanel').scrollIntoView({behavior:'smooth', block:'start'});
+}
+window.wsReviewWine = function(scanId, idx){
+  const s = scans[scanId]; const w = s && Array.isArray(s.wines) && s.wines[idx];
+  if(!w) return;
+  wsPourFrom(w, s.venue||'', scanId, idx);
+};
+// "🍷 Drinking it" on LIVE scan results — you ordered one at the table: score it now
+// (or leave the panel open and come back after tasting). Links to the saved scan.
+window.wsDrinking = function(i){
+  const w = lastWsWines[i]; if(!w || !w.name) return;
+  const venue = (document.getElementById('ws-venue')||{value:''}).value.trim();
+  wsPourFrom(w, venue, curScanId, i);
 };
 window.wsReviewUnlink = function(){
   pendingScanReview = null;
@@ -3026,7 +3042,7 @@ function piRender(ctx){
       </div>`;
     }).join('') + '</div>';
   }
-  if(list.length){
+  if(list.length && ctx!=='ws' && ctx!=='ai' && ctx!=='fp'){   // no 🧹 for document shots (menus/receipts) — the paper IS the background
     const bs = (bgStrength[ctx]==null?50:bgStrength[ctx]);
     html += `<div class="pi-btns" style="margin-top:8px;align-items:center;flex-wrap:nowrap" title="Background removal — slide right to scrub more of the backdrop off the FIRST photo, left for a gentler cut (0 = original photo). The subject itself never fades.">
       <span class="rt-lbl" style="white-space:nowrap">🧹 Background</span>
@@ -3084,7 +3100,9 @@ async function piAddFiles(ctx, files){
       // local (no CORS) — the transparent PNG is what gets stored & shown.
       // Track whether a cut actually happened so cocktail cards can float the
       // transparent glass on their tinted background (vs. cover-cropping a scene).
-      const cut = (ctx==='fp') ? null : await scrapeLocal(raw);
+      // Scanner (ws) + Ask-AI (ai) photos are DOCUMENTS (menus, lists, receipts) —
+      // there the paper IS the background, so cutting it makes them unreadable.
+      const cut = (ctx==='fp'||ctx==='ws'||ctx==='ai') ? null : await scrapeLocal(raw);
       piStore[ctx].push({ dataUrl: cut || raw, cut: !!cut, raw });
       piRender(ctx);
       draftQueue(ctx);
